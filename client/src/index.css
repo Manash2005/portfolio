@@ -69,4 +69,22 @@
     transform: translateY(0);
   }
 }
+
+@keyframes flickerGlow {
+  0%, 100% {
+    box-shadow: 0 0 20px cyan;
+  }
+
+  25% {
+    box-shadow: 0 0 35px cyan;
+  }
+
+  50% {
+    box-shadow: 0 0 10px cyan;
+  }
+
+  75% {
+    box-shadow: 0 0 40px cyan;
+  }
+}
 }

@@ -6,7 +6,9 @@ import Projects from './sections/Projects'
 function App() {
   return (
     <div className="min-h-screen overflow-x-hidden">
-      <Navbar />
+      <header className="flex items-center justify-center fixed top-0 left-1/2 transform -translate-x-1/2 z-50">
+        <Navbar />
+      </header>
 
       <main className="px-10 py-4">
         <Hero />
