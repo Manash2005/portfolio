@@ -1,9 +1,7 @@
 
 function About() {
   return (
-    <section>
-
-    </section>
+    <div>About</div>
   )
 }
 

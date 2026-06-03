@@ -3,10 +3,11 @@
 
 @theme {
   --color-background: #010011;
-  --color-foreground: #DD5A45;
+  --color-foreground: #C23D29;
 
   --color-primary: #FFFFFF;
   --color-secondary: #9E9E9E;
+  --color-hover : #84FF00;
 }
 
 @layer base {
