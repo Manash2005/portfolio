@@ -1,14 +1,47 @@
+import {motion} from 'motion/react'
 function SocialMediaCard(props) {
   return (
     <div>
-        <a 
+        <motion.a 
+          variants={{
+              rest: {
+                y: 0,
+              },
+              hover: {
+                y: -7,
+              },
+            }}
+          initial="rest"
+          animate="rest"
+          whileHover="hover"
           href={props.href} 
           target="_blank" 
-          rel="noopener noreferrer"
-          className="flex flex-col items-center justify-center bg-secondary/20 text-foreground p-2 rounded-lg mx-3 hover:bg-foreground  hover:text-background hover:scale-102 hover:shadow-lg duration-300 transition-all"
+          className={`flex items-center justify-center bg-secondary/20 text-foreground p-2 rounded-lg hover:rounded-lg mx-3 hover:bg-foreground  hover:text-background hover:scale-102 ps-4 py-4 shadow-lg hover:shadow-foreground transition-all duration-600`}
         >
-            <span className="text-3xl">{props.icon}</span>
-        </a>
+            <span className="text-2xl">{props.icon}</span>
+
+            <motion.div
+              variants={{
+                rest: {
+                  opacity: 0,
+                  width: 0,
+                  x: -10,
+                },
+                hover: {
+                opacity: 1,
+                width: "auto",
+                x: 0,
+                },
+              }}
+              transition={{
+                duration: 0.5,
+                ease: "easeOut",
+              }}
+              className="overflow-hidden ml-2"
+              >
+                <p>{props.name}</p>
+              </motion.div>
+        </motion.a>
     </div>
   )
 }

@@ -1,6 +1,6 @@
 function EducationCard({ institute, logo, details }) {
   return (
-    <div className="bg-secondary/20 p-6 rounded-xl border border-secondary/30 hover:border-foreground/50 transition-all duration-300 hover:shadow-lg hover:shadow-foreground/20 w-1/2 max-w-md">
+    <div className="bg-secondary/20 p-6 rounded-xl border border-secondary/30 hover:border-foreground/50 transition-all duration-300 hover:shadow-lg hover:shadow-foreground/20 w-full lg:w-sm mb-5 lg:mb-0">
       <div className="flex items-start gap-4">
         
         {/* Left Content */}
