@@ -3,8 +3,12 @@ import About from './sections/About'
 import Contact from './sections/Contact'
 import Hero from './sections/Hero'
 import Projects from './sections/Projects'
+import Intro from './sections/Intro'
 import { easeInOut, motion } from "motion/react"
+import { useState } from 'react'
+import UnderConstruction from './sections/UnderConstruction'
 function App() {
+  const [showIntro, setShowIntro] = useState(true);
   return (
     <div className="min-h-screen overflow-x-hidden">
       <motion.header 
@@ -16,11 +20,20 @@ function App() {
       </motion.header>
 
       <main className="px-2 lg:px-8">
-        <Hero />
-        <About />
-        <Projects />
-        <Contact />
-      </main>
+        {showIntro ? (
+          <Intro
+            onComplete={() => setShowIntro(false)}
+          />
+        ) : (
+          <>
+            <Hero />
+            <About />
+            <Projects />
+            <Contact />
+            <UnderConstruction />
+          </>
+        )}
+    </main>
     </div>
   )
 }

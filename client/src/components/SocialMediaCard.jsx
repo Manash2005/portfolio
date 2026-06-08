@@ -8,7 +8,7 @@ function SocialMediaCard(props) {
                 y: 0,
               },
               hover: {
-                y: -7,
+                y: -4,
               },
             }}
           initial="rest"
@@ -16,7 +16,7 @@ function SocialMediaCard(props) {
           whileHover="hover"
           href={props.href} 
           target="_blank" 
-          className={`flex items-center justify-center bg-secondary/20 text-foreground p-2 rounded-lg hover:rounded-lg mx-3 hover:bg-foreground  hover:text-background hover:scale-102 ps-4 py-4 shadow-lg hover:shadow-foreground transition-all duration-600`}
+          className={`flex items-center justify-center bg-secondary/10 text-foreground font-mono p-2 rounded-lg hover:rounded-lg mx-3 hover:bg-foreground  hover:text-white hover:scale-102 ps-4 py-4 shadow-lg hover:shadow-foreground transition-all duration-600`}
         >
             <span className="text-2xl">{props.icon}</span>
 
