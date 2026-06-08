@@ -7,6 +7,9 @@ import EducationCard from "../components/EducationCard"
 import { motion } from "motion/react";
 import { TypeAnimation } from "react-type-animation";
 function Hero() {
+  const handleResume = () => {
+    window.open("/resume.pdf", "_blank");
+  };
   return (
     <motion.section
     initial = {{opacity:0}}
@@ -33,7 +36,7 @@ function Hero() {
 
                 {/* Role */}
                 <motion.p
-                  className="text-secondary text-7xl py-2"
+                  className="text-secondary text-5xl md:text-8xl py-2"
                   initial={{ opacity: 0, y: 10 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   transition={{ duration: 1, delay: 0.1 }}
@@ -71,7 +74,7 @@ function Hero() {
 
                 <div className="block md:flex justify-between mt-10 mb-4">
                     {/* Download Resume Button */}
-                    <motion.div
+                    <motion.button
                     variants={{
                         rest: {
                         y: 0,
@@ -108,6 +111,7 @@ function Hero() {
 
                         cursor-pointer
                     "
+                    onClick={handleResume}
                     >
 
                         <span className="whitespace-nowrap">
@@ -135,7 +139,7 @@ function Hero() {
                         >
                             <Download size={20} />
                         </motion.div>
-                    </motion.div>
+                    </motion.button>
 
                     {/* Socials */}
                     <motion.div 

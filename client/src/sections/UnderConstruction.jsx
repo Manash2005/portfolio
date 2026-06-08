@@ -8,10 +8,9 @@ function UnderConstruction() {
         whileInView={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8 }}
         className="
-          max-w-xl
           text-center
           rounded-3xl
-          w-1/2
+          w-auto
           bg-secondary/10
           backdrop-blur-md
           p-10
