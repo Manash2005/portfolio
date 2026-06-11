@@ -20,10 +20,10 @@ function Hero() {
     >
 
         {/* Top section */}
-        <div className="block md:flex border-b-[0.1px]">
+        <div className="block md:flex border-b-[0.1px] justify-center items-cente">
 
             {/* left column */}
-            <div className="flex flex-col w-full md:w-1/2 mt-15 md:mt-0 min-h-screen">
+            <div className="flex flex-col justify-around w-full md:w-1/2 mt-15 md:mt-0 min-h-screen">
                 <motion.p 
                   className="text-primary text-3xl px-1 font-bold md:mt-20 mt-5"
                   initial={{ opacity: 0, y: 10 }}
@@ -72,7 +72,7 @@ function Hero() {
                     I love the idea of creating something from nothing but code. Since then, I've spent my time building web applications, solving DSA problems, and constantly challenging myself to learn new technologies.
                 </motion.p>
 
-                <div className="block md:flex justify-between mt-10 mb-4">
+                <div className="block md:flex justify-between mt-10">
                     {/* Download Resume Button */}
                     <motion.button
                     variants={{
@@ -187,7 +187,7 @@ function Hero() {
                 <img src="/heroImage.png" alt="Hero Image" className="h-full object-cover" />
             </motion.div>
         </div>
-
+                
     </motion.section>
   )
 }

@@ -7,6 +7,7 @@ import Intro from './sections/Intro'
 import { easeInOut, motion } from "motion/react"
 import { useState } from 'react'
 import UnderConstruction from './sections/UnderConstruction'
+import Skills from './sections/Skills'
 function App() {
   const [showIntro, setShowIntro] = useState(true);
   return (
@@ -27,6 +28,7 @@ function App() {
         ) : (
           <>
             <Hero />
+            <Skills />
             <About />
             <Projects />
             <Contact />
