@@ -20,7 +20,7 @@ function App() {
         <Navbar />
       </motion.header>
 
-      <main className="px-2 lg:px-8">
+      <main>
         {showIntro ? (
           <Intro
             onComplete={() => setShowIntro(false)}

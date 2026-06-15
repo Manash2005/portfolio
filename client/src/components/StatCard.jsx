@@ -24,7 +24,7 @@ function StatCard(props) {
   }, [numValue]);
 
   return (
-    <div className="bg-secondary/10 hover:bg-secondary/20 p-4 rounded-xl text-center transition-all duration-300 w-full lg:w-2xs mb-5 lg:mb-0">
+    <div className="bg-neutral-950 hover:bg-neutral-900 border border-neutral-800 p-4 rounded-xl text-center transition-all duration-300 w-full lg:w-2xs mb-5 lg:mb-0">
         {props.value && <div className="text-4xl font-bold text-foreground">{count}{suffix}</div>}
         {props.description && <div className="text-primary text-sm mt-2">{props.description}</div>}
     </div>

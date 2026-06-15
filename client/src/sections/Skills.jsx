@@ -4,7 +4,7 @@ import CodingProfileCard from "../components/CodingProfileCard";
 function Skills() {
 
   return (
-    <section className="min-h-screen py-10 w-full">
+    <section className="min-h-screen pt-20 w-full border-b-[0.1px] border-gray-50">
       <div className="w-full px-6">
 
         {/* Heading */}
