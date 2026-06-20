@@ -1,5 +1,7 @@
 import { motion } from "motion/react";
 import CodingProfileCard from "../components/CodingProfileCard";
+import GridBg from "../utils/GridBg";
+import FloatingParticles from "../utils/FloatingParticles";
 
 function Skills() {
 
@@ -35,6 +37,12 @@ function Skills() {
   return (
     <section id="skills" className="relative min-h-screen overflow-hidden pt-10 md:pt-20 w-full">
 
+      {/* GRID BACKGROUND */}
+      <GridBg />
+
+      {/* Floating Particles */}
+      <FloatingParticles />
+
       {/* Glow */}
       <motion.div 
       animate={{
@@ -60,7 +68,7 @@ function Skills() {
           className="text-center "
         >
           <h2 className="text-primary font-mono text-2xl 2xl:text-5xl md:text-4xl font-bold mt-3">
-            Coding Profiles
+            CODING PROFILE
           </h2>
         </motion.div>
 

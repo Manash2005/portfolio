@@ -1,8 +1,16 @@
 import { motion } from "motion/react";
+import GridBg from "../utils/GridBg";
+import FloatingParticles from "../utils/FloatingParticles";
 
 function UnderConstruction() {
   return (
-    <section className="min-h-[80vh] flex items-center justify-center px-6">
+    <section className="relative min-h-screen flex items-center justify-center px-6">
+      {/* Grid Background */}
+      <GridBg />
+
+      {/* Floating Dots */}
+      <FloatingParticles />
+
       <motion.div
         initial={{ opacity: 0, y: 40 }}
         whileInView={{ opacity: 1, y: 0 }}
@@ -15,6 +23,7 @@ function UnderConstruction() {
           backdrop-blur-md
           p-10
           shadow-lg
+          z-10
         "
       >
         <motion.h1
@@ -55,7 +64,7 @@ function UnderConstruction() {
             font-mono
           "
         >
-          Developer is still building it.
+          Developer is busy with Naina Dugar his GIRLFRIEND
         </motion.div>
       </motion.div>
     </section>

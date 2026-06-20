@@ -7,32 +7,8 @@ import { SiGmail } from "react-icons/si";
 import EducationCard from "../components/EducationCard";
 import { motion } from "motion/react";
 import { TypeAnimation } from "react-type-animation";
-
-function FloatingParticles() {
-  return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none z-10">
-      {Array.from({ length: 12 }).map((_, i) => (
-        <motion.div
-          key={i}
-          className="absolute h-2 w-2 rounded-full bg-foreground/40"
-          style={{
-            left: `${Math.random() * 100}%`,
-            top: `${Math.random() * 100}%`,
-          }}
-          animate={{
-            y: [0, -20, 0],
-            opacity: [0.2, 1, 0.2],
-          }}
-          transition={{
-            duration: 3 + Math.random() * 5,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        />
-      ))}
-    </div>
-  );
-}
+import FloatingParticles from "../utils/FloatingParticles";
+import GridBg from "../utils/GridBg";
 
 function Hero() {
   const handleResume = () => {
@@ -48,16 +24,7 @@ function Hero() {
       id="hero"
     >
       {/* GRID BACKGROUND */}
-      <div
-        className="absolute inset-0 z-0 pointer-events-none"
-        style={{
-          backgroundImage: `
-            linear-gradient(rgba(255,255,255,0.06) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255,255,255,0.06) 1px, transparent 1px)
-          `,
-          backgroundSize: "50px 50px",
-        }}
-      />
+      <GridBg />
 
       {/* FLOATING PARTICLES */}
       <FloatingParticles />

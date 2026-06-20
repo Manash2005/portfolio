@@ -14,7 +14,7 @@ function CodingProfileCard({
       whileHover={{ y: -6 }}
       transition={{ duration: 0.2 }}
       viewport={{ once: true }}
-      className="w-full bg-secondary/10 hover:bg-background border border-foreground/40 rounded-3xl p-6 shadow-[0px_0px_40px_rgba(194,61,41,0.3)] hover:shadow-[30px_20px_40px_rgba(194,61,41,0.3)] transition-all duration-700 my-4"
+      className="w-full bg-neutral-950 hover:bg-neutral-900 border border-foreground/40 rounded-3xl p-6 shadow-[0px_0px_40px_rgba(194,61,41,0.3)] hover:shadow-[30px_20px_40px_rgba(194,61,41,0.3)] transition-all duration-700 my-4"
     >
       {/* Header */}
 
