@@ -1,5 +1,16 @@
 import {motion} from "motion/react"
 function Navbar() {
+
+  const scrollToHome = () => {
+    document
+      .getElementById("hero")
+      ?.scrollIntoView({ behavior: "smooth" });
+  };
+  const scrollToSkills = () => {
+    document
+      .getElementById("skills")
+      ?.scrollIntoView({ behavior: "smooth" });
+  };
   return (
     
     <div className="relative">
@@ -30,11 +41,11 @@ function Navbar() {
       <motion.ul className="px-2">
         <motion.li 
         whileTap={{scale: 1.1, transition: 0.4}}
-        className="inline-block py-2 px-4 text-primary text-sm font-medium hover:bg-secondary/10 transition-colors duration-300 cursor-pointer rounded-md">Home</motion.li>
+        className="inline-block py-2 px-4 text-primary text-sm font-medium hover:bg-secondary/10 transition-colors duration-300 cursor-pointer rounded-md" onClick={scrollToHome}>Home</motion.li>
        
         <motion.li 
         whileTap={{scale: 1.1, transition: 0.4}}
-        className="inline-block py-2 px-4 text-gray-400 text-sm font-medium  transition-colors duration-300 cursor-not-allowed rounded-md">About</motion.li>
+        className="inline-block py-2 px-4 text-primary text-sm font-medium  transition-colors duration-300 rounded-md cursor-pointer" onClick={scrollToSkills}>Skills</motion.li>
        
         <motion.li 
         whileTap={{scale: 1.1, transition: 0.4}}

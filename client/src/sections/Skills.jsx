@@ -33,7 +33,7 @@ function Skills() {
     0
   );
   return (
-    <section className="relative min-h-screen overflow-hidden pt-20 w-full">
+    <section id="skills" className="relative min-h-screen overflow-hidden pt-10 md:pt-20 w-full">
 
       {/* Glow */}
       <motion.div 
@@ -46,7 +46,7 @@ function Skills() {
         repeat: Infinity,
         ease: "easeInOut",
       }}
-      className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-96 w-96 rounded-full bg-foreground/40 blur-3xl" />
+      className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-96 w-96 rounded-full bg-foreground/20 blur-3xl" />
 
       <div className="relative z-10 w-full px-6">
 
@@ -59,7 +59,7 @@ function Skills() {
           viewport={{ once: true }}
           className="text-center "
         >
-          <h2 className="text-primary font-mono 2xl:text-5xl md:text-4xl font-bold mt-3">
+          <h2 className="text-primary font-mono text-2xl 2xl:text-5xl md:text-4xl font-bold mt-3">
             Coding Profiles
           </h2>
         </motion.div>
@@ -71,9 +71,9 @@ function Skills() {
           whileInView={{ opacity: 1 }}
           transition={{ duration: 0.8 }}
           viewport={{ once: true }}
-          className="flex flex-row justify-between mt-20 md:px-2 2xl:px-15"
+          className="block md:flex md:flex-row justify-between mt-10 md:mt-20 md:px-2 2xl:px-15"
         >
-          <div className="min-w-sm m-2 p-2 w-auto">
+          <div className="md:min-w-sm m-2 p-2 w-auto">
             <p className="text-center text-amber-200 font-mono">DSA Problems</p>
             <CodingProfileCard
               logo="/leetcode.png"
@@ -93,13 +93,11 @@ function Skills() {
               />
           </div>
 
-          <div className="flex justify-center items-center">
-            <div>
+          <div className="hidden md:flex justify-center items-center">
             <p className="text-center font-bold md:text-7xl 2xl:text-9xl text-foreground mb-40">{totalProblems}</p>
-            </div>
           </div>
 
-          <div className="min-w-sm m-2 p-2">
+          <div className="md:min-w-sm m-2 p-2">
             <p className="text-center text-amber-200 font-mono">SQL Problems</p>
             <CodingProfileCard
               logo="/leetcode.png"
