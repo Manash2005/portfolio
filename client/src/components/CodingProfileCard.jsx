@@ -3,7 +3,6 @@ import { motion } from "motion/react";
 function CodingProfileCard({
   logo,
   platform,
-  totalSolved,
   easy,
   medium,
   hard,
@@ -15,7 +14,7 @@ function CodingProfileCard({
       whileHover={{ y: -6 }}
       transition={{ duration: 0.2 }}
       viewport={{ once: true }}
-      className="w-full max-w-sm bg-secondary/10 hover:bg-background border border-foreground/40 rounded-3xl p-6 shadow-[0px_0px_40px_rgba(194,61,41,0.3)] hover:shadow-[30px_20px_40px_rgba(194,61,41,0.3)] transition-all duration-700"
+      className="w-full bg-secondary/10 hover:bg-background border border-foreground/40 rounded-3xl p-6 shadow-[0px_0px_40px_rgba(194,61,41,0.3)] hover:shadow-[30px_20px_40px_rgba(194,61,41,0.3)] transition-all duration-700 my-4"
     >
       {/* Header */}
 
@@ -50,7 +49,7 @@ function CodingProfileCard({
           transition={{ duration: 0.4 }}
           className="text-5xl font-bold text-foreground mt-1"
         >
-          {totalSolved}
+          {easy + medium + hard}
         </motion.h1>
       </div>
 
