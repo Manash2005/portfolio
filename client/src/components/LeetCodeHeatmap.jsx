@@ -1,19 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 
-function getColorClass(cell) {
-  const lc = cell.leetcode;
-  const gfg = cell.gfg;
-
-  if (lc === 0 && gfg === 0)
-    return "bg-white/5";
-
-  if (lc > 0 && gfg > 0)
-    return "bg-purple-500";
-
-  if (lc > 0)
-    return "bg-emerald-500";
-
-  return "bg-sky-500";
+function getColorClass(count) {
+  if (count === 0) return "bg-white/5";
+  if (count <= 2) return "bg-emerald-500/20";
+  if (count <= 5) return "bg-emerald-500/40";
+  if (count <= 10) return "bg-emerald-500/60";
+  if (count <= 20) return "bg-emerald-500/80";
+  return "bg-emerald-400";
 }
 
 function formatDate(date) {
@@ -115,11 +108,9 @@ export default function LeetCodeHeatmap({ data = [] }) {
               title={`
                 ${cell.date}
 
-                LeetCode: ${cell.leetcode}
-                GFG: ${cell.gfg}
-
-                Total: ${cell.total}
-              `}
+                Total Coding Activity:
+                ${cell.count} submissions
+                `}
               className={`
                 rounded-sm
                 ring-1 ring-white/5

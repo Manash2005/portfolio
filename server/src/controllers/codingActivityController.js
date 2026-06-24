@@ -101,12 +101,10 @@ export const getCodingActivity = async (req, res) => {
     );
 
     const heatmapData = Array.from(
-      merged.entries()
+    merged.entries()
     ).map(([date, values]) => ({
-      date,
-      leetcode: values.leetcode,
-      gfg: values.gfg,
-      total:
+    date,
+    count:
         values.leetcode +
         values.gfg,
     }));
