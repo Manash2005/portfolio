@@ -16,7 +16,7 @@ function App() {
       initial={{ y: -100, opacity: 0 }}
       animate={{ y: 0, opacity: 1}}
       transition={{ duration: 2, ease: easeInOut }}
-      className="hidden lg:flex items-center justify-center fixed top-0 left-1/2 transform -translate-x-1/2 z-50">
+      className="flex w-full items-center justify-center fixed top-0 left-1/2 transform -translate-x-1/2 z-50">
         <Navbar />
       </motion.header>
 

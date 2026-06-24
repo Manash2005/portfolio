@@ -37,7 +37,7 @@ function Hero() {
           <div className="flex flex-col justify-around w-full md:w-1/2 mt-15 md:mt-0 min-h-screen">
 
             <motion.p
-              className="text-primary text-3xl px-1 font-bold md:mt-20 mt-5"
+              className="text-primary text-xl md:text-3xl px-1 font-bold md:mt-20 mt-5"
               initial={{ opacity: 0, y: 10 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 1 }}
