@@ -43,7 +43,7 @@ function Skills() {
   const fetchHeatmap = async () => {
     try {
       const response = await fetch(
-        "http://localhost:8000/api/v1/leetcode/Manash_22"
+        "https://portfolio-c43c.onrender.com/api/v1/leetcode/Manash_22"
       );
 
       if (!response.ok) {
