@@ -43,7 +43,7 @@ function Skills() {
   const fetchHeatmap = async () => {
     try {
       const response = await fetch(
-        "https://portfolio-c43c.onrender.com/api/v1/leetcode/Manash_22"
+        "https://portfolio-c43c.onrender.com/api/v1/coding-activity"
       );
 
       if (!response.ok) {
@@ -163,7 +163,7 @@ function Skills() {
           <div className="mx-auto max-w-5xl rounded-2xl border border-white/10 bg-white/5 p-5 md:p-8 backdrop-blur-md">
             <div className="text-center mb-6">
               <h3 className="text-xl md:text-2xl font-bold text-primary font-mono">
-                LEETCODE HEATMAP
+                CODING ACTIVITY
               </h3>
               <p className="mt-2 text-sm text-white/60">
                 My coding consistency over the last year

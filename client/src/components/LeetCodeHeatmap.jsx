@@ -1,11 +1,19 @@
 import { useEffect, useMemo, useState } from "react";
 
-function getColorClass(count) {
-  if (count === 0) return "bg-white/5";
-  if (count <= 2) return "bg-emerald-500/20";
-  if (count <= 5) return "bg-emerald-500/40";
-  if (count <= 8) return "bg-emerald-500/60";
-  return "bg-emerald-400";
+function getColorClass(cell) {
+  const lc = cell.leetcode;
+  const gfg = cell.gfg;
+
+  if (lc === 0 && gfg === 0)
+    return "bg-white/5";
+
+  if (lc > 0 && gfg > 0)
+    return "bg-purple-500";
+
+  if (lc > 0)
+    return "bg-emerald-500";
+
+  return "bg-sky-500";
 }
 
 function formatDate(date) {
@@ -32,7 +40,11 @@ export default function LeetCodeHeatmap({ data = [] }) {
 
     data.forEach((item) => {
       const key = String(item.date).slice(0, 10);
-      map.set(key, Number(item.count) || 0);
+      map.set(key, {
+        leetcode: item.leetcode || 0,
+        gfg: item.gfg || 0,
+        total: item.total || 0,
+      });
     });
 
     return map;
@@ -53,9 +65,13 @@ export default function LeetCodeHeatmap({ data = [] }) {
     while (current <= end) {
       const key = formatDate(current);
 
+      const item = submissionMap.get(key);
+
       allDays.push({
         date: key,
-        count: submissionMap.get(key) || 0,
+        leetcode: item?.leetcode || 0,
+        gfg: item?.gfg || 0,
+        total: item?.total || 0,
       });
 
       current.setDate(current.getDate() + 1);
@@ -96,12 +112,19 @@ export default function LeetCodeHeatmap({ data = [] }) {
           {cells.map((cell) => (
             <div
               key={cell.date}
-              title={`${cell.date} — ${cell.count} submissions`}
+              title={`
+                ${cell.date}
+
+                LeetCode: ${cell.leetcode}
+                GFG: ${cell.gfg}
+
+                Total: ${cell.total}
+              `}
               className={`
                 rounded-sm
                 ring-1 ring-white/5
                 ${isMobile ? "h-2 w-2" : "h-3 w-3"}
-                ${getColorClass(cell.count)}
+                ${getColorClass(cell)}
               `}
             />
           ))}
