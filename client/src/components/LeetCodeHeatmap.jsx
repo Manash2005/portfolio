@@ -106,16 +106,18 @@ export default function LeetCodeHeatmap({ data = [] }) {
             <div
               key={cell.date}
               title={`
-                ${cell.date}
+              ${cell.date}
 
-                Total Coding Activity:
-                ${cell.count} submissions
-                `}
+              LeetCode: ${cell.leetcode}
+              GFG: ${cell.gfg}
+
+              Total: ${cell.total}
+              `}
               className={`
                 rounded-sm
                 ring-1 ring-white/5
                 ${isMobile ? "h-2 w-2" : "h-3 w-3"}
-                ${getColorClass(cell)}
+                ${getColorClass(cell.total)}
               `}
             />
           ))}
