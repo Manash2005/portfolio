@@ -35,8 +35,8 @@ app.get("/test", async (req, res) => {
 
 app.use("/api/v1/leetcode", leetcodeRoutes);
 
-const PORT = 8000;
+const PORT = process.env.PORT || 8000;
 
 app.listen(PORT, () => {
-  console.log(`Server Running On Port ${PORT}`);
+  console.log(`Server running on ${PORT}`);
 });
