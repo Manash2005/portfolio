@@ -2,8 +2,12 @@ import { motion } from "motion/react";
 import CodingProfileCard from "../components/CodingProfileCard";
 import GridBg from "../utils/GridBg";
 import FloatingParticles from "../utils/FloatingParticles";
+import { useEffect, useState } from "react";
+import LeetCodeHeatmap from "../components/LeetCodeHeatmap";
 
 function Skills() {
+  const [heatmapData, setHeatmapData] = useState([]);
+  const [heatmapLoading, setHeatmapLoading] = useState(true);
 
   const problemCount= {
     leetcodeDSA : {
@@ -22,9 +26,9 @@ function Skills() {
       hard : 0
     },
     dataVidhya : {
-      easy : 1,
-      medium : 0,
-      hard : 0
+      easy : 2,
+      medium : 1,
+      hard : 1
     }
   }
 
@@ -34,6 +38,29 @@ function Skills() {
       Object.values(platform).reduce((sum, count) => sum + count, 0),
     0
   );
+
+  useEffect(() => {
+  const fetchHeatmap = async () => {
+    try {
+      const response = await fetch(
+        "http://localhost:8000/api/v1/leetcode/Manash_22"
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch heatmap data");
+      }
+
+      const data = await response.json();
+      setHeatmapData(data.heatmapData || []);
+    } catch (error) {
+      console.error("Heatmap fetch error:", error);
+    } finally {
+      setHeatmapLoading(false);
+    }
+  };
+
+  fetchHeatmap();
+}, []);
   return (
     <section id="skills" className="relative min-h-screen overflow-hidden pt-10 md:pt-20 w-full">
 
@@ -126,6 +153,41 @@ function Skills() {
           </div>
         </motion.div>
 
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          viewport={{ once: true }}
+          className="mt-16 md:mt-24"
+        >
+          <div className="mx-auto max-w-5xl rounded-2xl border border-white/10 bg-white/5 p-5 md:p-8 backdrop-blur-md">
+            <div className="text-center mb-6">
+              <h3 className="text-xl md:text-2xl font-bold text-primary font-mono">
+                LEETCODE HEATMAP
+              </h3>
+              <p className="mt-2 text-sm text-white/60">
+                My coding consistency over the last year
+              </p>
+            </div>
+
+            {heatmapLoading ? (
+              <p className="text-center text-white/60">Loading heatmap...</p>
+            ) : (
+              <LeetCodeHeatmap data={heatmapData} />
+            )}
+
+            <div className="mt-6 flex justify-center">
+              <a
+                href="https://leetcode.com/u/Manash_22/"
+                target="_blank"
+                rel="noreferrer"
+                className="rounded-full border border-primary px-4 py-2 text-sm text-primary transition hover:bg-primary hover:text-black"
+              >
+                View LeetCode Profile
+              </a>
+            </div>
+          </div>
+        </motion.div>
       </div>
     </section>
   );

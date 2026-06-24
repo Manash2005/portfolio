@@ -11,6 +11,11 @@ function Navbar() {
       .getElementById("skills")
       ?.scrollIntoView({ behavior: "smooth" });
   };
+  const scrollToProjects = () => {
+    document
+      .getElementById("projects")
+      ?.scrollIntoView({ behavior: "smooth" });
+  };
   return (
     
     <div className="relative">
@@ -49,7 +54,7 @@ function Navbar() {
        
         <motion.li 
         whileTap={{scale: 1.1, transition: 0.4}}
-        className="inline-block py-2 px-4 text-gray-400 text-sm font-medium transition-colors duration-300 cursor-not-allowed rounded-md">Projects</motion.li>
+        className="inline-block py-2 px-4 text-primary text-sm font-medium transition-colors duration-300 cursor-pointer rounded-md" onClick={scrollToProjects}>Projects</motion.li>
        
         <motion.li 
         whileTap={{scale: 1.1, transition: 0.4}}
