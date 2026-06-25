@@ -32,12 +32,7 @@ export default function LeetCodeHeatmap({ data = [] }) {
     const map = new Map();
 
     data.forEach((item) => {
-      const key = String(item.date).slice(0, 10);
-      map.set(key, {
-        leetcode: item.leetcode || 0,
-        gfg: item.gfg || 0,
-        total: item.total || 0,
-      });
+      map.set(String(item.date).slice(0, 10), item.count);
     });
 
     return map;
@@ -58,15 +53,10 @@ export default function LeetCodeHeatmap({ data = [] }) {
     while (current <= end) {
       const key = formatDate(current);
 
-      const item = submissionMap.get(key);
-
       allDays.push({
         date: key,
-        leetcode: item?.leetcode || 0,
-        gfg: item?.gfg || 0,
-        total: item?.total || 0,
+        count: submissionMap.get(key) || 0,
       });
-
       current.setDate(current.getDate() + 1);
     }
 
