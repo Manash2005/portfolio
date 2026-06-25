@@ -128,7 +128,7 @@ function Skills() {
               />
           </div>
 
-          <div className="hidden md:flex justify-center items-center">
+          <div className="hidden lg:flex justify-center items-center">
             <p className="text-center font-bold md:text-7xl 2xl:text-9xl text-foreground mb-40">{totalProblems}</p>
           </div>
 
