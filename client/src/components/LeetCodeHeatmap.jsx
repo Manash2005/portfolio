@@ -92,22 +92,15 @@ export default function LeetCodeHeatmap({ data = [] }) {
             ${isMobile ? "auto-cols-[8px] gap-1" : "auto-cols-[12px] gap-1"}
           `}
         >
-          {cells.map((cell) => (
+         {cells.map((cell) => (
             <div
               key={cell.date}
-              title={`
-              ${cell.date}
-
-              LeetCode: ${cell.leetcode}
-              GFG: ${cell.gfg}
-
-              Total: ${cell.total}
-              `}
+              title={`${cell.date}\nSubmissions: ${cell.count}`}
               className={`
                 rounded-sm
                 ring-1 ring-white/5
                 ${isMobile ? "h-2 w-2" : "h-3 w-3"}
-                ${getColorClass(cell.total)}
+                ${getColorClass(cell.count)}
               `}
             />
           ))}
