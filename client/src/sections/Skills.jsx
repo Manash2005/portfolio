@@ -42,8 +42,9 @@ function Skills() {
   useEffect(() => {
   const fetchHeatmap = async () => {
     try {
+      const apiUrl = import.meta.env.VITE_API_URL || "https://portfolio-c43c.onrender.com";
       const response = await fetch(
-        "https://portfolio-c43c.onrender.com/api/v1/coding-activity"
+        `${apiUrl}/api/v1/coding-activity`
       );
 
       if (!response.ok) {

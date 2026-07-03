@@ -10,9 +10,13 @@ const app = express();
 
 app.use(express.json());
 
+const allowedOrigins = process.env.NODE_ENV === "development" 
+  ? ["http://localhost:5173", "http://localhost:3000"]
+  : ["https://your-production-url.com"];
+
 app.use(
   cors({
-    origin: "*",
+    origin: allowedOrigins,
   })
 );
 
