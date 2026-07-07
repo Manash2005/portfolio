@@ -1,4 +1,26 @@
 import { motion } from "motion/react";
+import { ArrowUpRight } from "lucide-react";
+
+const PLATFORM_THEMES = {
+  LeetCode: {
+    text: "text-[#FFA116]",
+    borderHover: "hover:border-[#FFA116]/40",
+    shadowHover: "hover:shadow-[0_0_30px_rgba(255,161,22,0.2)]",
+    bgAccent: "bg-[#FFA116]/5",
+  },
+  GeeksforGeeks: {
+    text: "text-[#2F8D46]",
+    borderHover: "hover:border-[#2F8D46]/40",
+    shadowHover: "hover:shadow-[0_0_30px_rgba(47,141,70,0.2)]",
+    bgAccent: "bg-[#2F8D46]/5",
+  },
+  DataVidhya: {
+    text: "text-[#0080FF]",
+    borderHover: "hover:border-[#0080FF]/40",
+    shadowHover: "hover:shadow-[0_0_30px_rgba(0,128,255,0.2)]",
+    bgAccent: "bg-[#0080FF]/5",
+  },
+};
 
 function CodingProfileCard({
   logo,
@@ -6,75 +28,114 @@ function CodingProfileCard({
   easy,
   medium,
   hard,
+  profileUrl,
 }) {
+  const theme = PLATFORM_THEMES[platform] || {
+    text: "text-foreground",
+    borderHover: "hover:border-foreground/40",
+    shadowHover: "hover:shadow-[0_0_30px_rgba(194,61,41,0.2)]",
+    bgAccent: "bg-foreground/5",
+  };
+
+  const total = easy + medium + hard;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       whileHover={{ y: -6 }}
-      transition={{ duration: 0.2 }}
+      transition={{ duration: 0.3 }}
       viewport={{ once: true }}
-      className="w-full bg-neutral-950 hover:bg-neutral-900 border border-foreground/40 rounded-3xl p-6 shadow-[0px_0px_40px_rgba(194,61,41,0.3)] hover:shadow-[30px_20px_40px_rgba(194,61,41,0.3)] transition-all duration-700 my-4"
+      className={`w-full bg-neutral-950/40 backdrop-blur-md border border-white/10 rounded-2xl p-5 transition-all duration-300 my-4 ${theme.borderHover} ${theme.shadowHover}`}
     >
       {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className={`p-2 rounded-xl ${theme.bgAccent} border border-white/5`}>
+            <img
+              src={logo}
+              alt={platform}
+              className="w-8 h-8 object-contain rounded-md"
+            />
+          </div>
+          <div>
+            <h3 className="text-white font-bold text-lg font-mono tracking-wide">
+              {platform}
+            </h3>
+            <p className="text-secondary text-xs">Coding Profile</p>
+          </div>
+        </div>
 
-      <div className="flex items-center gap-4">
-        <img
-          src={logo}
-          alt={platform}
-          className="w-12 h-12 object-contain rounded-md"
-        />
+        {profileUrl && (
+          <a
+            href={profileUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="p-2 rounded-lg bg-white/5 border border-white/10 text-secondary hover:text-white hover:bg-white/10 transition-all"
+            title={`View ${platform} Profile`}
+          >
+            <ArrowUpRight className="w-4 h-4" />
+          </a>
+        )}
+      </div>
 
+      {/* Stats Summary */}
+      <div className="mt-6 flex items-baseline justify-between border-b border-white/5 pb-4">
         <div>
-          <h3 className="text-primary text-xl font-semibold">
-            {platform}
-          </h3>
-
-          <p className="text-secondary text-sm">
-            Coding Profile
+          <p className="text-secondary text-xs font-mono uppercase tracking-wider">
+            Problems Solved
           </p>
+          <h4 className="text-3xl font-extrabold text-white mt-1 font-mono">
+            {total}
+          </h4>
+        </div>
+        <div className={`px-2.5 py-1 rounded-full text-[10px] font-mono font-semibold ${theme.bgAccent} ${theme.text} border border-white/5`}>
+          Rank Verified
         </div>
       </div>
 
-      {/* Total Solved */}
-
-      <div className="mt-8">
-        <p className="text-secondary text-sm">
-          Problems Solved
-        </p>
-
-        <motion.h1
-          initial={{ scale: 0.9 }}
-          whileInView={{ scale: 1 }}
-          transition={{ duration: 0.4 }}
-          className="text-5xl font-bold text-foreground mt-1"
-        >
-          {easy + medium + hard}
-        </motion.h1>
-      </div>
-
-      {/* Difficulty Stats */}
-
-      <div className="grid grid-cols-3 gap-3 mt-8">
-        <div className="bg-secondary/20 rounded-2xl p-3 text-center">
-          <p className="text-secondary text-xs">Easy</p>
-          <p className="text-primary font-semibold mt-1">
-            {easy}
-          </p>
+      {/* Difficulty Progress Bars */}
+      <div className="space-y-3 mt-4">
+        {/* Easy */}
+        <div>
+          <div className="flex justify-between text-xs font-mono mb-1">
+            <span className="text-emerald-400 font-medium">Easy</span>
+            <span className="text-white/80">{easy}</span>
+          </div>
+          <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden">
+            <div
+              className="bg-emerald-500 h-full rounded-full transition-all duration-1000"
+              style={{ width: total > 0 ? `${(easy / total) * 100}%` : "0%" }}
+            />
+          </div>
         </div>
 
-        <div className="bg-secondary/20 rounded-2xl p-3 text-center">
-          <p className="text-secondary text-xs">Medium</p>
-          <p className="text-primary font-semibold mt-1">
-            {medium}
-          </p>
+        {/* Medium */}
+        <div>
+          <div className="flex justify-between text-xs font-mono mb-1">
+            <span className="text-amber-400 font-medium">Medium</span>
+            <span className="text-white/80">{medium}</span>
+          </div>
+          <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden">
+            <div
+              className="bg-amber-500 h-full rounded-full transition-all duration-1000"
+              style={{ width: total > 0 ? `${(medium / total) * 100}%` : "0%" }}
+            />
+          </div>
         </div>
 
-        <div className="bg-secondary/20 rounded-2xl p-3 text-center">
-          <p className="text-secondary text-xs">Hard</p>
-          <p className="text-primary font-semibold mt-1">
-            {hard}
-          </p>
+        {/* Hard */}
+        <div>
+          <div className="flex justify-between text-xs font-mono mb-1">
+            <span className="text-rose-400 font-medium">Hard</span>
+            <span className="text-white/80">{hard}</span>
+          </div>
+          <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden">
+            <div
+              className="bg-rose-500 h-full rounded-full transition-all duration-1000"
+              style={{ width: total > 0 ? `${(hard / total) * 100}%` : "0%" }}
+            />
+          </div>
         </div>
       </div>
     </motion.div>

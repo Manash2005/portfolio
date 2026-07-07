@@ -3,6 +3,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import codingActivityRoutes from "./routes/codingActivityRoutes.js";
 import leetcodeRoutes from "./routes/leetcodeRoutes.js";
+import contactRoutes from "./routes/contactRoutes.js";
 
 dotenv.config();
 
@@ -39,6 +40,7 @@ app.get("/test", async (req, res) => {
 
 app.use("/api/v1/leetcode", leetcodeRoutes);
 app.use("/api/v1/coding-activity",codingActivityRoutes);
+app.use("/api/v1/contact", contactRoutes);
 
 const PORT = process.env.PORT || 8000;
 

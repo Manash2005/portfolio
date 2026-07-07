@@ -2,31 +2,20 @@ export const projects = [
   {
     title: "TaskFlow",
     description:
-      "Full stack task management application with authentication, Kanban boards, analytics dashboard and profile management.",
+      "A full-stack task management application featuring user authentication, drag-and-drop Kanban boards, real-time analytics dashboards, and complete profile customisations.",
     image: "/projects/taskflow.png",
     liveLink: "https://task-manager-phi-five-12.vercel.app/",
     githubLink: "https://github.com/manash/taskflow",
-    techStack: [
-      "/logo/react.png",
-      "/logo/tailwindcss.png",
-      "/logo/node.png",
-      "/logo/mongodb.png",
-      "/logo/js.png",
-    ],
+    techStack: ["React", "Node.js", "Express", "MongoDB", "TailwindCSS", "JavaScript"],
   },
 
   {
     title: "Socially",
     description:
-      "Private social media platform for organizations where users can share content within restricted communities.",
+      "A private organizational social network where authenticated users can share text/image posts, follow colleagues, and collaborate in secure, restricted department-level channels.",
     image: "/projects/socially.png",
     liveLink: "https://socially.vercel.app",
-    techStack: [
-      "/react.png",
-      "/tailwind.png",
-      "/supabase.png",
-      "/node.png",
-      "/js.png",
-    ],
+    githubLink: "", // Hidden when empty
+    techStack: ["React", "Node.js", "Supabase", "TailwindCSS", "JavaScript"],
   },
 ];

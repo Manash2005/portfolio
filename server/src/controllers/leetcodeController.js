@@ -62,3 +62,68 @@ export const getLeetCodeCalendar = async (req, res) => {
     });
   }
 };
+
+export const getLeetCodeStats = async (req, res) => {
+  try {
+    const username = req.params.username;
+
+    const response = await fetch(
+      "https://leetcode.com/graphql",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          query: `
+            query userProblemsSolved($username: String!) {
+              allQuestionsCount {
+                difficulty
+                count
+              }
+              matchedUser(username: $username) {
+                submitStats {
+                  acSubmissionNum {
+                    difficulty
+                    count
+                    submissions
+                  }
+                }
+              }
+            }
+          `,
+          variables: {
+            username,
+          },
+        }),
+      }
+    );
+
+    const data = await response.json();
+    const statsList = data?.data?.matchedUser?.submitStats?.acSubmissionNum;
+
+    if (!statsList) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found or no stats available",
+      });
+    }
+
+    // Map counts
+    const stats = {};
+    statsList.forEach((item) => {
+      stats[item.difficulty.toLowerCase()] = item.count;
+    });
+
+    res.status(200).json({
+      success: true,
+      stats,
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};

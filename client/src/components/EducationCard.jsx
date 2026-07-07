@@ -1,19 +1,20 @@
 function EducationCard({ institute, logo, details }) {
   return (
-    <div className="bg-neutral-950 p-6 rounded-xl hover:bg-neutral-900 transition-all duration-600 w-full lg:w-sm mb-5 lg:mb-0 border border-neutral-800">
-      <div className="flex items-start gap-4">
-        
+    <div className="bg-neutral-950/40 border border-white/10 backdrop-blur-md hover:border-foreground/30 p-5 rounded-2xl transition-all duration-300 w-full">
+      <div className="flex items-center justify-between gap-4">
         {/* Left Content */}
-        <div className="flex-1 w-md">
+        <div className="flex-1">
           {/* Institute Name */}
-          <h3 className="text-foreground text-xl font-bold mb-4">{institute}</h3>
-          
+          <h3 className="text-foreground text-lg font-bold font-mono tracking-wide mb-3">
+            {institute}
+          </h3>
+
           {/* Details */}
-          <div className="space-y-2">
+          <div className="space-y-2 border-t border-white/5 pt-3">
             {Object.entries(details).map(([key, value]) => (
-              <div key={key} className="flex flex-col sm:flex-row sm:justify-between gap-1">
-                <span className="text-primary font-mono capitalize">{key}:</span>
-                <span className="text-secondary text-sm">{value}</span>
+              <div key={key} className="flex justify-between items-center text-xs font-mono">
+                <span className="text-white/40 capitalize">{key}:</span>
+                <span className="text-foreground font-semibold">{value}</span>
               </div>
             ))}
           </div>
@@ -21,17 +22,17 @@ function EducationCard({ institute, logo, details }) {
 
         {/* Right Logo */}
         {logo && (
-          <div className="shrink-0 w-10 h-10">
-            <img 
-              src={logo} 
-              alt={`${institute} Logo`} 
-              className="object-cover rounded-lg border border-secondary/30"
+          <div className="shrink-0 w-12 h-12 p-2 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center">
+            <img
+              src={logo}
+              alt={`${institute} Logo`}
+              className="w-full h-full object-contain rounded-md"
             />
           </div>
         )}
       </div>
     </div>
-  )
+  );
 }
 
-export default EducationCard
+export default EducationCard;

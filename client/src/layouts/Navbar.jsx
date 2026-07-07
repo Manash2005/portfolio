@@ -45,9 +45,21 @@ function Navbar() {
       ?.scrollIntoView({ behavior: "smooth" });
   };
 
+  const scrollToAbout = () => {
+    document
+      .getElementById("about")
+      ?.scrollIntoView({ behavior: "smooth" });
+  };
+
   const scrollToProjects = () => {
     document
       .getElementById("projects")
+      ?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const scrollToContact = () => {
+    document
+      .getElementById("contact")
       ?.scrollIntoView({ behavior: "smooth" });
   };
 
@@ -152,6 +164,25 @@ function Navbar() {
                 cursor-pointer
                 rounded-md
               "
+              onClick={scrollToAbout}
+            >
+              About
+            </motion.li>
+
+            <motion.li
+              whileTap={{ scale: 0.95 }}
+              className="
+                inline-block
+                py-2
+                px-2
+                md:px-4
+                text-primary
+                hover:bg-secondary/10
+                transition-colors
+                duration-300
+                cursor-pointer
+                rounded-md
+              "
               onClick={scrollToProjects}
             >
               Projects
@@ -164,10 +195,14 @@ function Navbar() {
                 py-2
                 px-2
                 md:px-4
-                text-gray-400
-                cursor-not-allowed
+                text-primary
+                hover:bg-secondary/10
+                transition-colors
+                duration-300
+                cursor-pointer
                 rounded-md
               "
+              onClick={scrollToContact}
             >
               Contact Me
             </motion.li>
