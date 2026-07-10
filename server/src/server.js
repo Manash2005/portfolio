@@ -12,12 +12,27 @@ const app = express();
 app.use(express.json());
 
 const allowedOrigins = process.env.NODE_ENV === "development" 
-  ? ["http://localhost:5173", "http://localhost:3000"]
+  ? ["http://localhost:5173", "http://localhost:5174", "http://localhost:3000"]
   : ["https://your-production-url.com"];
 
 app.use(
   cors({
-    origin: allowedOrigins,
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps, curl)
+      if (!origin) return callback(null, true);
+
+      if (process.env.NODE_ENV === "development") {
+        if (origin.startsWith("http://localhost:") || origin === "http://localhost") {
+          return callback(null, true);
+        }
+      }
+
+      if (allowedOrigins.indexOf(origin) !== -1) {
+        return callback(null, true);
+      }
+
+      return callback(new Error("Not allowed by CORS"));
+    },
   })
 );
 

@@ -23,7 +23,7 @@ function About() {
   ];
 
   const tags = [
-    "React", "Node.js", "Express", "MongoDB", "JavaScript", 
+    "React", "Node.js", "Express", "MongoDB", "JavaScript", "Python",
     "TailwindCSS", "SQL", "C++", "Data Structures", "Algorithms", 
     "Git", "REST APIs"
   ];
@@ -138,7 +138,7 @@ function About() {
               </div>
               <div className="flex justify-between items-center text-xs font-mono">
                 <span className="text-secondary">Location:</span>
-                <span className="text-primary">Goa, India</span>
+                <span className="text-primary">Bangalore, India</span>
               </div>
               <div className="flex justify-between items-center text-xs font-mono">
                 <span className="text-secondary">Interests:</span>

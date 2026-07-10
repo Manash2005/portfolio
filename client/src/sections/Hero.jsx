@@ -34,7 +34,7 @@ function Hero() {
         <div className="block md:flex border-b-[0.1px] justify-center">
 
           {/* LEFT COLUMN */}
-          <div className="flex flex-col justify-center w-full md:w-[55%] lg:w-[50%] mt-20 md:mt-0 min-h-screen py-16 md:py-24 pr-4 md:pr-8 gap-6 md:gap-7">
+          <div className="flex flex-col justify-center w-full md:w-[55%] lg:w-[50%] mt-0 min-h-screen py-16 md:py-24 pr-4 md:pr-8 gap-2 md:gap-6">
             {/* GREETING */}
             <motion.div
               initial={{ opacity: 0, y: 15 }}
