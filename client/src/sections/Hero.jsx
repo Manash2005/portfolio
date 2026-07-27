@@ -10,7 +10,7 @@ import { TypeAnimation } from "react-type-animation";
 import FloatingParticles from "../utils/FloatingParticles";
 import GridBg from "../utils/GridBg";
 
-function Hero() {
+function Hero({ stats }) {
   const handleResume = () => {
     window.open("/resume.pdf", "_blank");
   };
@@ -68,7 +68,9 @@ function Hero() {
                     2000,
                     "Backend",
                     2000,
-                    "Full-Stack",
+                    "Full Stack",
+                    2000,
+                    "Data Analyst",
                     2000,
                   ]}
                   speed={50}
@@ -193,17 +195,17 @@ function Hero() {
               viewport={{ once: true }}
             >
               <StatCard
-                value="100+"
+                value={stats?.leetcode?.total ? `${stats.leetcode.total}` : "95"}
                 description="LeetCode"
               />
 
               <StatCard
-                value="170+"
+                value={stats?.gfg?.total ? `${stats.gfg.total}` : "174"}
                 description="GFG Solves"
               />
 
               <StatCard
-                value="2"
+                value={stats?.projectsCount ? `${stats.projectsCount}` : "4"}
                 description="Projects"
               />
             </motion.div>

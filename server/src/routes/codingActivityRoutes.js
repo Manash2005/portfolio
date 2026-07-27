@@ -1,12 +1,14 @@
 import express from "express";
 import {
   getCodingActivity,
-  getDatavidhyaStats,
+  getGithubStats,
+  getGithubHeatmap,
 } from "../controllers/codingActivityController.js";
 
 const router = express.Router();
 
 router.get("/", getCodingActivity);
-router.get("/datavidhya-stats/:userId", getDatavidhyaStats);
+router.get("/github-stats/:username", getGithubStats);
+router.get("/github-heatmap/:username", getGithubHeatmap);
 
 export default router;

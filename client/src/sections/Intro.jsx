@@ -103,8 +103,14 @@ function StatItem({ value, label, direction, delay }) {
   );
 }
 
-function Intro({ onComplete }) {
+function Intro({ onComplete, stats }) {
   const [phase, setPhase] = useState("enter");
+  
+  const dynamicStats = [
+    { value: `${stats?.leetcode?.total || 95}`, label: "LeetCode Problems", direction: "left"   },
+    { value: `${stats?.gfg?.total || 174}`, label: "GFG Problems",       direction: "right"  },
+    { value: `${stats?.projectsCount || 4}`,    label: "Projects Built",     direction: "bottom" },
+  ];
 
   useEffect(() => {
     const t1 = setTimeout(() => setPhase("exit"), 4200);
@@ -243,7 +249,7 @@ function Intro({ onComplete }) {
       </div>
 
       {/* Stats */}
-      {STATS.map((stat, i) => (
+      {dynamicStats.map((stat, i) => (
         <StatItem
           key={stat.label}
           value={stat.value}

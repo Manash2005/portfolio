@@ -23,7 +23,7 @@ const formatDateFull = (dateStr) => {
   });
 };
 
-export default function LeetCodeHeatmap({ data = [] }) {
+export default function LeetCodeHeatmap({ data = [], type = "leetcode" }) {
   const [isMobile, setIsMobile] = useState(false);
   const [hoveredCell, setHoveredCell] = useState(null);
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
@@ -258,7 +258,7 @@ export default function LeetCodeHeatmap({ data = [] }) {
           </div>
           <div>
             <p className="text-[10px] text-white/50 font-mono uppercase tracking-wider">
-              Total Submissions
+              {type === "github" ? "Total Contributions" : "Total Submissions"}
             </p>
             <h5 className="text-xl font-bold text-white font-mono mt-0.5">
               {stats.totalSubmissions}

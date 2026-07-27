@@ -14,6 +14,12 @@ const PLATFORM_THEMES = {
     shadowHover: "hover:shadow-[0_0_30px_rgba(47,141,70,0.2)]",
     bgAccent: "bg-[#2F8D46]/5",
   },
+  GitHub: {
+    text: "text-white",
+    borderHover: "hover:border-white/20",
+    shadowHover: "hover:shadow-[0_0_30px_rgba(255,255,255,0.1)]",
+    bgAccent: "bg-white/5",
+  },
   DataVidhya: {
     text: "text-[#0080FF]",
     borderHover: "hover:border-[#0080FF]/40",
@@ -24,6 +30,7 @@ const PLATFORM_THEMES = {
 
 function CodingProfileCard({
   logo,
+  icon,
   platform,
   easy,
   medium,
@@ -37,7 +44,8 @@ function CodingProfileCard({
     bgAccent: "bg-foreground/5",
   };
 
-  const total = easy + medium + hard;
+  const isGitHub = platform.toLowerCase() === "github";
+  const total = isGitHub ? easy : easy + medium + hard;
 
   return (
     <motion.div
@@ -51,18 +59,24 @@ function CodingProfileCard({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className={`p-2 rounded-xl ${theme.bgAccent} border border-white/5`}>
-            <img
-              src={logo}
-              alt={platform}
-              className="w-8 h-8 object-contain rounded-md"
-            />
+          <div className={`p-2.5 rounded-xl ${theme.bgAccent} border border-white/5 flex items-center justify-center w-12 h-12 text-white`}>
+            {logo ? (
+              <img
+                src={logo}
+                alt={platform}
+                className="w-8 h-8 object-contain rounded-md"
+              />
+            ) : (
+              icon
+            )}
           </div>
           <div>
             <h3 className="text-white font-bold text-lg font-mono tracking-wide">
               {platform}
             </h3>
-            <p className="text-secondary text-xs">Coding Profile</p>
+            <p className="text-secondary text-xs">
+              {isGitHub ? "Developer Profile" : "Coding Profile"}
+            </p>
           </div>
         </div>
 
@@ -83,7 +97,7 @@ function CodingProfileCard({
       <div className="mt-6 flex items-baseline justify-between border-b border-white/5 pb-4">
         <div>
           <p className="text-secondary text-xs font-mono uppercase tracking-wider">
-            Problems Solved
+            {isGitHub ? "Public Repositories" : "Problems Solved"}
           </p>
           <h4 className="text-3xl font-extrabold text-white mt-1 font-mono">
             {total}
@@ -94,49 +108,97 @@ function CodingProfileCard({
         </div>
       </div>
 
-      {/* Difficulty Progress Bars */}
+      {/* Difficulty Progress Bars / GitHub Stats */}
       <div className="space-y-3 mt-4">
-        {/* Easy */}
-        <div>
-          <div className="flex justify-between text-xs font-mono mb-1">
-            <span className="text-emerald-400 font-medium">Easy</span>
-            <span className="text-white/80">{easy}</span>
-          </div>
-          <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden">
-            <div
-              className="bg-emerald-500 h-full rounded-full transition-all duration-1000"
-              style={{ width: total > 0 ? `${(easy / total) * 100}%` : "0%" }}
-            />
-          </div>
-        </div>
+        {isGitHub ? (
+          <>
+            {/* Repositories */}
+            <div>
+              <div className="flex justify-between text-xs font-mono mb-1">
+                <span className="text-white/60 font-medium">Public Repos</span>
+                <span className="text-white/85">{easy}</span>
+              </div>
+              <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden">
+                <div
+                  className="bg-white/40 h-full rounded-full transition-all duration-1000"
+                  style={{ width: `${Math.min((easy / 30) * 100, 100)}%` }}
+                />
+              </div>
+            </div>
 
-        {/* Medium */}
-        <div>
-          <div className="flex justify-between text-xs font-mono mb-1">
-            <span className="text-amber-400 font-medium">Medium</span>
-            <span className="text-white/80">{medium}</span>
-          </div>
-          <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden">
-            <div
-              className="bg-amber-500 h-full rounded-full transition-all duration-1000"
-              style={{ width: total > 0 ? `${(medium / total) * 100}%` : "0%" }}
-            />
-          </div>
-        </div>
+            {/* Followers */}
+            <div>
+              <div className="flex justify-between text-xs font-mono mb-1">
+                <span className="text-amber-400 font-medium">Followers</span>
+                <span className="text-white/85">{medium}</span>
+              </div>
+              <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden">
+                <div
+                  className="bg-amber-500 h-full rounded-full transition-all duration-1000"
+                  style={{ width: `${Math.min((medium / 20) * 100, 100)}%` }}
+                />
+              </div>
+            </div>
 
-        {/* Hard */}
-        <div>
-          <div className="flex justify-between text-xs font-mono mb-1">
-            <span className="text-rose-400 font-medium">Hard</span>
-            <span className="text-white/80">{hard}</span>
-          </div>
-          <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden">
-            <div
-              className="bg-rose-500 h-full rounded-full transition-all duration-1000"
-              style={{ width: total > 0 ? `${(hard / total) * 100}%` : "0%" }}
-            />
-          </div>
-        </div>
+            {/* Following */}
+            <div>
+              <div className="flex justify-between text-xs font-mono mb-1">
+                <span className="text-emerald-400 font-medium">Following</span>
+                <span className="text-white/85">{hard}</span>
+              </div>
+              <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden">
+                <div
+                  className="bg-emerald-500 h-full rounded-full transition-all duration-1000"
+                  style={{ width: `${Math.min((hard / 20) * 100, 100)}%` }}
+                />
+              </div>
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Easy */}
+            <div>
+              <div className="flex justify-between text-xs font-mono mb-1">
+                <span className="text-emerald-400 font-medium">Easy</span>
+                <span className="text-white/80">{easy}</span>
+              </div>
+              <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden">
+                <div
+                  className="bg-emerald-500 h-full rounded-full transition-all duration-1000"
+                  style={{ width: total > 0 ? `${(easy / total) * 100}%` : "0%" }}
+                />
+              </div>
+            </div>
+
+            {/* Medium */}
+            <div>
+              <div className="flex justify-between text-xs font-mono mb-1">
+                <span className="text-amber-400 font-medium">Medium</span>
+                <span className="text-white/80">{medium}</span>
+              </div>
+              <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden">
+                <div
+                  className="bg-amber-500 h-full rounded-full transition-all duration-1000"
+                  style={{ width: total > 0 ? `${(medium / total) * 100}%` : "0%" }}
+                />
+              </div>
+            </div>
+
+            {/* Hard */}
+            <div>
+              <div className="flex justify-between text-xs font-mono mb-1">
+                <span className="text-rose-400 font-medium">Hard</span>
+                <span className="text-white/80">{hard}</span>
+              </div>
+              <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden">
+                <div
+                  className="bg-rose-500 h-full rounded-full transition-all duration-1000"
+                  style={{ width: total > 0 ? `${(hard / total) * 100}%` : "0%" }}
+                />
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </motion.div>
   );

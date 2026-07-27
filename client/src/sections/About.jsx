@@ -23,9 +23,9 @@ function About() {
   ];
 
   const tags = [
-    "React", "Node.js", "Express", "MongoDB", "JavaScript", "Python",
+    "React", "Next.js", "Node.js", "Express", "MongoDB", "JavaScript", "Python",
     "TailwindCSS", "SQL", "C++", "Data Structures", "Algorithms", 
-    "Git", "REST APIs"
+    "Git", "REST APIs", "NumPy", "Pandas", "Matplotlib", "Seaborn"
   ];
 
   return (
