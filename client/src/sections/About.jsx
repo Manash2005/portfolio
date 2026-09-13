@@ -1,30 +1,10 @@
 import { motion } from "motion/react";
-import { User, Code, Terminal, Brain, Cpu } from "lucide-react";
+import { User, MapPin, Briefcase, GraduationCap } from "lucide-react";
 import GridBg from "../utils/GridBg";
 import NoiseBg from "../utils/NoiseBg";
 import portfolioData from "../data/portfolio_data.json";
 
 function About() {
-  const cards = [
-    {
-      icon: <Code className="h-6 w-6 text-foreground" />,
-      title: "Full-Stack Development",
-      description: "Building responsive frontend apps and robust REST APIs using React, Node.js, Express, and databases."
-    },
-    {
-      icon: <Brain className="h-6 w-6 text-foreground" />,
-      title: "Problem Solving",
-      description: "Actively solving DSA problems with 100+ Leetcode and 170+ GeeksforGeeks solutions under my belt."
-    },
-    {
-      icon: <Terminal className="h-6 w-6 text-foreground" />,
-      title: "CS Fundamentals",
-      description: "Pursuing BS in Computer Science at BITS Pilani, mastering databases, OS, networks, and software engineering."
-    }
-  ];
-
-  const tags = portfolioData.skills.languages.concat(portfolioData.skills.frontend, portfolioData.skills.backend, portfolioData.skills.databases, portfolioData.skills.ai_llm);
-
   return (
     <section id="about" className="relative min-h-screen overflow-hidden pt-20 md:pt-28 pb-16 w-full flex items-center justify-center">
       {/* GRID BACKGROUND */}
@@ -47,7 +27,7 @@ function About() {
         className="absolute left-1/3 top-1/2 -translate-x-1/2 -translate-y-1/2 h-[500px] w-[500px] rounded-full bg-foreground/15 blur-3xl z-0 pointer-events-none"
       />
 
-      <div className="relative z-10 w-full max-w-7xl px-6 md:px-12 grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
+      <div className="relative z-10 w-full max-w-6xl px-6 md:px-12 grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
         {/* Left Side: Journey & Philosophy */}
         <div className="lg:col-span-7 flex flex-col justify-center">
           <motion.div
@@ -65,7 +45,7 @@ function About() {
               My Developer Journey
             </h2>
 
-            <div className="mt-6 mb-8 space-y-4">
+            <div className="mt-6 space-y-4">
               {portfolioData.personal.about.map((paragraph, idx) => (
                 <motion.p 
                   key={idx}
@@ -79,92 +59,59 @@ function About() {
                 </motion.p>
               ))}
             </div>
-          </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {cards.map((card, idx) => (
-              <motion.div
-                key={idx}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                whileHover={{ y: -4 }}
-                transition={{
-                  default: { duration: 0.5, delay: idx * 0.15 },
-                  y: { type: "spring", stiffness: 300, damping: 22 },
-                }}
-                viewport={{ once: true }}
-                className="border border-white/5 bg-neutral-950/40 backdrop-blur-md rounded-2xl p-5 hover:border-foreground/35 transition-all duration-300 shadow-sm"
-              >
-                <div className="h-10 w-10 rounded-lg bg-secondary/10 border border-white/10 flex justify-center items-center mb-4">
-                  {card.icon}
-                </div>
-                <h3 className="text-primary font-bold text-base mb-2 font-mono">
-                  {card.title}
-                </h3>
-                <p className="text-secondary text-xs leading-relaxed">
-                  {card.description}
-                </p>
-              </motion.div>
-            ))}
-          </div>
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+              viewport={{ once: true }}
+              className="mt-8 flex flex-col sm:flex-row gap-4"
+            >
+              <div className="flex items-center gap-2 text-sm text-secondary font-mono bg-white/5 px-4 py-2 rounded-lg border border-white/10">
+                <MapPin className="h-4 w-4 text-foreground" />
+                <span>Bangalore, India</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-secondary font-mono bg-white/5 px-4 py-2 rounded-lg border border-white/10">
+                <Briefcase className="h-4 w-4 text-foreground" />
+                <span>Open to Internships</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-secondary font-mono bg-white/5 px-4 py-2 rounded-lg border border-white/10">
+                <GraduationCap className="h-4 w-4 text-foreground" />
+                <span>BITS Pilani CS</span>
+              </div>
+            </motion.div>
+
+          </motion.div>
         </div>
 
-        {/* Right Side: Skill Tags & Interactive Visual Card */}
-        <div className="lg:col-span-5 flex flex-col justify-center">
+        {/* Right Side: Photo Frame */}
+        <div className="lg:col-span-5 flex flex-col justify-center items-center lg:items-end">
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             whileInView={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.7 }}
             viewport={{ once: true }}
-            className="border border-white/10 bg-neutral-950/30 backdrop-blur-xl rounded-3xl p-6 md:p-8 shadow-[0_0_40px_rgba(194,61,41,0.01)]"
+            className="relative group w-full max-w-[380px] aspect-[4/5] rounded-3xl overflow-hidden border border-white/10 bg-neutral-950/40 backdrop-blur-md shadow-xl"
           >
-            <div className="flex items-center gap-3 mb-6">
-              <div className="h-10 w-10 rounded-lg bg-foreground/10 border border-foreground/30 flex items-center justify-center">
-                <Cpu className="h-5 w-5 text-foreground" />
-              </div>
-              <div>
-                <h3 className="text-primary font-bold text-lg font-mono">Core Toolset</h3>
-                <p className="text-secondary text-xs">Technologies I work with daily</p>
-              </div>
+            {/* Photo Placeholder/Image - Replace src with your actual photo */}
+            <img 
+              src="/heroImage.png" 
+              alt="Manash Swain" 
+              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 opacity-90"
+            />
+            
+            {/* Overlay Gradient */}
+            <div className="absolute inset-0 bg-gradient-to-t from-[#010011] via-transparent to-transparent opacity-80" />
+            
+            <div className="absolute bottom-6 left-6 right-6">
+              <h3 className="text-white font-bold text-xl mb-1">Manash Swain</h3>
+              <p className="text-foreground text-sm font-mono opacity-80">Building ideas into reality</p>
             </div>
-
-            <div className="flex flex-wrap gap-2.5">
-              {tags.map((tag, idx) => (
-                <motion.span
-                  key={idx}
-                  whileHover={{ scale: 1.06, y: -2 }}
-                  transition={{ type: "spring", stiffness: 400, damping: 20 }}
-                  className="px-3.5 py-1.5 rounded-xl text-xs font-mono border border-white/5 bg-neutral-950/60 text-secondary hover:border-foreground/40 hover:text-foreground transition-colors duration-200 cursor-default"
-                >
-                  {tag}
-                </motion.span>
-              ))}
-            </div>
-
-            <div className="mt-6 pt-5 border-t border-white/5 flex flex-col gap-3.5">
-              <div className="flex justify-between items-center text-xs font-mono">
-                <span className="text-secondary">Status:</span>
-                <span className="text-foreground animate-pulse">Open to Opportunities</span>
-              </div>
-              <div className="flex justify-between items-center text-xs font-mono">
-                <span className="text-secondary">Location:</span>
-                <span className="text-primary">Bangalore, India</span>
-              </div>
-              <div className="flex justify-between items-center text-xs font-mono">
-                <span className="text-secondary">Interests:</span>
-                <span className="text-primary">Full-Stack, DSA, Systems</span>
-              </div>
-              <a
-                href="#skills"
-                onClick={(e) => {
-                  e.preventDefault();
-                  document.getElementById("skills")?.scrollIntoView({ behavior: "smooth" });
-                }}
-                className="mt-2 text-center py-2.5 rounded-xl text-xs font-mono border border-foreground/30 bg-foreground/10 text-primary hover:bg-foreground hover:text-black transition-all duration-300 font-semibold"
-              >
-                View Coding Dashboard
-              </a>
-            </div>
+            
+            {/* Decorative corners */}
+            <div className="absolute top-4 left-4 w-8 h-8 border-t-2 border-l-2 border-foreground/50 rounded-tl-xl transition-all duration-300 group-hover:border-foreground" />
+            <div className="absolute top-4 right-4 w-8 h-8 border-t-2 border-r-2 border-foreground/50 rounded-tr-xl transition-all duration-300 group-hover:border-foreground" />
+            <div className="absolute bottom-4 right-4 w-8 h-8 border-b-2 border-r-2 border-foreground/50 rounded-br-xl transition-all duration-300 group-hover:border-foreground" />
           </motion.div>
         </div>
       </div>

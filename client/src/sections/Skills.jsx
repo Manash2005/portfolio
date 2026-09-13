@@ -67,7 +67,9 @@ function Skills({ stats }) {
         const data = await response.json();
         setGithubHeatmapData(data.heatmapData || []);
       } catch (error) {
-        console.error("Github heatmap fetch error:", error);
+        if (!error.message.includes('404')) {
+          console.error("Github heatmap fetch error:", error);
+        }
       } finally {
         setGithubHeatmapLoading(false);
       }
@@ -230,8 +232,8 @@ function Skills({ stats }) {
           </div>
 
           {/* Right Column: Total Solved Gauge (5 cols) */}
-          <div className="lg:col-span-5 flex flex-col justify-between h-full">
-            <div className="flex flex-col h-full justify-between">
+          <div className="lg:col-span-5 flex flex-col h-full">
+            <div className="flex flex-col gap-4">
               <div>
                 <div className="flex items-center justify-between border-b border-white/10 pb-3 mb-4">
                   <h3 className="text-lg font-bold font-mono text-primary flex items-center gap-2">
