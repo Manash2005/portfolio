@@ -95,7 +95,7 @@ function About() {
           >
             {/* Photo Placeholder/Image - Replace src with your actual photo */}
             <img 
-              src="/heroImage.png" 
+              src="/about_me_photo.png" 
               alt="Manash Swain" 
               className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 opacity-90"
             />

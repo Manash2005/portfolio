@@ -42,32 +42,28 @@ function Hero({ stats }) {
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
               viewport={{ once: true }}
-              className="space-y-4"
+              className="space-y-3"
             >
               <a
                 href="/resume.pdf"
                 target="_blank"
                 rel="noreferrer"
-                className="flex items-center gap-2 border border-foreground/30 bg-foreground/5 rounded-full px-3.5 py-1.5 w-fit text-xs font-mono text-foreground backdrop-blur-sm shadow-inner select-none hover:bg-foreground/15 transition-colors"
+                className="flex items-center gap-3 border border-foreground/30 bg-foreground/5 rounded-full px-3.5 py-1.5 w-fit text-xs font-mono text-foreground backdrop-blur-sm shadow-inner select-none hover:bg-foreground/15 transition-colors"
               >
                 <span className="w-1.5 h-1.5 rounded-full bg-foreground animate-ping" />
-                Open to AI Automation / Backend internships
+                Open to work
               </a>
-
-              <h1 className="text-3xl md:text-5xl font-bold text-white leading-tight tracking-tight mt-2 flex gap-2">
-                I am <ScrambleText text={portfolioData.personal.name} delay={500} speed={40} className="text-foreground" />
-              </h1>
             </motion.div>
 
             {/* ROLE */}
             <motion.div
-              className="text-4xl md:text-5xl font-mono text-white/90 font-medium h-[120px] md:h-[140px]"
+              className="text-4xl md:text-6xl font-mono text-white/90 font-medium h-[120px] md:h-[140px]"
               initial={{ opacity: 0, y: 15 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.15 }}
               viewport={{ once: true }}
             >
-              <span className="text-foreground font-bold">
+              <span className=" font-bold" style={{ color: '#ADFF2F' }}>
                 <TypeAnimation
                   sequence={[
                     "AI Workflow",
@@ -234,7 +230,7 @@ function Hero({ stats }) {
 
           {/* RIGHT COLUMN */}
           <div
-            className="hidden md:flex items-center justify-center w-full md:w-1/2 mt-10 md:mt-0 pointer-events-none select-none"
+            className="hidden md:flex items-end justify-end  w-full md:w-1/2 mt-10 md:mt-0 pointer-events-none select-none"
           >
             <img
               src="/heroImage.png"

@@ -1,12 +1,11 @@
 {
   "personal": {
-    "name": "Manash Swain",
+    "name": "Manash",
     "role": "Full-Stack Software Engineer & AI Workflow Specialist",
     "location": "Bangalore, India",
     "taglines": [
-      "I don't just write syntax—I design resilient systems.",
-      "Building performant web applications, clean REST APIs, and agentic AI workflows.",
-      "From solving 300+ DSA problems to architecting secure LLM pipelines."
+      "Hi viewer, I am Manash",
+      "Who builds performant web applications, clean REST APIs, and agentic AI workflows."
     ],
     "about": [
       "I am a passionate Full-Stack Software Developer currently pursuing a BS in Computer Science at BITS Pilani (2024 - 2027). I specialize in creating clean, maintainable web applications and solving complex algorithmic challenges.",

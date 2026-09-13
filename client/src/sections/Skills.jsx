@@ -5,7 +5,7 @@ import NoiseBg from "../utils/NoiseBg";
 import { useEffect, useState } from "react";
 import { fetchWithRetry } from "../utils/fetchWithRetry";
 import LeetCodeHeatmap from "../components/LeetCodeHeatmap";
-import { GitHubCalendar } from "react-github-calendar";
+import GitHubHeatmap from "../components/GitHubHeatmap";
 import {
   SiCplusplus,
   SiMongodb,
@@ -404,25 +404,7 @@ function Skills({ stats }) {
             </a>
           </div>
 
-          <div className="border border-white/5 bg-neutral-950/20 backdrop-blur-md rounded-2xl p-6 md:p-8 flex items-center justify-center overflow-x-auto min-h-[220px]">
-            <GitHubCalendar 
-              username="Manash2005" 
-              colorScheme="dark" 
-              theme={{
-                dark: [
-                  'rgba(255, 255, 255, 0.05)',
-                  'rgba(194, 61, 41, 0.2)',
-                  'rgba(194, 61, 41, 0.45)',
-                  'rgba(194, 61, 41, 0.7)',
-                  '#C23D29'
-                ]
-              }}
-              style={{
-                color: 'rgba(255,255,255,0.6)',
-                fontFamily: 'monospace'
-              }}
-            />
-          </div>
+          <GitHubHeatmap username="Manash2005" />
         </motion.div>
       </div>
     </section>
