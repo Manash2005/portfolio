@@ -51,10 +51,13 @@ function CodingProfileCard({
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
-      whileHover={{ y: -6 }}
-      transition={{ duration: 0.3 }}
+      whileHover={{ y: -5 }}
       viewport={{ once: true }}
-      className={`w-full bg-neutral-950/40 backdrop-blur-md border border-white/10 rounded-2xl p-5 transition-all duration-300 my-4 ${theme.borderHover} ${theme.shadowHover}`}
+      transition={{
+        default: { duration: 0.4, ease: "easeOut" },
+        y: { type: "spring", stiffness: 280, damping: 22 },
+      }}
+      className={`w-full bg-neutral-950/40 backdrop-blur-md border border-white/10 rounded-2xl p-5 my-4 ${theme.borderHover} ${theme.shadowHover} transition-colors duration-300`}
     >
       {/* Header */}
       <div className="flex items-center justify-between">

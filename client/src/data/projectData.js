@@ -1,5 +1,15 @@
 export const projects = [
   {
+    title: "Gatekeeper",
+    category: "web",
+    description:
+      "A secure agentic AI workflow: the LLM proposes actions via Anthropic Tool Use, but a deterministic rules-engine gates every critical operation. Achieved 0% hallucinated execution rate and 99% structured-output parse success using Pydantic schemas.",
+    image: "/projects/gatekeeper.png",
+    liveLink: "",
+    githubLink: "https://github.com/Manash2005/gatekeeper-ai",
+    techStack: ["Python", "FastAPI", "Anthropic API", "Pydantic", "Agentic Design"],
+  },
+  {
     title: "TaskFlow",
     category: "web",
     description:

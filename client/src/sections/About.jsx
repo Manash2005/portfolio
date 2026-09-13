@@ -1,7 +1,8 @@
 import { motion } from "motion/react";
 import { User, Code, Terminal, Brain, Cpu } from "lucide-react";
 import GridBg from "../utils/GridBg";
-import FloatingParticles from "../utils/FloatingParticles";
+import NoiseBg from "../utils/NoiseBg";
+import portfolioData from "../data/portfolio_data.json";
 
 function About() {
   const cards = [
@@ -22,11 +23,7 @@ function About() {
     }
   ];
 
-  const tags = [
-    "React", "Next.js", "Node.js", "Express", "MongoDB", "JavaScript", "Python",
-    "TailwindCSS", "SQL", "C++", "Data Structures", "Algorithms", 
-    "Git", "REST APIs", "NumPy", "Pandas", "Matplotlib", "Seaborn"
-  ];
+  const tags = portfolioData.skills.languages.concat(portfolioData.skills.frontend, portfolioData.skills.backend, portfolioData.skills.databases, portfolioData.skills.ai_llm);
 
   return (
     <section id="about" className="relative min-h-screen overflow-hidden pt-20 md:pt-28 pb-16 w-full flex items-center justify-center">
@@ -34,7 +31,7 @@ function About() {
       <GridBg />
 
       {/* FLOATING PARTICLES */}
-      <FloatingParticles />
+      <NoiseBg />
 
       {/* Accent Glow */}
       <motion.div
@@ -68,12 +65,20 @@ function About() {
               My Developer Journey
             </h2>
 
-            <p className="text-secondary mt-6 text-base md:text-lg leading-relaxed max-w-2xl">
-              I am a passionate Full-Stack Software Developer currently pursuing a BS in Computer Science at <span className="text-primary font-semibold">BITS Pilani</span> (2024 - 2027). I specialize in creating clean, maintainable web applications and solving complex algorithmic challenges.
-            </p>
-            <p className="text-secondary mt-4 mb-8 text-base md:text-lg leading-relaxed max-w-2xl">
-              For me, coding is not just about writing syntax—it is about designing elegant solutions to real problems. Whether optimizing a SQL database query, designing a Kanban dashboard, or practicing core computer science concepts, I love the endless learning loop that development offers.
-            </p>
+            <div className="mt-6 mb-8 space-y-4">
+              {portfolioData.personal.about.map((paragraph, idx) => (
+                <motion.p 
+                  key={idx}
+                  initial={{ opacity: 0, y: 10 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: idx * 0.1 }}
+                  viewport={{ once: true }}
+                  className="text-secondary text-base md:text-lg leading-relaxed max-w-2xl"
+                >
+                  {paragraph}
+                </motion.p>
+              ))}
+            </div>
           </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -82,7 +87,11 @@ function About() {
                 key={idx}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: idx * 0.15 }}
+                whileHover={{ y: -4 }}
+                transition={{
+                  default: { duration: 0.5, delay: idx * 0.15 },
+                  y: { type: "spring", stiffness: 300, damping: 22 },
+                }}
                 viewport={{ once: true }}
                 className="border border-white/5 bg-neutral-950/40 backdrop-blur-md rounded-2xl p-5 hover:border-foreground/35 transition-all duration-300 shadow-sm"
               >
@@ -123,8 +132,9 @@ function About() {
               {tags.map((tag, idx) => (
                 <motion.span
                   key={idx}
-                  whileHover={{ scale: 1.05, y: -2 }}
-                  className="px-3.5 py-1.5 rounded-xl text-xs font-mono border border-white/5 bg-neutral-950/60 text-secondary hover:border-foreground/40 hover:text-foreground transition-all duration-300 cursor-default"
+                  whileHover={{ scale: 1.06, y: -2 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                  className="px-3.5 py-1.5 rounded-xl text-xs font-mono border border-white/5 bg-neutral-950/60 text-secondary hover:border-foreground/40 hover:text-foreground transition-colors duration-200 cursor-default"
                 >
                   {tag}
                 </motion.span>

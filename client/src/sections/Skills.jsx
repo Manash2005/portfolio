@@ -1,8 +1,9 @@
-import { motion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 import CodingProfileCard from "../components/CodingProfileCard";
 import GridBg from "../utils/GridBg";
-import FloatingParticles from "../utils/FloatingParticles";
+import NoiseBg from "../utils/NoiseBg";
 import { useEffect, useState } from "react";
+import { fetchWithRetry } from "../utils/fetchWithRetry";
 import LeetCodeHeatmap from "../components/LeetCodeHeatmap";
 import {
   SiCplusplus,
@@ -32,16 +33,18 @@ function Skills({ stats }) {
   const [heatmapLoading, setHeatmapLoading] = useState(true);
   const [githubHeatmapData, setGithubHeatmapData] = useState([]);
   const [githubHeatmapLoading, setGithubHeatmapLoading] = useState(true);
+  const shouldReduceMotion = useReducedMotion();
 
   const totalProblems =
     (stats?.leetcode?.total || 95) +
     (stats?.gfg?.total || 174);
 
   useEffect(() => {
+
     const fetchHeatmap = async () => {
       try {
         const apiUrl = import.meta.env.VITE_API_URL || "https://portfolio-c43c.onrender.com";
-        const response = await fetch(`${apiUrl}/api/v1/coding-activity`);
+        const response = await fetchWithRetry(`${apiUrl}/api/v1/coding-activity`);
         if (!response.ok) {
           throw new Error("Failed to fetch heatmap data");
         }
@@ -57,7 +60,7 @@ function Skills({ stats }) {
     const fetchGithubHeatmap = async () => {
       try {
         const apiUrl = import.meta.env.VITE_API_URL || "https://portfolio-c43c.onrender.com";
-        const response = await fetch(`${apiUrl}/api/v1/coding-activity/github-heatmap/Manash2005`);
+        const response = await fetchWithRetry(`${apiUrl}/api/v1/coding-activity/github-heatmap/Manash2005`);
         if (!response.ok) {
           throw new Error("Failed to fetch github heatmap data");
         }
@@ -136,7 +139,7 @@ function Skills({ stats }) {
       <GridBg />
 
       {/* Floating Particles */}
-      <FloatingParticles />
+      <NoiseBg />
 
       {/* Glow */}
       <motion.div
@@ -192,9 +195,13 @@ function Skills({ stats }) {
                     key={cat.category}
                     initial={{ opacity: 0, y: 15 }}
                     whileInView={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.4, delay: idx * 0.1 }}
+                    whileHover={shouldReduceMotion ? {} : { y: -4, scale: 1.01 }}
+                    transition={shouldReduceMotion
+                      ? { duration: 0.2 }
+                      : { type: "spring", stiffness: 300, damping: 25, delay: idx * 0.08 }
+                    }
                     viewport={{ once: true }}
-                    className={`border border-white/5 bg-neutral-950/20 backdrop-blur-md rounded-2xl p-5 hover:border-foreground/30 hover:bg-neutral-950/40 transition-all duration-300 shadow-sm ${idx === 4 ? "md:col-span-2" : ""}`}
+                    className={`border border-white/5 bg-neutral-950/20 backdrop-blur-md rounded-2xl p-5 hover:border-foreground/30 hover:bg-neutral-950/40 shadow-sm ${idx === 4 ? "md:col-span-2" : ""}`}
                   >
                     <h4 className="text-white font-mono text-xs uppercase tracking-wider border-b border-white/5 pb-2.5 mb-3.5 font-bold">
                       {cat.category}
@@ -250,7 +257,7 @@ function Skills({ stats }) {
                   </p>
 
                   <div className="relative flex items-center justify-center my-3">
-                    <div className="w-24 h-24 rounded-full border border-dashed border-foreground/30 animate-[spin_40s_linear_infinite] absolute" />
+                    <div className="w-24 h-24 rounded-full border border-dashed border-foreground/30 absolute" />
                     <div className="w-20 h-20 rounded-full border border-white/10 flex items-center justify-center bg-black/40 backdrop-blur-md">
                       <span className="text-3xl font-extrabold text-white font-mono tracking-tight">
                         {totalProblems}

@@ -6,18 +6,20 @@ import { useState } from "react";
 function ProjectCard({
   title,
   description,
+  short_description,
   image,
   techStack = [],
   liveLink,
   githubLink,
 }) {
   const [imageError, setImageError] = useState(false);
+  const displayDescription = short_description || description;
 
   return (
     <motion.div
       whileHover={{ y: -8 }}
-      transition={{ duration: 0.3 }}
-      className="group relative overflow-hidden rounded-3xl border border-white/10 bg-neutral-950/40 backdrop-blur-md p-5 transition-all duration-500 hover:border-foreground/30 hover:shadow-[0_0_40px_rgba(194,61,41,0.15)] flex flex-col h-full"
+      transition={{ type: "spring", stiffness: 300, damping: 22 }}
+      className="group relative overflow-hidden rounded-3xl border border-white/10 bg-neutral-950/40 backdrop-blur-md p-5 hover:border-foreground/30 hover:shadow-[0_0_40px_rgba(194,61,41,0.15)] transition-colors duration-300 flex flex-col h-full"
     >
       {/* Background Gradient Glow */}
       <div className="absolute inset-0 bg-gradient-to-br from-foreground/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500 pointer-events-none" />
@@ -46,7 +48,7 @@ function ProjectCard({
         </h3>
 
         <p className="text-secondary text-xs md:text-sm mt-3 leading-relaxed flex-1">
-          {description}
+          {displayDescription}
         </p>
 
         {/* Tech Stack Pills */}
@@ -62,7 +64,7 @@ function ProjectCard({
         </div>
 
         {/* Footer Actions */}
-        <div className="mt-6 pt-4 border-t border-white/5 flex items-center justify-between">
+        <div className="mt-6 pt-4 border-t border-white/5 flex items-center justify-between gap-3">
           {githubLink ? (
             <a
               href={githubLink}
@@ -79,15 +81,21 @@ function ProjectCard({
             </span>
           )}
 
-          <a
-            href={liveLink}
-            target="_blank"
-            rel="noreferrer"
-            className="flex items-center gap-1.5 rounded-xl bg-foreground/10 border border-foreground/30 px-3.5 py-2 text-xs font-mono text-foreground hover:bg-foreground hover:text-black transition-all duration-300 font-semibold"
-          >
-            Live Demo
-            <ExternalLink className="w-3.5 h-3.5" />
-          </a>
+          {liveLink ? (
+            <a
+              href={liveLink}
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-1.5 rounded-xl bg-foreground/10 border border-foreground/30 px-3.5 py-2 text-xs font-mono text-foreground hover:bg-foreground hover:text-black transition-all duration-300 font-semibold"
+            >
+              Live Demo
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
+          ) : (
+            <span className="text-[10px] font-mono text-white/30 italic select-none">
+              No Live Demo
+            </span>
+          )}
         </div>
       </div>
     </motion.div>

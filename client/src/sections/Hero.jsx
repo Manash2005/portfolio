@@ -1,4 +1,3 @@
-/* eslint-disable react-hooks/purity */
 import StatCard from "../components/StatCard";
 import { Download } from "lucide-react";
 import SocialMediaCard from "../components/SocialMediaCard";
@@ -7,12 +6,14 @@ import { SiGmail } from "react-icons/si";
 import EducationCard from "../components/EducationCard";
 import { motion } from "motion/react";
 import { TypeAnimation } from "react-type-animation";
-import FloatingParticles from "../utils/FloatingParticles";
+import NoiseBg from "../utils/NoiseBg";
 import GridBg from "../utils/GridBg";
+import ScrambleText from "../components/ScrambleText";
+import portfolioData from "../data/portfolio_data.json";
 
 function Hero({ stats }) {
   const handleResume = () => {
-    window.open("/resume.pdf", "_blank");
+    window.open(portfolioData.contact.resume_url, "_blank");
   };
 
   return (
@@ -27,7 +28,7 @@ function Hero({ stats }) {
       <GridBg />
 
       {/* FLOATING PARTICLES */}
-      <FloatingParticles />
+      <NoiseBg />
 
       {/* HERO CONTENT */}
       <div className="relative z-10 px-2 lg:px-8">
@@ -43,19 +44,24 @@ function Hero({ stats }) {
               viewport={{ once: true }}
               className="space-y-4"
             >
-              <div className="flex items-center gap-2 border border-foreground/30 bg-foreground/5 rounded-full px-3.5 py-1.5 w-fit text-xs font-mono text-foreground backdrop-blur-sm shadow-inner select-none">
+              <a
+                href="/resume.pdf"
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-2 border border-foreground/30 bg-foreground/5 rounded-full px-3.5 py-1.5 w-fit text-xs font-mono text-foreground backdrop-blur-sm shadow-inner select-none hover:bg-foreground/15 transition-colors"
+              >
                 <span className="w-1.5 h-1.5 rounded-full bg-foreground animate-ping" />
-                Open to work
-              </div>
+                Open to AI Automation / Backend internships
+              </a>
 
-              <h1 className="text-2xl md:text-xl font-bold text-white leading-tight tracking-tight mt-2">
-                I am <span className="text-white">Manash</span>
+              <h1 className="text-3xl md:text-5xl font-bold text-white leading-tight tracking-tight mt-2 flex gap-2">
+                I am <ScrambleText text={portfolioData.personal.name} delay={500} speed={40} className="text-foreground" />
               </h1>
             </motion.div>
 
             {/* ROLE */}
             <motion.div
-              className="text-5xl md:text-6xl font-mono text-white/90 font-medium"
+              className="text-4xl md:text-5xl font-mono text-white/90 font-medium h-[120px] md:h-[140px]"
               initial={{ opacity: 0, y: 15 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.15 }}
@@ -64,13 +70,11 @@ function Hero({ stats }) {
               <span className="text-foreground font-bold">
                 <TypeAnimation
                   sequence={[
-                    "Frontend",
+                    "AI Workflow",
                     2000,
                     "Backend",
                     2000,
                     "Full Stack",
-                    2000,
-                    "Data Analyst",
                     2000,
                   ]}
                   speed={50}
@@ -78,21 +82,20 @@ function Hero({ stats }) {
                   repeat={Infinity}
                 />
               </span><br />
-              Developer
+              Engineer
             </motion.div>
 
             {/* DESCRIPTION */}
-            <motion.p
+            <motion.div
               className="text-white/60 text-base md:text-lg leading-relaxed max-w-xl"
               initial={{ opacity: 0, y: 15 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.25 }}
               viewport={{ once: true }}
             >
-              I love the idea of creating something from nothing but code. I build
-              performant web applications, design clean REST APIs, and practice CS
-              fundamentals daily to design elegant solutions to real problems.
-            </motion.p>
+              <p className="mb-2 font-mono text-sm text-foreground/80">{portfolioData.personal.taglines[0]}</p>
+              <p>{portfolioData.personal.taglines[1]}</p>
+            </motion.div>
 
             {/* ACTIONS & SOCIALS */}
             <motion.div
@@ -104,15 +107,15 @@ function Hero({ stats }) {
             >
               {/* RESUME BUTTON */}
               <motion.button
+                whileHover="hover"
+                whileTap={{ scale: 0.97 }}
                 variants={{
                   rest: { y: 0 },
                   hover: { y: -5 },
                 }}
                 initial="rest"
                 animate="rest"
-                whileHover="hover"
-                whileTap={{ y: -5 }}
-                transition={{ duration: 0.3 }}
+                transition={{ type: "spring", stiffness: 300, damping: 22 }}
                 className="
                   flex items-center
                   bg-foreground/10
@@ -231,12 +234,16 @@ function Hero({ stats }) {
 
           {/* RIGHT COLUMN */}
           <div
-            className="hidden md:block w-full md:w-1/2 mt-10 md:mt-0 pointer-events-none select-none"
+            className="hidden md:flex items-center justify-center w-full md:w-1/2 mt-10 md:mt-0 pointer-events-none select-none"
           >
             <img
               src="/heroImage.png"
-              alt="Hero Image"
-              className="h-full object-cover"
+              alt="Manash Swain — Full-Stack & AI Engineer"
+              width={600}
+              height={600}
+              loading="eager"
+              decoding="async"
+              className="h-full max-h-[85vh] w-auto object-contain"
             />
           </div>
         </div>

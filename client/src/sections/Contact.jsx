@@ -3,7 +3,8 @@ import { useState } from "react";
 import { Mail, ArrowUpRight, Send, Check } from "lucide-react";
 import { FaLinkedin, FaGithub } from "react-icons/fa";
 import GridBg from "../utils/GridBg";
-import FloatingParticles from "../utils/FloatingParticles";
+import NoiseBg from "../utils/NoiseBg";
+import { fetchWithRetry } from "../utils/fetchWithRetry";
 
 function Contact() {
   const [formData, setFormData] = useState({ name: "", email: "", message: "" });
@@ -25,7 +26,7 @@ function Contact() {
     setStatus("sending");
     try {
       const apiUrl = import.meta.env.VITE_API_URL || "https://portfolio-c43c.onrender.com";
-      const response = await fetch(`${apiUrl}/api/v1/contact`, {
+      const response = await fetchWithRetry(`${apiUrl}/api/v1/contact`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -76,7 +77,7 @@ function Contact() {
       <GridBg />
 
       {/* FLOATING PARTICLES */}
-      <FloatingParticles />
+      <NoiseBg />
 
       {/* Ambient Red Glow Backdrop */}
       <motion.div

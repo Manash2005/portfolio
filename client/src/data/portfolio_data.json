@@ -1,0 +1,111 @@
+{
+  "personal": {
+    "name": "Manash Swain",
+    "role": "Full-Stack Software Engineer & AI Workflow Specialist",
+    "location": "Bangalore, India",
+    "taglines": [
+      "I don't just write syntax—I design resilient systems.",
+      "Building performant web applications, clean REST APIs, and agentic AI workflows.",
+      "From solving 300+ DSA problems to architecting secure LLM pipelines."
+    ],
+    "about": [
+      "I am a passionate Full-Stack Software Developer currently pursuing a BS in Computer Science at BITS Pilani (2024 - 2027). I specialize in creating clean, maintainable web applications and solving complex algorithmic challenges.",
+      "My journey started with a deep curiosity for how things work under the hood. Whether I'm optimizing a SQL database query with CTEs, designing a Kanban dashboard, or practicing core computer science concepts (like the 300+ problems I've solved across LeetCode and GeeksforGeeks), I love the endless learning loop that development offers.",
+      "Recently, I've been fascinated by AI Automation and Agentic Workflows. I'm exploring how to build robust LLM pipelines with Anthropic's Claude API, focusing on tool use, structured outputs (Pydantic), and implementing rule-based gating (like ensuring a model never has final authority over a financial transaction)."
+    ],
+    "education": [
+      {
+        "institute": "BITS Pilani",
+        "degree": "BS in Computer Science",
+        "duration": "2024 - 2027",
+        "logo": "/bitsPilaniLogo.png"
+      }
+    ]
+  },
+  "skills": {
+    "languages": ["C++", "JavaScript", "Python", "SQL"],
+    "frontend": ["React", "Tailwind CSS", "HTML5", "CSS3"],
+    "backend": ["Node.js", "Express.js", "FastAPI", "REST API Design", "JWT Authentication"],
+    "databases": ["MongoDB", "MongoDB Atlas", "SQL (joins, CTEs, window functions)", "SQLite"],
+    "ai_llm": ["Anthropic/Claude API", "Tool Use (Function Calling)", "Prompt Engineering", "Structured Outputs (Pydantic)", "Agentic Workflow Design", "Guardrails & Rule-Based Gating"],
+    "data_analytics": ["Pandas", "NumPy", "Matplotlib", "Seaborn", "Precision/Recall Evaluation"],
+    "tools": ["Git & GitHub", "Postman", "Vercel", "Render", "CI Basics", "ImageKit (Cloud Image Uploads)"],
+    "fundamentals": ["Data Structures", "Algorithms", "300+ LeetCode/GFG Problems Solved"]
+  },
+  "projects": [
+    {
+      "title": "TaskFlow",
+      "category": "Full-Stack Web",
+      "short_description": "A full-stack task management application with real-time analytics and Kanban boards.",
+      "problem": "Teams often struggle to track project progress visually without feeling overwhelmed by complex enterprise tools.",
+      "architecture": "Client-side state managed by React, synchronized with an Express/MongoDB backend. Uses JWT for secure session management.",
+      "key_challenge": "Implementing smooth drag-and-drop Kanban functionality while ensuring optimistic UI updates synced flawlessly with backend state.",
+      "solution": "Built a robust state synchronization layer in React that locally updates the board instantly, falling back gracefully if the API request fails.",
+      "outcome": "A seamless, zero-latency feel for the user with robust data persistence.",
+      "metrics": ["100% real-time sync", "Sub-100ms UI response"],
+      "techStack": ["React", "Node.js", "Express", "MongoDB", "TailwindCSS"],
+      "liveLink": "https://task-manager-phi-five-12.vercel.app/",
+      "githubLink": "https://github.com/manash/taskflow",
+      "image": "/projects/taskflow.png",
+      "featured": true,
+      "reflection": "If I rebuilt this today, I'd implement WebSockets for true multi-player collaboration instead of standard HTTP polling."
+    },
+    {
+      "title": "Gatekeeper (Agentic AI System)",
+      "category": "AI / Automation",
+      "short_description": "A secure AI agent workflow implementing strict rule-based gating for sensitive actions.",
+      "problem": "Fully autonomous LLM agents are prone to hallucination. Giving them direct access to execute critical actions (like payments or DB deletes) is a massive security risk.",
+      "architecture": "A multi-layered agent system where the LLM can *propose* actions via Tool Use, but a deterministic rules-engine acts as a 'Gatekeeper' that validates all parameters before execution.",
+      "key_challenge": "Ensuring the LLM outputs structured, perfectly formatted data that the rule engine could parse without crashing.",
+      "solution": "Utilized Anthropic's Claude API with strict Pydantic schemas to force structured JSON outputs, combined with a retry-loop for self-correction.",
+      "outcome": "Achieved 0% hallucinated execution rate on critical actions.",
+      "metrics": ["0% Hallucinated Executions", "99% Parse Success Rate"],
+      "techStack": ["Python", "FastAPI", "Anthropic API", "Pydantic", "Agentic Design"],
+      "liveLink": "",
+      "githubLink": "https://github.com/Manash2005/gatekeeper-ai",
+      "image": "/projects/gatekeeper.png",
+      "featured": true,
+      "reflection": "The architecture choice ('model never has final authority over a money action') proved that combining deterministic code with probabilistic AI yields the safest production systems."
+    },
+    {
+      "title": "Socially",
+      "category": "Full-Stack Web",
+      "short_description": "A private organizational social network with restricted department-level channels.",
+      "problem": "Organizations need a secure, internal way to share updates without relying on chaotic email threads or public social media.",
+      "architecture": "React frontend heavily integrated with Supabase for backend-as-a-service (BaaS), utilizing Row Level Security (RLS) policies.",
+      "key_challenge": "Designing a database schema that strictly enforced viewing permissions based on a user's department and role.",
+      "solution": "Leveraged Supabase's PostgreSQL RLS policies to ensure that users could only query posts belonging to their authorized channels at the database level.",
+      "outcome": "A highly secure, performant feed that scales effortlessly.",
+      "metrics": ["Secure RLS Policies", "Real-time feed updates"],
+      "techStack": ["React", "Node.js", "Supabase", "TailwindCSS"],
+      "liveLink": "https://socially.vercel.app",
+      "githubLink": "",
+      "image": "/projects/socially.png",
+      "featured": true,
+      "reflection": "Using Supabase taught me the power of pushing security down to the database layer rather than handling it all in the application logic."
+    },
+    {
+      "title": "DataPulse: Sales Insights",
+      "category": "Data Analytics",
+      "short_description": "An end-to-end data analytics dashboard analyzing customer acquisition and cohort behaviors.",
+      "problem": "Raw sales data is noisy and difficult for non-technical stakeholders to interpret for strategic decisions.",
+      "architecture": "Jupyter Notebook environment performing heavy data cleaning with Pandas, followed by statistical visualization with Seaborn.",
+      "key_challenge": "Handling missing values and outliers in a massive dataset without skewing the overall cohort retention metrics.",
+      "solution": "Applied sophisticated imputation techniques and generated multi-variable distribution plots to isolate true behavioral trends.",
+      "outcome": "Actionable insights that clearly visualize drop-off points in the customer lifecycle.",
+      "metrics": ["Cleaned 100k+ rows", "Identified 15% drop-off variance"],
+      "techStack": ["Python", "Pandas", "NumPy", "Matplotlib", "Seaborn"],
+      "liveLink": "",
+      "githubLink": "https://github.com/Manash2005/sales-data-analysis",
+      "image": "/projects/datapulse.png",
+      "featured": true,
+      "reflection": "I realized that the hardest part of data analytics isn't the code—it's asking the right questions before you start plotting."
+    }
+  ],
+  "contact": {
+    "email": "swainm099@gmail.com",
+    "github": "https://github.com/Manash2005",
+    "linkedin": "https://www.linkedin.com/in/manash-swain",
+    "resume_url": "/resume.pdf"
+  }
+}

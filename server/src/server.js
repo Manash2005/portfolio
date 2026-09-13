@@ -11,34 +11,76 @@ const app = express();
 
 app.use(express.json());
 
-const allowedOrigins = process.env.NODE_ENV === "development" 
-  ? ["http://localhost:5173", "http://localhost:5174", "http://localhost:3000"]
-  : ["https://manashswain.vercel.app"];
+const isDev = (process.env.NODE_ENV || "production") === "development";
 
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps, curl)
-      if (!origin) return callback(null, true);
+const allowedOrigins = isDev
+  ? [
+      "http://localhost:5173",
+      "http://localhost:5174",
+      "http://localhost:3000",
+      "http://localhost",
+    ]
+  : [
+      "https://manashswain.vercel.app",
+      "https://portfolio-c43c.onrender.com",
+    ];
 
-      if (process.env.NODE_ENV === "development") {
-        if (origin.startsWith("http://localhost:") || origin === "http://localhost") {
-          return callback(null, true);
-        }
-      }
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
 
-      // Allow production domain and Vercel preview domains
-      if (
-        allowedOrigins.indexOf(origin) !== -1 ||
-        origin.endsWith(".vercel.app")
-      ) {
+    if (isDev) {
+      if (origin.startsWith("http://localhost:") || origin === "http://localhost") {
         return callback(null, true);
       }
+    }
 
-      return callback(new Error("Not allowed by CORS"));
-    },
-  })
-);
+    if (
+      allowedOrigins.indexOf(origin) !== -1 ||
+      origin.endsWith(".vercel.app") ||
+      origin.endsWith(".onrender.com")
+    ) {
+      return callback(null, true);
+    }
+
+    console.warn(`CORS blocked origin: ${origin}`);
+    return callback(null, false);
+  },
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+  allowedHeaders: [
+    "Origin",
+    "X-Requested-With",
+    "Content-Type",
+    "Accept",
+    "Authorization",
+  ],
+  credentials: true,
+  optionsSuccessStatus: 204,
+  maxAge: 86400,
+};
+
+app.use(cors(corsOptions));
+
+app.options("*", cors(corsOptions));
+
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (origin && (origin.endsWith(".vercel.app") || origin.endsWith(".onrender.com"))) {
+    res.header("Access-Control-Allow-Origin", origin);
+  } else if (isDev) {
+    res.header("Access-Control-Allow-Origin", "*");
+  }
+  res.header(
+    "Access-Control-Allow-Methods",
+    "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+  );
+  res.header(
+    "Access-Control-Allow-Headers",
+    "Origin, X-Requested-With, Content-Type, Accept, Authorization"
+  );
+  res.header("Access-Control-Allow-Credentials", "true");
+  next();
+});
 
 app.get("/", (req, res) => {
   res.send("Server Running");
