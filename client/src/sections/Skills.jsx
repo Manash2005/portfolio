@@ -5,6 +5,7 @@ import NoiseBg from "../utils/NoiseBg";
 import { useEffect, useState } from "react";
 import { fetchWithRetry } from "../utils/fetchWithRetry";
 import LeetCodeHeatmap from "../components/LeetCodeHeatmap";
+import { GitHubCalendar } from "react-github-calendar";
 import {
   SiCplusplus,
   SiMongodb,
@@ -31,8 +32,6 @@ import { Brain, Cpu, ExternalLink, Code2, Trophy, BarChart3, LineChart } from "l
 function Skills({ stats }) {
   const [heatmapData, setHeatmapData] = useState([]);
   const [heatmapLoading, setHeatmapLoading] = useState(true);
-  const [githubHeatmapData, setGithubHeatmapData] = useState([]);
-  const [githubHeatmapLoading, setGithubHeatmapLoading] = useState(true);
   const shouldReduceMotion = useReducedMotion();
 
   const totalProblems =
@@ -56,27 +55,7 @@ function Skills({ stats }) {
         setHeatmapLoading(false);
       }
     };
-
-    const fetchGithubHeatmap = async () => {
-      try {
-        const apiUrl = import.meta.env.VITE_API_URL || "https://portfolio-c43c.onrender.com";
-        const response = await fetchWithRetry(`${apiUrl}/api/v1/coding-activity/github-heatmap/Manash2005`);
-        if (!response.ok) {
-          throw new Error("Failed to fetch github heatmap data");
-        }
-        const data = await response.json();
-        setGithubHeatmapData(data.heatmapData || []);
-      } catch (error) {
-        if (!error.message.includes('404')) {
-          console.error("Github heatmap fetch error:", error);
-        }
-      } finally {
-        setGithubHeatmapLoading(false);
-      }
-    };
-
     fetchHeatmap();
-    fetchGithubHeatmap();
   }, []);
 
   const SKILLS_DATA = [
@@ -305,11 +284,7 @@ function Skills({ stats }) {
                     GitHub Contributions
                   </p>
                   <h4 className="text-2xl font-bold text-white font-mono mt-1">
-                    {githubHeatmapLoading ? (
-                      <span className="text-sm font-normal text-white/40 animate-pulse">Loading...</span>
-                    ) : (
-                      githubHeatmapData.reduce((acc, curr) => acc + curr.count, 0)
-                    )}
+                    1,200+
                   </h4>
                 </motion.div>
               </div>
@@ -429,15 +404,25 @@ function Skills({ stats }) {
             </a>
           </div>
 
-          {githubHeatmapLoading ? (
-            <div className="border border-white/5 bg-neutral-950/20 backdrop-blur-md rounded-2xl p-8 flex items-center justify-center min-h-[200px]">
-              <p className="text-center text-white/50 font-mono text-sm animate-pulse">
-                Synchronizing GitHub activity calendar...
-              </p>
-            </div>
-          ) : (
-            <LeetCodeHeatmap data={githubHeatmapData} type="github" />
-          )}
+          <div className="border border-white/5 bg-neutral-950/20 backdrop-blur-md rounded-2xl p-6 md:p-8 flex items-center justify-center overflow-x-auto min-h-[220px]">
+            <GitHubCalendar 
+              username="Manash2005" 
+              colorScheme="dark" 
+              theme={{
+                dark: [
+                  'rgba(255, 255, 255, 0.05)',
+                  'rgba(194, 61, 41, 0.2)',
+                  'rgba(194, 61, 41, 0.45)',
+                  'rgba(194, 61, 41, 0.7)',
+                  '#C23D29'
+                ]
+              }}
+              style={{
+                color: 'rgba(255,255,255,0.6)',
+                fontFamily: 'monospace'
+              }}
+            />
+          </div>
         </motion.div>
       </div>
     </section>
