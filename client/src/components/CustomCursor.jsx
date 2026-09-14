@@ -1,66 +1,57 @@
-import { useEffect, useState } from 'react'
-import { motion } from 'motion/react'
+import { useEffect, useRef } from 'react'
 
+/**
+ * CustomCursor — no spring physics, moves 1:1 with the mouse via CSS transforms.
+ * Uses refs + direct DOM manipulation instead of React state to avoid re-render
+ * lag that makes the cursor feel slow.
+ */
 export default function CustomCursor() {
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
-  const [isHovering, setIsHovering] = useState(false)
+  const dotRef = useRef(null)
+  const glowRef = useRef(null)
+  const isHoveringRef = useRef(false)
 
   useEffect(() => {
-    const updateMousePosition = (e) => {
-      setMousePosition({ x: e.clientX, y: e.clientY })
+    const dot = dotRef.current
+    const glow = glowRef.current
+    if (!dot || !glow) return
+
+    const onMove = (e) => {
+      const x = e.clientX
+      const y = e.clientY
+      dot.style.transform = `translate(${x - 8}px, ${y - 8}px) scale(${isHoveringRef.current ? 2 : 1})`
+      glow.style.transform = `translate(${x - 64}px, ${y - 64}px) scale(${isHoveringRef.current ? 1.5 : 1})`
     }
 
-    const handleMouseOver = (e) => {
-      if (
+    const onOver = (e) => {
+      const isLink =
         e.target.tagName.toLowerCase() === 'button' ||
         e.target.tagName.toLowerCase() === 'a' ||
         e.target.closest('button') ||
         e.target.closest('a')
-      ) {
-        setIsHovering(true)
-      } else {
-        setIsHovering(false)
-      }
+      isHoveringRef.current = !!isLink
     }
 
-    window.addEventListener('mousemove', updateMousePosition)
-    window.addEventListener('mouseover', handleMouseOver)
-
+    window.addEventListener('mousemove', onMove, { passive: true })
+    window.addEventListener('mouseover', onOver, { passive: true })
     return () => {
-      window.removeEventListener('mousemove', updateMousePosition)
-      window.removeEventListener('mouseover', handleMouseOver)
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('mouseover', onOver)
     }
   }, [])
 
   return (
     <>
-      <motion.div
+      {/* Small dot — tracks 1:1 with cursor */}
+      <div
+        ref={dotRef}
         className="fixed top-0 left-0 w-4 h-4 bg-primary/50 rounded-full pointer-events-none z-[9999] mix-blend-screen"
-        animate={{
-          x: mousePosition.x - 8,
-          y: mousePosition.y - 8,
-          scale: isHovering ? 2 : 1,
-        }}
-        transition={{
-          type: 'spring',
-          stiffness: 150,
-          damping: 15,
-          mass: 0.1,
-        }}
+        style={{ willChange: 'transform', transition: 'scale 0.15s ease' }}
       />
-      <motion.div
+      {/* Soft glow blob */}
+      <div
+        ref={glowRef}
         className="fixed top-0 left-0 w-32 h-32 bg-primary/10 rounded-full pointer-events-none z-[9998] blur-xl"
-        animate={{
-          x: mousePosition.x - 64,
-          y: mousePosition.y - 64,
-          scale: isHovering ? 1.5 : 1,
-        }}
-        transition={{
-          type: 'spring',
-          stiffness: 50,
-          damping: 20,
-          mass: 0.5,
-        }}
+        style={{ willChange: 'transform', transition: 'scale 0.2s ease' }}
       />
     </>
   )
