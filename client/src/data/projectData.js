@@ -5,8 +5,8 @@ export const projects = [
     description:
       "A secure agentic AI workflow: the LLM proposes actions via Anthropic Tool Use, but a deterministic rules-engine gates every critical operation. Achieved 0% hallucinated execution rate and 99% structured-output parse success using Pydantic schemas.",
     image: "/projects/gatekeeper.png",
-    liveLink: "",
-    githubLink: "https://github.com/Manash2005/gatekeeper-ai",
+    liveLink: "https://revenue-recovery-jet.vercel.app/",
+    githubLink: "https://github.com/Manash2005/revenue_recovery",
     techStack: ["Python", "FastAPI", "Anthropic API", "Pydantic", "Agentic Design"],
   },
   {
@@ -29,17 +29,6 @@ export const projects = [
     liveLink: "https://socially.vercel.app",
     githubLink: "", // Hidden when empty
     techStack: ["React", "Node.js", "Supabase", "TailwindCSS", "JavaScript"],
-  },
-
-  {
-    title: "DataPulse: Sales Insights",
-    category: "data-analytics",
-    description:
-      "An end-to-end data analytics dashboard analyzing customer acquisition, retention, and cohort behaviors. Performs data cleaning, statistical analysis, and generates interactive graphs.",
-    image: "/projects/datapulse.png",
-    liveLink: "", // No live link for analytics notebook/script
-    githubLink: "https://github.com/Manash2005/sales-data-analysis",
-    techStack: ["Python", "Pandas", "NumPy", "Matplotlib", "Seaborn", "Jupyter"],
   },
 
   {

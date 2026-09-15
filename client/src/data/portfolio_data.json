@@ -60,7 +60,7 @@
       "outcome": "Achieved 0% hallucinated execution rate on critical actions.",
       "metrics": ["0% Hallucinated Executions", "99% Parse Success Rate"],
       "techStack": ["Python", "FastAPI", "Anthropic API", "Pydantic", "Agentic Design"],
-      "liveLink": "",
+      "liveLink": "https://revenue-recovery-jet.vercel.app/",
       "githubLink": "https://github.com/Manash2005/gatekeeper-ai",
       "image": "/projects/gatekeeper.png",
       "featured": true,
