@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { generateSkylineDays } from '../utils/activityStats'
 import portfolioData from '../data/portfolio_data.json'
 
-const STORAGE_KEY = 'portfolio_activity_cache_v3'
+const STORAGE_KEY = 'portfolio_activity_cache_v4'
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000 // 6 hours
 const SLOW_THRESHOLD_MS = 4000 // 4 seconds for cold start notice
 
@@ -25,6 +25,16 @@ function getInitialCache() {
     const cachedStr = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null
     if (cachedStr) {
       const cached = JSON.parse(cachedStr)
+
+      // Guard: if both leetcode and gfg maps are empty, the cache is from before
+      // the GFG multi-year fix. Treat as stale so fresh data is fetched.
+      const lcCount = Object.keys(cached.leetcodeMap || {}).length
+      const gfgCount = Object.keys(cached.gfgMap || {}).length
+      if (lcCount + gfgCount === 0) {
+        localStorage.removeItem(STORAGE_KEY)
+        return { days: [], updatedAt: null, isCached: false, status: 'loading', isFresh: false }
+      }
+
       const normalized = generateSkylineDays(
         cached.githubMap || {},
         cached.leetcodeMap || {},

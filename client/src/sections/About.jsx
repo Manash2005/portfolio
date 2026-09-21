@@ -1,7 +1,9 @@
+import { useState } from 'react'
 import { motion, useMotionValue, useTransform } from 'motion/react'
 import data from '../data/portfolio_data.json'
 
-function PhotoCard() {
+function PhotoCard({ linkedinUrl }) {
+  const [hovered, setHovered] = useState(false)
   const x = useMotionValue(0)
   const y = useMotionValue(0)
   const rotateX = useTransform(y, [-50, 50], [6, -6])
@@ -12,30 +14,81 @@ function PhotoCard() {
     x.set(e.clientX - rect.left - rect.width / 2)
     y.set(e.clientY - rect.top - rect.height / 2)
   }
-  const handleLeave = () => { x.set(0); y.set(0) }
+  const handleLeave = () => { x.set(0); y.set(0); setHovered(false) }
 
   return (
-    <motion.div
-      onMouseMove={handleMouse}
-      onMouseLeave={handleLeave}
-      style={{
-        rotateX,
-        rotateY,
-        transformStyle: 'preserve-3d',
-        perspective: 600,
-      }}
-      className="w-full max-w-[320px] aspect-[3/4] rounded-2xl overflow-hidden mx-auto"
+    <a
+      href={linkedinUrl}
+      target="_blank"
+      rel="noreferrer"
+      aria-label="View Manash Swain on LinkedIn"
+      style={{ display: 'block', maxWidth: 320, margin: '0 auto' }}
     >
-      <img
-        src="/about_me_photo.png"
-        alt="Manash Swain"
-        width={320}
-        height={427}
-        loading="lazy"
-        className="w-full h-full object-cover"
-        style={{ filter: 'grayscale(20%) contrast(1.05)' }}
-      />
-    </motion.div>
+      <motion.div
+        onMouseMove={handleMouse}
+        onMouseLeave={handleLeave}
+        onMouseEnter={() => setHovered(true)}
+        style={{
+          rotateX,
+          rotateY,
+          transformStyle: 'preserve-3d',
+          perspective: 600,
+          position: 'relative',
+          borderRadius: '1rem',
+          overflow: 'hidden',
+          aspectRatio: '3/4',
+          cursor: 'pointer',
+        }}
+      >
+        <img
+          src="/about_me_photo.png"
+          alt="Manash Swain"
+          width={320}
+          height={427}
+          loading="lazy"
+          className="w-full h-full object-cover"
+          style={{
+            filter: 'grayscale(20%) contrast(1.05)',
+            transition: 'filter 0.3s',
+            ...(hovered ? { filter: 'grayscale(0%) contrast(1.1) brightness(0.7)' } : {}),
+          }}
+        />
+
+        {/* LinkedIn hover overlay */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: hovered ? 1 : 0 }}
+          transition={{ duration: 0.25 }}
+          style={{
+            position: 'absolute',
+            inset: 0,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '0.6rem',
+            pointerEvents: 'none',
+          }}
+        >
+          {/* LinkedIn icon */}
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none">
+            <rect width="24" height="24" rx="4" fill="#0A66C2" />
+            <path d="M7 9h2v8H7V9zm1-2.5a1.25 1.25 0 110 2.5 1.25 1.25 0 010-2.5zM11 9h1.9v1.1c.3-.6 1-1.2 2.1-1.2 2.2 0 2.6 1.4 2.6 3.3V17h-2v-4.4c0-.8 0-1.9-1.2-1.9-1.2 0-1.4.9-1.4 1.8V17H11V9z" fill="white" />
+          </svg>
+          <span
+            style={{
+              fontFamily: 'var(--font-display)',
+              fontSize: '0.85rem',
+              fontWeight: 600,
+              color: '#fff',
+              letterSpacing: '0.02em',
+            }}
+          >
+            View on LinkedIn
+          </span>
+        </motion.div>
+      </motion.div>
+    </a>
   )
 }
 
@@ -145,7 +198,7 @@ export default function About() {
           viewport={{ once: true }}
           transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1], delay: 0.1 }}
         >
-          <PhotoCard />
+          <PhotoCard linkedinUrl={data.contact.linkedin} />
         </motion.div>
       </div>
     </section>
