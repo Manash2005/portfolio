@@ -272,10 +272,10 @@ function SkylineScene({
         ref={controlsRef}
         enableZoom={false}
         enablePan={false}
-        minAzimuthAngle={-Math.PI / 5}
-        maxAzimuthAngle={Math.PI / 5}
-        minPolarAngle={Math.PI / 4.5}
-        maxPolarAngle={Math.PI / 2.3}
+        minAzimuthAngle={-Math.PI / 2}
+        maxAzimuthAngle={Math.PI / 2}
+        minPolarAngle={0}
+        maxPolarAngle={Math.PI / 1.9}
         dampingFactor={0.06}
       />
 
