@@ -1,4 +1,19 @@
+let activityCache = null;
+let cacheTimestamp = 0;
+const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour TTL
+
 export const getCodingActivity = async (req, res) => {
+  res.set("Cache-Control", "public, max-age=3600");
+
+  const now = Date.now();
+  if (activityCache && now - cacheTimestamp < CACHE_TTL_MS) {
+    return res.status(200).json({
+      success: true,
+      heatmapData: activityCache,
+      cached: true,
+    });
+  }
+
   const merged = new Map();
 
   // -----------------------------
@@ -52,39 +67,47 @@ export const getCodingActivity = async (req, res) => {
   }
 
   // -----------------------------
-  // GFG
+  // GFG (fetch current and previous year)
   // -----------------------------
   try {
     const gfgUsername = "swainlfei";
-    const year = new Date().getFullYear();
-    const gfgResponse = await fetch(
-      "https://practiceapi.geeksforgeeks.org/api/v1/user/problems/submissions/",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          handle: gfgUsername,
-          requestType: "getYearwiseUserSubmissions",
-          year: String(year),
-          month: "",
-        }),
-      }
-    );
+    const currentYear = new Date().getFullYear();
+    const yearsToFetch = [currentYear - 1, currentYear];
 
-    if (gfgResponse.ok) {
-      const gfgData = await gfgResponse.json();
-      Object.entries(gfgData.result || {}).forEach(([date, count]) => {
-        if (!merged.has(date)) {
-          merged.set(date, {
-            leetcode: 0,
-            gfg: Number(count),
+    for (const yr of yearsToFetch) {
+      try {
+        const gfgResponse = await fetch(
+          "https://practiceapi.geeksforgeeks.org/api/v1/user/problems/submissions/",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              handle: gfgUsername,
+              requestType: "getYearwiseUserSubmissions",
+              year: String(yr),
+              month: "",
+            }),
+          }
+        );
+
+        if (gfgResponse.ok) {
+          const gfgData = await gfgResponse.json();
+          Object.entries(gfgData.result || {}).forEach(([date, count]) => {
+            if (!merged.has(date)) {
+              merged.set(date, {
+                leetcode: 0,
+                gfg: Number(count),
+              });
+            } else {
+              merged.get(date).gfg = Number(count);
+            }
           });
-        } else {
-          merged.get(date).gfg = Number(count);
         }
-      });
+      } catch (err) {
+        console.error(`GFG year ${yr} fetch failed:`, err);
+      }
     }
   } catch (error) {
     console.error("GFG submissions fetch failed:", error);
@@ -93,7 +116,13 @@ export const getCodingActivity = async (req, res) => {
   const heatmapData = Array.from(merged.entries()).map(([date, values]) => ({
     date,
     count: (values.leetcode || 0) + (values.gfg || 0),
+    leetcode: values.leetcode || 0,
+    gfg: values.gfg || 0,
   }));
+
+  // Update in-memory cache
+  activityCache = heatmapData;
+  cacheTimestamp = Date.now();
 
   return res.status(200).json({
     success: true,

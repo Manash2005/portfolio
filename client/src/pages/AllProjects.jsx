@@ -1,87 +1,112 @@
 import { motion } from 'motion/react'
-import { projects } from '../data/projectData'
-import ProjectCard from '../components/ProjectCard'
-import GridBg from '../utils/GridBg'
 import { Link } from 'react-router-dom'
-import { ArrowLeft, Grid3X3 } from 'lucide-react'
+import data from '../data/portfolio_data.json'
 
 export default function AllProjects() {
-  const webProjects = projects.filter(p => p.category === 'web')
-  const dataProjects = projects.filter(p => p.category === 'data-analytics')
-
   return (
-    <div className="min-h-screen relative bg-background">
-      <GridBg />
-
-      <div className="relative z-10 pt-32 pb-16 px-6 md:px-12 w-full max-w-7xl mx-auto">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
+    <main className="content-layer px-6 md:px-12 pt-32 pb-24">
+      <div className="max-w-5xl mx-auto">
+        <Link
+          to="/"
+          className="text-label mb-12 block transition-colors"
+          style={{ color: 'var(--color-muted)' }}
+          onMouseEnter={e => e.currentTarget.style.color = 'var(--color-text)'}
+          onMouseLeave={e => e.currentTarget.style.color = 'var(--color-muted)'}
         >
-          <Link 
-            to="/#projects" 
-            className="inline-flex items-center gap-2 text-secondary hover:text-primary transition-colors font-mono text-sm mb-10 border border-white/10 bg-white/5 px-4 py-2 rounded-full hover:border-foreground/40"
+          ← Back
+        </Link>
+
+        <div style={{ overflow: 'hidden' }}>
+          <motion.h1
+            className="text-display mb-16"
+            initial={{ y: '105%', opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.75, ease: [0.16, 1, 0.3, 1] }}
+            style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}
           >
-            <ArrowLeft className="w-4 h-4" /> Back to Home
-          </Link>
+            All projects
+          </motion.h1>
+        </div>
 
-          <div className="flex items-center gap-3 mb-4">
-            <div className="h-10 w-10 rounded-xl bg-foreground/10 border border-foreground/30 flex items-center justify-center">
-              <Grid3X3 className="w-5 h-5 text-foreground" />
-            </div>
-            <div>
-              <h1 className="text-4xl md:text-5xl font-extrabold text-white tracking-tight">Project Archive</h1>
-              <p className="text-secondary text-sm mt-1">Everything I've built, shipped, and experimented with.</p>
-            </div>
-          </div>
-          
-          <div className="w-full h-px bg-white/5 mt-8 mb-12" />
-
-          {/* Web Projects */}
-          <section className="mb-16">
-            <div className="flex items-center gap-3 mb-8">
-              <span className="px-3 py-1 text-xs font-mono font-bold border border-red-500/30 bg-red-500/10 text-red-400 rounded-full">WEB SYSTEMS</span>
-              <span className="text-secondary font-mono text-xs">{webProjects.length} projects</span>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {webProjects.map((project, index) => (
-                <motion.div
-                  key={project.title}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: index * 0.1 }}
-                  className="h-full flex"
-                >
-                  <ProjectCard {...project} />
-                </motion.div>
-              ))}
-            </div>
-          </section>
-
-          {/* Data Analytics Projects */}
-          <section>
-            <div className="flex items-center gap-3 mb-8">
-              <span className="px-3 py-1 text-xs font-mono font-bold border border-orange-500/30 bg-orange-500/10 text-orange-400 rounded-full">DATA ANALYTICS</span>
-              <span className="text-secondary font-mono text-xs">{dataProjects.length} projects</span>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {dataProjects.map((project, index) => (
-                <motion.div
-                  key={project.title}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: index * 0.1 }}
-                  className="h-full flex"
-                >
-                  <ProjectCard {...project} />
-                </motion.div>
-              ))}
-            </div>
-          </section>
-        </motion.div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-px"
+          style={{ border: '1px solid var(--color-hairline)', background: 'var(--color-hairline)' }}>
+          {data.projects.map((project, i) => (
+            <motion.article
+              key={project.title}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: i * 0.07 }}
+              className="p-8 group"
+              style={{ background: 'var(--color-bg)' }}
+            >
+              {project.image && (
+                <div className="aspect-video rounded-xl overflow-hidden mb-6" style={{ background: 'var(--color-surface)' }}>
+                  <img
+                    src={project.image}
+                    alt={`${project.title} screenshot`}
+                    width={600}
+                    height={340}
+                    loading="lazy"
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                  />
+                </div>
+              )}
+              <p className="text-label mb-2">{project.category}</p>
+              <h2
+                style={{
+                  fontFamily: 'var(--font-display)',
+                  fontSize: '1.5rem',
+                  fontWeight: 700,
+                  color: 'var(--color-text)',
+                  marginBottom: '0.75rem',
+                }}
+              >
+                {project.title}
+              </h2>
+              <p
+                style={{
+                  fontFamily: 'var(--font-body)',
+                  fontSize: '0.875rem',
+                  color: 'var(--color-muted)',
+                  lineHeight: 1.7,
+                  marginBottom: '1.25rem',
+                }}
+              >
+                {project.outcome || project.short_description}
+              </p>
+              <p
+                style={{
+                  fontFamily: 'var(--font-mono)',
+                  fontSize: '0.6875rem',
+                  color: 'var(--color-muted)',
+                  letterSpacing: '0.06em',
+                  marginBottom: '1.5rem',
+                }}
+              >
+                {project.techStack.join(' · ')}
+              </p>
+              <div className="flex gap-5">
+                {project.liveLink && (
+                  <a href={project.liveLink} target="_blank" rel="noreferrer"
+                    className="text-label transition-colors"
+                    style={{ color: 'var(--color-accent)' }}>
+                    Live ↗
+                  </a>
+                )}
+                {project.githubLink && (
+                  <a href={project.githubLink} target="_blank" rel="noreferrer"
+                    className="text-label transition-colors"
+                    style={{ color: 'var(--color-muted)' }}
+                    onMouseEnter={e => e.currentTarget.style.color = 'var(--color-text)'}
+                    onMouseLeave={e => e.currentTarget.style.color = 'var(--color-muted)'}>
+                    Code ↗
+                  </a>
+                )}
+              </div>
+            </motion.article>
+          ))}
+        </div>
       </div>
-    </div>
+    </main>
   )
 }
-

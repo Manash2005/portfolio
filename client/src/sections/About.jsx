@@ -1,122 +1,153 @@
-import { motion } from "motion/react";
-import { User, MapPin, Briefcase, GraduationCap } from "lucide-react";
-import GridBg from "../utils/GridBg";
-import NoiseBg from "../utils/NoiseBg";
-import portfolioData from "../data/portfolio_data.json";
+import { motion, useMotionValue, useTransform } from 'motion/react'
+import data from '../data/portfolio_data.json'
 
-function About() {
+function PhotoCard() {
+  const x = useMotionValue(0)
+  const y = useMotionValue(0)
+  const rotateX = useTransform(y, [-50, 50], [6, -6])
+  const rotateY = useTransform(x, [-50, 50], [-6, 6])
+
+  const handleMouse = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect()
+    x.set(e.clientX - rect.left - rect.width / 2)
+    y.set(e.clientY - rect.top - rect.height / 2)
+  }
+  const handleLeave = () => { x.set(0); y.set(0) }
+
   return (
-    <section id="about" className="relative min-h-screen overflow-hidden pt-20 md:pt-28 pb-16 w-full flex items-center justify-center">
-      {/* GRID BACKGROUND */}
-      <GridBg />
-
-      {/* FLOATING PARTICLES */}
-      <NoiseBg />
-
-      {/* Accent Glow */}
-      <motion.div
-        animate={{
-          scale: [1, 1.2, 1],
-          opacity: [0.15, 0.4, 0.15],
-        }}
-        transition={{
-          duration: 5,
-          repeat: Infinity,
-          ease: "easeInOut",
-        }}
-        className="absolute left-1/3 top-1/2 -translate-x-1/2 -translate-y-1/2 h-[500px] w-[500px] rounded-full bg-foreground/15 blur-3xl z-0 pointer-events-none"
+    <motion.div
+      onMouseMove={handleMouse}
+      onMouseLeave={handleLeave}
+      style={{
+        rotateX,
+        rotateY,
+        transformStyle: 'preserve-3d',
+        perspective: 600,
+      }}
+      className="w-full max-w-[320px] aspect-[3/4] rounded-2xl overflow-hidden mx-auto"
+    >
+      <img
+        src="/about_me_photo.png"
+        alt="Manash Swain"
+        width={320}
+        height={427}
+        loading="lazy"
+        className="w-full h-full object-cover"
+        style={{ filter: 'grayscale(20%) contrast(1.05)' }}
       />
-
-      <div className="relative z-10 w-full max-w-6xl px-6 md:px-12 grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-center">
-        {/* Left Side: Journey & Philosophy */}
-        <div className="lg:col-span-7 flex flex-col justify-center">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7 }}
-            viewport={{ once: true }}
-          >
-            <div className="flex items-center gap-2 border border-white/10 bg-white/5 rounded-full px-4 py-1.5 w-fit text-xs font-mono text-secondary mb-6 backdrop-blur-sm shadow-inner">
-              <User className="h-3.5 w-3.5 text-foreground" />
-              About Me
-            </div>
-
-            <h2 className="text-primary text-4xl md:text-5xl font-extrabold tracking-tight">
-              My Developer Journey
-            </h2>
-
-            <div className="mt-6 space-y-4">
-              {portfolioData.personal.about.map((paragraph, idx) => (
-                <motion.p 
-                  key={idx}
-                  initial={{ opacity: 0, y: 10 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: idx * 0.1 }}
-                  viewport={{ once: true }}
-                  className="text-secondary text-base md:text-lg leading-relaxed max-w-2xl"
-                >
-                  {paragraph}
-                </motion.p>
-              ))}
-            </div>
-
-            <motion.div 
-              initial={{ opacity: 0, y: 10 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.3 }}
-              viewport={{ once: true }}
-              className="mt-8 flex flex-col sm:flex-row gap-4"
-            >
-              <div className="flex items-center gap-2 text-sm text-secondary font-mono bg-white/5 px-4 py-2 rounded-lg border border-white/10">
-                <MapPin className="h-4 w-4 text-foreground" />
-                <span>Bangalore, India</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm text-secondary font-mono bg-white/5 px-4 py-2 rounded-lg border border-white/10">
-                <Briefcase className="h-4 w-4 text-foreground" />
-                <span>Open to Internships</span>
-              </div>
-              <div className="flex items-center gap-2 text-sm text-secondary font-mono bg-white/5 px-4 py-2 rounded-lg border border-white/10">
-                <GraduationCap className="h-4 w-4 text-foreground" />
-                <span>BITS Pilani CS</span>
-              </div>
-            </motion.div>
-
-          </motion.div>
-        </div>
-
-        {/* Right Side: Photo Frame */}
-        <div className="lg:col-span-5 flex flex-col justify-center items-center lg:items-end">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.7 }}
-            viewport={{ once: true }}
-            className="relative group w-full max-w-[380px] aspect-[4/5] rounded-3xl overflow-hidden border border-white/10 bg-neutral-950/40 backdrop-blur-md shadow-xl"
-          >
-            {/* Photo Placeholder/Image - Replace src with your actual photo */}
-            <img 
-              src="/about_me_photo.png" 
-              alt="Manash Swain" 
-              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 opacity-90"
-            />
-            
-            {/* Overlay Gradient */}
-            <div className="absolute inset-0 bg-gradient-to-t from-[#010011] via-transparent to-transparent opacity-80" />
-            
-            <div className="absolute bottom-6 left-6 right-6">
-              <h3 className="text-white font-bold text-xl mb-1">Manash Swain</h3>
-              <p className="text-foreground text-sm font-mono opacity-80">Building ideas into reality</p>
-            </div>
-            
-            {/* Decorative corners */}
-            <div className="absolute top-4 left-4 w-8 h-8 border-t-2 border-l-2 border-foreground/50 rounded-tl-xl transition-all duration-300 group-hover:border-foreground" />
-            <div className="absolute top-4 right-4 w-8 h-8 border-t-2 border-r-2 border-foreground/50 rounded-tr-xl transition-all duration-300 group-hover:border-foreground" />
-            <div className="absolute bottom-4 right-4 w-8 h-8 border-b-2 border-r-2 border-foreground/50 rounded-br-xl transition-all duration-300 group-hover:border-foreground" />
-          </motion.div>
-        </div>
-      </div>
-    </section>
-  );
+    </motion.div>
+  )
 }
 
-export default About;
+function Reveal({ children, delay = 0 }) {
+  return (
+    <div style={{ overflow: 'hidden' }}>
+      <motion.div
+        initial={{ y: '105%', opacity: 0 }}
+        whileInView={{ y: 0, opacity: 1 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.75, ease: [0.16, 1, 0.3, 1], delay }}
+      >
+        {children}
+      </motion.div>
+    </div>
+  )
+}
+
+export default function About() {
+  const { about, now } = data.personal
+
+  return (
+    <section
+      id="about"
+      className="content-layer section-padding px-6 md:px-12"
+      aria-label="About Manash Swain"
+    >
+      <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-16 items-start">
+        {/* Text */}
+        <div>
+          <Reveal>
+            <p className="text-label mb-6">About</p>
+          </Reveal>
+          <Reveal delay={0.06}>
+            <h2
+              className="text-heading mb-10"
+              style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}
+            >
+              Builder. Thinker.<br />
+              <span style={{ color: 'var(--color-accent)' }}>AI-obsessed.</span>
+            </h2>
+          </Reveal>
+
+          <div className="space-y-5 mb-12">
+            {about.map((para, i) => (
+              <motion.p
+                key={i}
+                initial={{ opacity: 0, y: 12 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6, delay: i * 0.1, ease: [0.16, 1, 0.3, 1] }}
+                style={{
+                  fontFamily: 'var(--font-body)',
+                  fontSize: '1rem',
+                  lineHeight: 1.75,
+                  color: 'var(--color-muted)',
+                }}
+              >
+                {para}
+              </motion.p>
+            ))}
+          </div>
+
+          {/* Now block */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+            className="p-5 rounded-xl"
+            style={{
+              background: 'var(--color-surface)',
+              border: '1px solid var(--color-hairline)',
+            }}
+          >
+            <p className="text-label mb-4">Now</p>
+            {Object.entries(now).map(([key, val]) => (
+              <div
+                key={key}
+                className="flex gap-3 py-2"
+                style={{ borderBottom: '1px solid var(--color-hairline)' }}
+              >
+                <span
+                  className="text-label"
+                  style={{ color: 'var(--color-accent)', minWidth: '5rem', textTransform: 'capitalize' }}
+                >
+                  {key.replace(/([A-Z])/g, ' $1').trim()}
+                </span>
+                <span
+                  style={{
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: '0.75rem',
+                    color: 'var(--color-muted)',
+                  }}
+                >
+                  {val}
+                </span>
+              </div>
+            ))}
+          </motion.div>
+        </div>
+
+        {/* Photo */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.96 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1], delay: 0.1 }}
+        >
+          <PhotoCard />
+        </motion.div>
+      </div>
+    </section>
+  )
+}

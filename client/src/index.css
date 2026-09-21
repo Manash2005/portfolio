@@ -1,61 +1,148 @@
-@import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400..700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap');
+/* Self-hosted fonts — no Google Fonts network request */
+@import '@fontsource/space-grotesk/400.css';
+@import '@fontsource/space-grotesk/500.css';
+@import '@fontsource/space-grotesk/600.css';
+@import '@fontsource/space-grotesk/700.css';
+@import '@fontsource/inter/400.css';
+@import '@fontsource/inter/500.css';
+@import '@fontsource/inter/600.css';
+@import '@fontsource/jetbrains-mono/400.css';
+@import '@fontsource/jetbrains-mono/500.css';
 @import "tailwindcss";
 
 @theme {
-  --color-background: #010011;
-  --color-foreground: #C23D29;
+  /* Core palette */
+  --color-bg:        #08080C;
+  --color-surface:   #0E0E14;
+  --color-text:      #EDEDF2;
+  --color-muted:     #8A8A99;
+  --color-hairline:  rgba(255, 255, 255, 0.08);
 
-  --color-primary: #FFFFFF;
-  --color-secondary: #9E9E9E;
-  --color-hover : #84FF00;
+  /* Single accent — electric lime */
+  --color-accent:    #B8FF3C;
 
+  /* Legacy aliases kept so old Tailwind utilities still resolve */
+  --color-background: #08080C;
+  --color-foreground: #B8FF3C;
+  --color-primary:    #EDEDF2;
+  --color-secondary:  #8A8A99;
+
+  /* Typography */
+  --font-display: 'Space Grotesk', sans-serif;
+  --font-body:    'Inter', sans-serif;
+  --font-mono:    'JetBrains Mono', monospace;
 }
 
 @layer base {
-
   html {
-    scroll-behavior: smooth;
-    cursor: none;
+    background-color: #08080C;
+  }
+
+  html.lenis, html.lenis body {
+    height: auto;
+  }
+
+  .lenis.lenis-smooth {
+    scroll-behavior: auto !important;
+  }
+
+  .lenis.lenis-smooth [data-lenis-prevent] {
+    overscroll-behavior: contain;
+  }
+
+  .lenis.lenis-stopped {
+    overflow: hidden;
+  }
+
+  .lenis.lenis-smooth iframe {
+    pointer-events: none;
   }
 
   body {
-    background-color: var(--color-background);
-    color: var(--color-primary);
-    font-family: "Inter", sans-serif;
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-body);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
-  /* Hide default cursor on all interactive elements */
-  a, button, [role="button"] {
-    cursor: none;
-  }
-
-  /* Beautiful text selection */
   ::selection {
-    background-color: #C23D29;
-    color: #ffffff;
+    background-color: var(--color-accent);
+    color: #08080C;
   }
 
-  /* Hide scrollbar while keeping scroll functionality */
-  ::-webkit-scrollbar {
-    width: 4px;
+  /* Thin scrollbar */
+  ::-webkit-scrollbar { width: 3px; }
+  ::-webkit-scrollbar-track { background: #08080C; }
+  ::-webkit-scrollbar-thumb { background: rgba(184, 255, 60, 0.3); border-radius: 2px; }
+
+  /* Visible focus rings for a11y */
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 3px;
+    border-radius: 4px;
   }
-  ::-webkit-scrollbar-track {
-    background: #010011;
+}
+
+@layer utilities {
+  /* Fluid display type — use as class="text-display" */
+  .text-display {
+    font-family: var(--font-display);
+    font-size: clamp(2.5rem, 6vw, 6rem);
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    font-weight: 700;
   }
-  ::-webkit-scrollbar-thumb {
-    background: #C23D29;
-    border-radius: 2px;
+
+  .text-heading {
+    font-family: var(--font-display);
+    font-size: clamp(1.75rem, 3.5vw, 3rem);
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    font-weight: 600;
+  }
+
+  .text-label {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--color-muted);
+  }
+
+  /* Hairline border */
+  .border-hairline { border-color: var(--color-hairline); }
+
+  /* Accent */
+  .text-accent { color: var(--color-accent); }
+  .bg-accent    { background-color: var(--color-accent); }
+
+  /* Section spacing */
+  .section-padding {
+    padding-top: clamp(5rem, 10vw, 8rem);
+    padding-bottom: clamp(5rem, 10vw, 8rem);
+  }
+
+  /* Canvas z-layering */
+  .canvas-layer {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  .content-layer {
+    position: relative;
+    z-index: 1;
   }
 }
 
 @layer components {
-  .font-cursive {
-    font-family: "Dancing Script", cursive;
-  }
+  /* Old class aliases for components not yet migrated */
   .font-mono {
-    font-family: "JetBrains Mono", monospace;
+    font-family: var(--font-mono);
+  }
+  .font-display {
+    font-family: var(--font-display);
   }
 }

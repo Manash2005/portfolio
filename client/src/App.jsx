@@ -1,91 +1,67 @@
-import Navbar from './layouts/Navbar'
-import { easeInOut, motion } from "motion/react"
-import { useState, useEffect } from 'react'
+import { useEffect, useRef } from 'react'
+import { AnimatePresence } from 'motion/react'
 import { Routes, Route, useLocation } from 'react-router-dom'
+import { gsap } from 'gsap'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import Lenis from 'lenis'
+import 'lenis/dist/lenis.css'
 import Home from './pages/Home'
 import AllProjects from './pages/AllProjects'
-import CustomCursor from './components/CustomCursor'
-import { statsData as initialStats } from './data/statsData'
-import { fetchWithRetry } from './utils/fetchWithRetry'
+import Navbar from './layouts/Navbar'
+import Loader from './components/Loader'
+import Footer from './components/Footer'
+import { useState } from 'react'
+
+gsap.registerPlugin(ScrollTrigger)
 
 function App() {
-  const [showIntro, setShowIntro] = useState(true);
-  const [scrollProgress, setScrollProgress] = useState(0);
-  const [globalStats, setGlobalStats] = useState(initialStats);
-  const location = useLocation();
+  const [loaderDone, setLoaderDone] = useState(false)
+  const lenisRef = useRef(null)
+  const location = useLocation()
+
+  // Lenis smooth scroll — sync to GSAP ticker
+  useEffect(() => {
+    const lenis = new Lenis({
+      duration: 1.1,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      smoothWheel: true,
+      syncTouch: false,
+    })
+    lenisRef.current = lenis
+
+    const tick = (time) => lenis.raf(time * 1000)
+    gsap.ticker.add(tick)
+    gsap.ticker.lagSmoothing(0)
+
+    lenis.on('scroll', ScrollTrigger.update)
+
+    return () => {
+      gsap.ticker.remove(tick)
+      lenis.destroy()
+    }
+  }, [])
 
   // Reset scroll on route change
   useEffect(() => {
-    window.scrollTo(0, 0);
-  }, [location.pathname]);
-
-  // Monitor page scroll progress
-  useEffect(() => {
-    const handleScroll = () => {
-      const totalHeight = document.documentElement.scrollHeight - window.innerHeight;
-      if (totalHeight > 0) {
-        setScrollProgress((window.scrollY / totalHeight) * 100);
-      }
-    };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  // Fetch dynamic LeetCode stats
-  useEffect(() => {
-    const fetchLeetcodeStats = async () => {
-      try {
-        const apiUrl = import.meta.env.VITE_API_URL || "https://portfolio-c43c.onrender.com";
-        const response = await fetchWithRetry(`${apiUrl}/api/v1/leetcode/stats/Manash_22`);
-        const data = await response.json();
-        if (data.success && data.stats) {
-          setGlobalStats((prev) => {
-            const leetcode = {
-              easy: data.stats.easy || prev.leetcode.easy,
-              medium: data.stats.medium || prev.leetcode.medium,
-              hard: data.stats.hard || prev.leetcode.hard,
-            };
-            leetcode.total = leetcode.easy + leetcode.medium + leetcode.hard;
-            return { ...prev, leetcode };
-          });
-        }
-      } catch (error) {
-        console.error("Leetcode stats fetch error:", error);
-      }
-    };
-    fetchLeetcodeStats();
-  }, []);
+    window.scrollTo(0, 0)
+  }, [location.pathname])
 
   return (
-    <div className="min-h-screen overflow-x-hidden">
-      <CustomCursor />
-      <motion.header
-        initial={{ y: -100, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 1.5, ease: easeInOut }}
-        className="flex w-full items-center justify-center fixed top-0 left-1/2 transform -translate-x-1/2 z-50"
-      >
-        <Navbar />
-      </motion.header>
+    <div className="min-h-screen w-full overflow-x-clip" style={{ background: '#08080C' }}>
+      <AnimatePresence mode="wait">
+        {!loaderDone && (
+          <Loader key="loader" onComplete={() => setLoaderDone(true)} />
+        )}
+      </AnimatePresence>
 
-      <Routes>
-        <Route path="/" element={<Home stats={globalStats} showIntro={showIntro} setShowIntro={setShowIntro} />} />
-        <Route path="/projects" element={<AllProjects stats={globalStats} />} />
-      </Routes>
-
-      {/* Scroll Progress Bar */}
-      {!showIntro && (
+      {loaderDone && (
         <>
-          <div className="fixed bottom-0 left-0 w-full h-[3px] bg-[#0c0a1c]/60 z-[9999] pointer-events-none">
-            <div
-              className="h-full bg-gradient-to-r from-red-600 via-orange-500 to-amber-400 shadow-[0_0_10px_rgba(239,68,68,0.7)] transition-all duration-75 ease-out"
-              style={{ width: `${scrollProgress}%` }}
-            />
-          </div>
-          <div className="fixed bottom-4 right-4 z-[9999] pointer-events-none font-mono text-[10px] text-white/50 bg-[#070514]/80 border border-white/5 backdrop-blur-md rounded-md px-2 py-0.5 flex items-center gap-1 select-none">
-            <span>SCROLLED</span>
-            <span className="text-[#C23D29] font-bold">{Math.round(scrollProgress)}%</span>
-          </div>
+          <Navbar />
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/projects" element={<AllProjects />} />
+          </Routes>
+          <Footer />
         </>
       )}
     </div>
