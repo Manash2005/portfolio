@@ -2,13 +2,10 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { generateSkylineDays } from '../utils/activityStats'
 import portfolioData from '../data/portfolio_data.json'
 
-const STORAGE_KEY = 'portfolio_activity_cache_v4'
+const STORAGE_KEY = 'portfolio_activity_cache_v5'
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000 // 6 hours
-const SLOW_THRESHOLD_MS = 4000 // 4 seconds for cold start notice
+const SLOW_THRESHOLD_MS = 4000
 
-/**
- * Format relative time (e.g. "just now", "12m ago", "2h ago")
- */
 function getRelativeTime(timestamp) {
   if (!timestamp) return ''
   const diffSec = Math.floor((Date.now() - timestamp) / 1000)
@@ -25,40 +22,25 @@ function getInitialCache() {
     const cachedStr = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEY) : null
     if (cachedStr) {
       const cached = JSON.parse(cachedStr)
-
-      // Guard: if both leetcode and gfg maps are empty, the cache is from before
-      // the GFG multi-year fix. Treat as stale so fresh data is fetched.
       const lcCount = Object.keys(cached.leetcodeMap || {}).length
       const gfgCount = Object.keys(cached.gfgMap || {}).length
+      // If both LC and GFG are empty this is a stale pre-fix cache; force re-fetch
       if (lcCount + gfgCount === 0) {
         localStorage.removeItem(STORAGE_KEY)
         return { days: [], updatedAt: null, isCached: false, status: 'loading', isFresh: false }
       }
-
       const normalized = generateSkylineDays(
         cached.githubMap || {},
         cached.leetcodeMap || {},
         cached.gfgMap || {}
       )
       const isFresh = Date.now() - cached.timestamp < CACHE_TTL_MS
-      return {
-        days: normalized,
-        updatedAt: cached.timestamp,
-        isCached: true,
-        status: 'ready',
-        isFresh,
-      }
+      return { days: normalized, updatedAt: cached.timestamp, isCached: true, status: 'ready', isFresh }
     }
   } catch (err) {
     console.warn('Cache parse error:', err)
   }
-  return {
-    days: [],
-    updatedAt: null,
-    isCached: false,
-    status: 'loading',
-    isFresh: false,
-  }
+  return { days: [], updatedAt: null, isCached: false, status: 'loading', isFresh: false }
 }
 
 export function useActivityData() {
@@ -92,15 +74,12 @@ export function useActivityData() {
     setIsSlow(false)
     setErrorMessage(null)
 
-    // Trigger slow-loading notice after 4 seconds (Render cold start)
-    slowTimerRef.current = setTimeout(() => {
-      setIsSlow(true)
-    }, SLOW_THRESHOLD_MS)
+    slowTimerRef.current = setTimeout(() => { setIsSlow(true) }, SLOW_THRESHOLD_MS)
 
     const apiUrl = import.meta.env.VITE_API_URL || 'https://portfolio-c43c.onrender.com'
 
     try {
-      // 1. Fetch GitHub contributions from primary jogruber API
+      // 1. GitHub contributions (jogruber API — already CORS-safe)
       let githubMap = {}
       try {
         const ghRes = await fetch(
@@ -116,9 +95,11 @@ export function useActivityData() {
           }
         }
       } catch (ghErr) {
-        console.warn('Primary GitHub API failed, falling back to backend scrape:', ghErr)
+        console.warn('GitHub jogruber API failed:', ghErr)
+        // Fallback: backend GitHub scrape
         try {
-          const fbRes = await fetch(`${apiUrl}/api/v1/coding-activity/github-heatmap/Manash2005`)
+          const fbRes = await fetch(`${apiUrl}/api/v1/coding-activity/github-heatmap/Manash2005`,
+            { signal: AbortSignal.timeout(8000) })
           if (fbRes.ok) {
             const fbJson = await fbRes.json()
             if (Array.isArray(fbJson.heatmapData)) {
@@ -127,35 +108,47 @@ export function useActivityData() {
               })
             }
           }
-        } catch {
-          // ignore fallback error
-        }
+        } catch { /* ignore */ }
       }
 
-      // 2. Fetch LeetCode & GFG merged activity from backend
+      // 2. LeetCode calendar via new backend proxy endpoint
+      //    The backend does the server-to-server call so no CORS issue
       let leetcodeMap = {}
-      let gfgMap = {}
-
       try {
-        const actRes = await fetch(`${apiUrl}/api/v1/coding-activity`, {
-          signal: AbortSignal.timeout(10000),
+        const lcRes = await fetch(`${apiUrl}/api/v1/coding-activity/leetcode-calendar`, {
+          signal: AbortSignal.timeout(15000),
         })
-        if (actRes.ok) {
-          const actJson = await actRes.json()
-          if (Array.isArray(actJson.heatmapData)) {
-            actJson.heatmapData.forEach((item) => {
-              if (item.date) {
-                if (item.leetcode) leetcodeMap[item.date] = item.leetcode
-                if (item.gfg) gfgMap[item.date] = item.gfg
-              }
+        if (lcRes.ok) {
+          const lcJson = await lcRes.json()
+          if (lcJson.calendar && Object.keys(lcJson.calendar).length > 0) {
+            Object.entries(lcJson.calendar).forEach(([date, count]) => {
+              leetcodeMap[date] = Number(count)
             })
           }
         }
-      } catch (actErr) {
-        console.warn('Backend coding activity fetch failed:', actErr)
+      } catch (lcErr) {
+        console.warn('LeetCode calendar proxy failed:', lcErr)
       }
 
-      // 3. Fetch LeetCode breakdown stats
+      // 3. GFG calendar via new backend proxy endpoint (fetches both years)
+      let gfgMap = {}
+      try {
+        const gfgRes = await fetch(`${apiUrl}/api/v1/coding-activity/gfg-calendar`, {
+          signal: AbortSignal.timeout(20000),
+        })
+        if (gfgRes.ok) {
+          const gfgJson = await gfgRes.json()
+          if (gfgJson.calendar && Object.keys(gfgJson.calendar).length > 0) {
+            Object.entries(gfgJson.calendar).forEach(([date, count]) => {
+              gfgMap[date] = Number(count)
+            })
+          }
+        }
+      } catch (gfgErr) {
+        console.warn('GFG calendar proxy failed:', gfgErr)
+      }
+
+      // 4. LeetCode difficulty stats
       try {
         const lcStatsRes = await fetch(`${apiUrl}/api/v1/leetcode/stats/Manash_22`, {
           signal: AbortSignal.timeout(8000),
@@ -172,13 +165,10 @@ export function useActivityData() {
             })
           }
         }
-      } catch {
-        // preserve defaults
-      }
+      } catch { /* preserve defaults */ }
 
       clearTimeout(slowTimerRef.current)
 
-      // Normalize into exactly 371 days
       const normalizedDays = generateSkylineDays(githubMap, leetcodeMap, gfgMap)
       setDays(normalizedDays)
       setStatus('ready')
@@ -187,25 +177,19 @@ export function useActivityData() {
       setUpdatedAt(now)
       setIsCached(false)
 
-      // Save to localStorage with TTL
       try {
-        localStorage.setItem(
-          STORAGE_KEY,
-          JSON.stringify({
-            timestamp: now,
-            githubMap,
-            leetcodeMap,
-            gfgMap,
-          })
-        )
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+          timestamp: now,
+          githubMap,
+          leetcodeMap,
+          gfgMap,
+        }))
       } catch (stErr) {
         console.warn('localStorage save failed:', stErr)
       }
     } catch (err) {
       clearTimeout(slowTimerRef.current)
       console.error('Activity data fetch error:', err)
-
-      // Check if we have cached data to show rather than blank error
       try {
         const cachedStr = localStorage.getItem(STORAGE_KEY)
         if (cachedStr) {
@@ -221,16 +205,12 @@ export function useActivityData() {
           setStatus('ready')
           return
         }
-      } catch {
-        // ignore
-      }
-
+      } catch { /* ignore */ }
       setStatus('error')
       setErrorMessage('Unable to load activity data. Upstream service may be temporarily unavailable.')
     }
   }, [])
 
-  // Initial mount: fetch if not fresh in cache
   useEffect(() => {
     let isCancelled = false
     if (!initial.isFresh) {

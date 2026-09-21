@@ -118,17 +118,91 @@ export const getCodingActivity = async (req, res) => {
     count: (values.leetcode || 0) + (values.gfg || 0),
     leetcode: values.leetcode || 0,
     gfg: values.gfg || 0,
-  }));
+  }))
 
   // Update in-memory cache
-  activityCache = heatmapData;
-  cacheTimestamp = Date.now();
+  activityCache = heatmapData
+  cacheTimestamp = Date.now()
 
   return res.status(200).json({
     success: true,
     heatmapData,
-  });
-};
+  })
+}
+
+// ── NEW: LeetCode calendar proxy (server-to-server, no CORS) ──────────────
+export const getLeetcodeCalendar = async (req, res) => {
+  res.set('Cache-Control', 'public, max-age=3600')
+  try {
+    const username = req.params.username || 'Manash_22'
+    const lcResponse = await fetch('https://leetcode.com/graphql', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        query: `query userProfileCalendar($username: String!) {
+          matchedUser(username: $username) {
+            userCalendar { submissionCalendar }
+          }
+        }`,
+        variables: { username },
+      }),
+    })
+    if (!lcResponse.ok) throw new Error(`LC GraphQL ${lcResponse.status}`)
+    const lcData = await lcResponse.json()
+    const calStr = lcData?.data?.matchedUser?.userCalendar?.submissionCalendar
+    if (!calStr) return res.status(200).json({ success: true, calendar: {} })
+    const cal = JSON.parse(calStr)
+    // Convert Unix timestamps to YYYY-MM-DD
+    const calendar = {}
+    Object.entries(cal).forEach(([ts, count]) => {
+      const date = new Date(Number(ts) * 1000).toISOString().split('T')[0]
+      calendar[date] = Number(count)
+    })
+    return res.status(200).json({ success: true, calendar })
+  } catch (err) {
+    console.error('getLeetcodeCalendar error:', err)
+    return res.status(200).json({ success: false, calendar: {} })
+  }
+}
+
+// ── NEW: GFG calendar proxy (server-to-server, no CORS) ───────────────────
+export const getGfgCalendar = async (req, res) => {
+  res.set('Cache-Control', 'public, max-age=3600')
+  try {
+    const username = req.params.username || 'swainlfei'
+    const currentYear = new Date().getFullYear()
+    const calendar = {}
+    for (const yr of [currentYear - 1, currentYear]) {
+      try {
+        const gfgRes = await fetch(
+          'https://practiceapi.geeksforgeeks.org/api/v1/user/problems/submissions/',
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              handle: username,
+              requestType: 'getYearwiseUserSubmissions',
+              year: String(yr),
+              month: '',
+            }),
+          }
+        )
+        if (gfgRes.ok) {
+          const gfgData = await gfgRes.json()
+          Object.entries(gfgData.result || {}).forEach(([date, count]) => {
+            calendar[date] = Number(count)
+          })
+        }
+      } catch (err) {
+        console.error(`GFG year ${yr} error:`, err)
+      }
+    }
+    return res.status(200).json({ success: true, calendar })
+  } catch (err) {
+    console.error('getGfgCalendar error:', err)
+    return res.status(200).json({ success: false, calendar: {} })
+  }
+}
 
 export const getGithubStats = async (req, res) => {
   try {
