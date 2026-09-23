@@ -1,13 +1,34 @@
-import { Canvas } from '@react-three/fiber'
+import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { useEffect, useRef } from 'react'
-import AgentFace from './AgentFace'
-import LogicCore from './LogicCore'
+import * as THREE from 'three'
+import AIChip from './AIChip'
 import Lights from './Lights'
+import { useChipScrollRig } from '../hooks/useChipScrollRig'
+
+/**
+ * CameraRig — lives inside the Canvas and moves the camera each frame
+ * based on the rig values set by useChipScrollRig.
+ */
+function CameraRig({ rig }) {
+  const { camera } = useThree()
+  const smoothCam = useRef([2.2, 0.2, 4.8])
+
+  useFrame(() => {
+    const target = rig?.current?.camPos ?? [2.2, 0.2, 4.8]
+    smoothCam.current[0] = THREE.MathUtils.lerp(smoothCam.current[0], target[0], 0.025)
+    smoothCam.current[1] = THREE.MathUtils.lerp(smoothCam.current[1], target[1], 0.025)
+    smoothCam.current[2] = THREE.MathUtils.lerp(smoothCam.current[2], target[2], 0.025)
+
+    camera.position.set(...smoothCam.current)
+    camera.lookAt(0, 0, 0)
+  })
+
+  return null
+}
 
 /**
  * Scene — persistent full-viewport Canvas, fixed behind page content.
- * Features the Cybernetic AI Agent Visage that dismantles on scroll
- * to expose its internal Guardrails lattice and Tool Calling logic.
+ * Features the cinematic AI Processor Chip with scroll-driven camera.
  */
 export default function Scene() {
   const mouseRef = useRef({ x: 0, y: 0 })
@@ -32,6 +53,9 @@ export default function Scene() {
     typeof window !== 'undefined' &&
     window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
+  // Scroll rig — drives camera and chip positions
+  const rig = useChipScrollRig()
+
   if (prefersReduced) return null
 
   return (
@@ -41,8 +65,8 @@ export default function Scene() {
       style={{ pointerEvents: 'none' }}
     >
       <Canvas
-        dpr={isMobile || isLowPower ? 1 : [1, 1.75]}
-        camera={{ position: [0, 0, 4.8], fov: 48 }}
+        dpr={isMobile || isLowPower ? 1 : [1, 1.5]}
+        camera={{ position: [2.2, 0.2, 4.8], fov: 48 }}
         gl={{
           antialias: !isMobile,
           alpha: true,
@@ -50,9 +74,11 @@ export default function Scene() {
         }}
         style={{ background: 'transparent' }}
       >
+        {/* Drives camera each frame from the rig ref */}
+        <CameraRig rig={rig} />
+
         <Lights />
-        <AgentFace mouseRef={mouseRef} />
-        <LogicCore />
+        <AIChip mouseRef={mouseRef} rig={rig} />
       </Canvas>
     </div>
   )
