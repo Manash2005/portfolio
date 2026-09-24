@@ -136,22 +136,19 @@ export default function AgentFace({ mouseRef }) {
       THREE.MathUtils.lerp(groupRef.current.scale.x, targetScale, 0.05)
     )
 
-    // ── 3. Opacity sweep ──────────────────────────────────────────────────
+    // ── 3. Opacity sweep — single pass, handles pulse in same walk ────────
+    // Epsilon dead-zone: skip update when already within 0.004 of target
+    // to stop continuous material mutation when scroll is at rest.
     groupRef.current.traverse((child) => {
-      if (child.isMesh && child.material?.transparent) {
-        child.material.opacity = THREE.MathUtils.lerp(
-          child.material.opacity, targetOpacity, 0.06
-        )
-      }
-    })
-    // Antenna tip pulse
-    groupRef.current.traverse((child) => {
-      if (child.isMesh && child.userData.pulse) {
-        child.material.opacity = THREE.MathUtils.lerp(
-          child.material.opacity,
-          (0.5 + 0.5 * Math.sin(t * 3.5)) * targetOpacity,
-          0.1
-        )
+      if (!child.isMesh || !child.material?.transparent) return
+      if (child.userData.pulse) {
+        const pulseTarget = (0.5 + 0.5 * Math.sin(t * 3.5)) * targetOpacity
+        child.material.opacity = THREE.MathUtils.lerp(child.material.opacity, pulseTarget, 0.10)
+      } else {
+        const diff = targetOpacity - child.material.opacity
+        if (Math.abs(diff) > 0.004) {
+          child.material.opacity += diff * 0.06
+        }
       }
     })
 
