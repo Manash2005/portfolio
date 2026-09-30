@@ -44,9 +44,26 @@
   "stats": {
     "leetcode_fallback": 95,
     "gfg_fallback": 174,
-    "projects": 3
+    "projects": 4
   },
   "projects": [
+    {
+      "title": "Safe NL-to-SQL",
+      "category": "AI / Automation",
+      "short_description": "Deterministic natural language to SQL assistant with AST safety validation, Human-in-the-Loop checkpoints, and sandboxed execution.",
+      "outcome": "100% blocked destructive queries & schema drops. Stateful human approval workflow with 22/22 tests passing.",
+      "problem": "Traditional Text-to-SQL tools are vulnerable black boxes where LLMs can hallucinate table names, omit WHERE clauses, or execute catastrophic DDL drops directly on live production databases.",
+      "architecture": "LangGraph state machine integrating intent taxonomy classification, ambiguity clarification, schema-grounded SQL generation (Groq Llama 3.3 70B), deterministic AST safety validation, and an isolated SQLite sandbox.",
+      "key_challenge": "Enforcing zero-tolerance deterministic safety against catastrophic operations (DROP, ALTER, unbounded UPDATE/DELETE) while preserving conversational flow and enabling human intervention.",
+      "solution": "Decoupled LLM generation from safety enforcement: sqlparse AST validator enforces fail-closed policies, while LangGraph persists thread state to SQLite checkpointers to pause execution for human review and in-browser SQL editing.",
+      "metrics": ["100% Blocked DDL Mutations", "Stateful HITL Checkpoints", "22 Automated Tests Passing"],
+      "techStack": ["LangGraph", "FastAPI", "Python", "React 19", "SQLite", "TailwindCSS"],
+      "liveLink": "https://sqlwriter.vercel.app",
+      "githubLink": "https://github.com/Manash2005/sql-writer",
+      "image": "/projects/sql-writer.png",
+      "featured": true,
+      "reflection": "LLMs should propose queries, but deterministic AST verification and human checkpoints must govern database execution."
+    },
     {
       "title": "Gatekeeper",
       "category": "AI / Automation",

@@ -38,7 +38,7 @@ export default function Hero() {
             style={{ background: 'var(--color-accent)' }}
             aria-hidden
           />
-          <span className="text-label">Open to internships</span>
+          <span className="text-label">Open to work</span>
         </motion.div>
 
         {/* Name */}
