@@ -571,3 +571,131 @@ export function deleteEvent(req, res) {
     res.status(500).json({ success: false, error: 'Failed to delete event' })
   }
 }
+
+/* ==========================================================================
+   STRATEGIC GOALS CONTROLLERS
+   ========================================================================== */
+
+/**
+ * GET /api/v1/admin/goals
+ */
+export function getAdminGoals(req, res) {
+  try {
+    const goals = db.prepare(`
+      SELECT 
+        g.id, g.title, g.description, g.category, g.status, g.target_date, g.color,
+        g.created_at, g.updated_at,
+        COUNT(DISTINCT p.id) AS total_projects,
+        COUNT(DISTINCT e.id) AS total_events,
+        SUM(CASE WHEN e.status = 'Completed' THEN 1 ELSE 0 END) AS completed_events
+      FROM goals g
+      LEFT JOIN projects p ON p.goal_id = g.id
+      LEFT JOIN events e ON e.goal_id = g.id
+      GROUP BY g.id
+      ORDER BY g.created_at ASC
+    `).all()
+    res.json({ success: true, count: goals.length, goals })
+  } catch (err) {
+    console.error('Error fetching admin goals:', err)
+    res.status(500).json({ success: false, error: 'Failed to retrieve goals' })
+  }
+}
+
+/**
+ * POST /api/v1/admin/goals
+ * Create a new strategic goal
+ */
+export function createGoal(req, res) {
+  try {
+    const { title, description, category, status, target_date, color } = req.body || {}
+    if (!title || !title.trim()) {
+      return res.status(400).json({ success: false, error: 'Goal title is required' })
+    }
+
+    const id = 'goal_' + crypto.randomUUID().slice(0, 12)
+    const goalData = {
+      id,
+      title: title.trim(),
+      description: description ? description.trim() : '',
+      category: category ? category.trim() : 'AI Engineering',
+      status: status || 'in_progress',
+      target_date: target_date || null,
+      color: color || '#B8FF3C',
+    }
+
+    db.prepare(`
+      INSERT INTO goals (id, title, description, category, status, target_date, color, created_at, updated_at)
+      VALUES (@id, @title, @description, @category, @status, @target_date, @color, datetime('now'), datetime('now'))
+    `).run(goalData)
+
+    const created = db.prepare('SELECT * FROM goals WHERE id = ?').get(id)
+    res.status(201).json({ success: true, message: 'Goal created successfully', goal: created })
+  } catch (err) {
+    console.error('Error creating goal:', err)
+    res.status(500).json({ success: false, error: err.message || 'Failed to create goal' })
+  }
+}
+
+/**
+ * PATCH /api/v1/admin/goals/:id
+ * Update an existing strategic goal
+ */
+export function updateGoal(req, res) {
+  const { id } = req.params
+  try {
+    const existing = db.prepare('SELECT * FROM goals WHERE id = ?').get(id)
+    if (!existing) {
+      return res.status(404).json({ success: false, error: 'Goal not found' })
+    }
+
+    const body = req.body || {}
+    const title = body.title !== undefined ? body.title.trim() : existing.title
+    const description = body.description !== undefined ? body.description.trim() : existing.description
+    const category = body.category !== undefined ? body.category.trim() : existing.category
+    const status = body.status !== undefined ? body.status : existing.status
+    const target_date = body.target_date !== undefined ? body.target_date : existing.target_date
+    const color = body.color !== undefined ? body.color : existing.color
+
+    db.prepare(`
+      UPDATE goals SET
+        title = ?,
+        description = ?,
+        category = ?,
+        status = ?,
+        target_date = ?,
+        color = ?,
+        updated_at = datetime('now')
+      WHERE id = ?
+    `).run(title, description, category, status, target_date, color, id)
+
+    const updated = db.prepare('SELECT * FROM goals WHERE id = ?').get(id)
+    res.json({ success: true, message: 'Goal updated successfully', goal: updated })
+  } catch (err) {
+    console.error('Error updating goal:', err)
+    res.status(500).json({ success: false, error: err.message || 'Failed to update goal' })
+  }
+}
+
+/**
+ * DELETE /api/v1/admin/goals/:id
+ * Delete a strategic goal
+ */
+export function deleteGoal(req, res) {
+  const { id } = req.params
+  try {
+    const existing = db.prepare('SELECT * FROM goals WHERE id = ?').get(id)
+    if (!existing) {
+      return res.status(404).json({ success: false, error: 'Goal not found' })
+    }
+
+    // Explicitly unbind goal from projects and events
+    db.prepare('UPDATE projects SET goal_id = NULL WHERE goal_id = ?').run(id)
+    db.prepare('UPDATE events SET goal_id = NULL WHERE goal_id = ?').run(id)
+
+    db.prepare('DELETE FROM goals WHERE id = ?').run(id)
+    res.json({ success: true, message: 'Goal deleted successfully', id })
+  } catch (err) {
+    console.error('Error deleting goal:', err)
+    res.status(500).json({ success: false, error: 'Failed to delete goal' })
+  }
+}

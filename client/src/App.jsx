@@ -17,6 +17,7 @@ import AdminToolbar from './components/admin/AdminToolbar'
 import ProjectModal from './components/admin/ProjectModal'
 import AboutModal from './components/admin/AboutModal'
 import EventAdminModal from './components/admin/EventAdminModal'
+import GoalModal from './components/admin/GoalModal'
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -80,6 +81,7 @@ function AppContent() {
           <ProjectModal />
           <AboutModal />
           <EventAdminModal />
+          <GoalModal />
         </>
       )}
     </div>

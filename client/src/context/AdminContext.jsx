@@ -20,6 +20,7 @@ export function AdminProvider({ children }) {
   const [projectModalState, setProjectModalState] = useState({ isOpen: false, project: null })
   const [isAboutModalOpen, setIsAboutModalOpen] = useState(false)
   const [eventModalState, setEventModalState] = useState({ isOpen: false, event: null })
+  const [goalModalState, setGoalModalState] = useState({ isOpen: false, goal: null })
 
   const triggerRefresh = useCallback(() => {
     setContentVersion(v => v + 1)
@@ -134,6 +135,10 @@ export function AdminProvider({ children }) {
   const openEditEvent = (event) => setEventModalState({ isOpen: true, event })
   const closeEventModal = () => setEventModalState({ isOpen: false, event: null })
 
+  const openCreateGoal = () => setGoalModalState({ isOpen: true, goal: null })
+  const openEditGoal = (goal) => setGoalModalState({ isOpen: true, goal })
+  const closeGoalModal = () => setGoalModalState({ isOpen: false, goal: null })
+
   return (
     <AdminContext.Provider
       value={{
@@ -159,6 +164,10 @@ export function AdminProvider({ children }) {
         openCreateEvent,
         openEditEvent,
         closeEventModal,
+        goalModalState,
+        openCreateGoal,
+        openEditGoal,
+        closeGoalModal,
       }}
     >
       {children}

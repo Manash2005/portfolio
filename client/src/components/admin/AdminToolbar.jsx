@@ -11,6 +11,7 @@ export default function AdminToolbar() {
     logout,
     openCreateProject,
     openCreateEvent,
+    openCreateGoal,
     openEditAbout,
   } = useAdmin()
 
@@ -105,6 +106,13 @@ export default function AdminToolbar() {
                 title="Create calendar event or activity note"
               >
                 + Event
+              </button>
+              <button
+                onClick={openCreateGoal}
+                className="px-2 py-1 rounded hover:bg-white/10 transition-colors text-white cursor-pointer"
+                title="Create active strategic goal"
+              >
+                + Goal
               </button>
               <button
                 onClick={openEditAbout}

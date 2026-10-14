@@ -86,8 +86,9 @@ export default function SecondBrain({ defaultMode = 'calendar' }) {
   useEffect(() => {
     if (contentVersion > 0) {
       fetchEvents()
+      fetchMetadata()
     }
-  }, [contentVersion, fetchEvents])
+  }, [contentVersion, fetchEvents, fetchMetadata])
 
   // Fetch stats, goals, and projects
   const fetchMetadata = useCallback(async () => {

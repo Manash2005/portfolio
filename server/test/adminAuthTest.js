@@ -23,6 +23,10 @@ import {
   getAdminEvents,
   updatePortfolioContent,
   getPortfolioContent,
+  createGoal,
+  updateGoal,
+  deleteGoal,
+  getAdminGoals,
 } from '../src/controllers/adminController.js'
 import { getPublicEvents } from '../src/controllers/secondBrainController.js'
 
@@ -210,6 +214,42 @@ async function runAdminTests() {
   getPortfolioContent({}, getContentRes)
   assert.equal(getContentRes.data.data.personal.headline, 'Automated & Deterministic AI Systems')
   console.log('✓ Test 7: Portfolio section content updates and persistence verified')
+
+  // 8. Strategic Goal CRUD and Unlinking
+  console.log('Testing Strategic Goal CRUD & Relationships...')
+  const createGoalRes = mockRes()
+  createGoal({
+    body: {
+      title: 'Automated Goal Test Objective',
+      description: 'Test goal description for unit verification',
+      category: 'AI Engineering',
+      status: 'in_progress',
+      color: '#60A5FA',
+    }
+  }, createGoalRes)
+  assert.equal(createGoalRes.statusCode, 201)
+  const createdGoal = createGoalRes.data.goal
+  assert.equal(createdGoal.title, 'Automated Goal Test Objective')
+
+  // Update Goal
+  const updateGoalRes = mockRes()
+  updateGoal({
+    params: { id: createdGoal.id },
+    body: {
+      title: 'Updated Goal Objective',
+      status: 'completed',
+    }
+  }, updateGoalRes)
+  assert.equal(updateGoalRes.statusCode, 200)
+  assert.equal(updateGoalRes.data.goal.title, 'Updated Goal Objective')
+  assert.equal(updateGoalRes.data.goal.status, 'completed')
+
+  // Delete Goal
+  const deleteGoalRes = mockRes()
+  deleteGoal({ params: { id: createdGoal.id } }, deleteGoalRes)
+  assert.equal(deleteGoalRes.statusCode, 200)
+  assert.equal(db.prepare('SELECT count(*) as c FROM goals WHERE id = ?').get(createdGoal.id).c, 0)
+  console.log('✓ Test 8: Strategic Goal CRUD & lifecycle operations verified')
 
   // Clean up test admin user
   db.prepare('DELETE FROM admin_users WHERE id = ?').run(row.id)
