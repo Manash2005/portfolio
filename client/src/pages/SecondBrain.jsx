@@ -9,9 +9,26 @@ import AgendaView from '../components/secondbrain/AgendaView'
 import DayView from '../components/secondbrain/DayView'
 import GoalsAndProjectsPanel from '../components/secondbrain/GoalsAndProjectsPanel'
 import EventDetailModal from '../components/secondbrain/EventDetailModal'
-import { Calendar, RefreshCw, AlertCircle } from 'lucide-react'
+import DsaWorkspace from '../components/dsa/DsaWorkspace'
+import { Calendar, RefreshCw, AlertCircle, Flame } from 'lucide-react'
+import { useLocation, useNavigate } from 'react-router-dom'
 
-export default function SecondBrain() {
+import { useAdmin } from '../context/AdminContext'
+import { API_BASE_URL } from '../utils/apiConfig'
+
+export default function SecondBrain({ defaultMode = 'calendar' }) {
+  const location = useLocation()
+  const navigate = useNavigate()
+  const isDsaRoute = location.pathname.includes('/dsa') || defaultMode === 'dsa'
+  const [brainMode, setBrainMode] = useState(isDsaRoute ? 'dsa' : 'calendar')
+
+  useEffect(() => {
+    if (location.pathname.includes('/dsa')) {
+      setBrainMode('dsa')
+    }
+  }, [location.pathname])
+
+  const { isAdmin, authFetch, contentVersion } = useAdmin()
   const [currentDate, setCurrentDate] = useState(() => new Date())
   const [view, setView] = useState('month') // 'month' | 'week' | 'agenda' | 'day'
   const [events, setEvents] = useState([])
@@ -30,7 +47,7 @@ export default function SecondBrain() {
   // Selected event modal
   const [selectedEvent, setSelectedEvent] = useState(null)
 
-  const apiUrl = import.meta.env.VITE_API_URL || 'https://portfolio-c43c.onrender.com'
+  const apiUrl = API_BASE_URL
 
   // Fetch events with server-side filters
   const fetchEvents = useCallback(async () => {
@@ -40,13 +57,16 @@ export default function SecondBrain() {
       if (selectedStatus !== 'All') params.append('status', selectedStatus)
       if (searchQuery.trim()) params.append('search', searchQuery.trim())
 
-      const res = await fetch(`${apiUrl}/api/v1/second-brain/events?${params.toString()}`, {
-        signal: AbortSignal.timeout(10000),
-      })
+      const endpoint = isAdmin
+        ? `${apiUrl}/api/v1/admin/events?${params.toString()}`
+        : `${apiUrl}/api/v1/second-brain/events?${params.toString()}`
+
+      const res = await (isAdmin ? authFetch(endpoint) : fetch(endpoint, { signal: AbortSignal.timeout(10000) }))
       if (res.ok) {
         const json = await res.json()
-        if (json.success && Array.isArray(json.events)) {
-          setEvents(json.events)
+        const eventList = json.data || json.events
+        if (json.success && Array.isArray(eventList)) {
+          setEvents(eventList)
           setStatus('ready')
           return
         }
@@ -60,7 +80,14 @@ export default function SecondBrain() {
         setErrorMessage('Unable to connect to Second Brain service. Please ensure server is running.')
       }
     }
-  }, [apiUrl, selectedCategory, selectedStatus, searchQuery, events.length])
+  }, [apiUrl, selectedCategory, selectedStatus, searchQuery, isAdmin, authFetch, events.length])
+
+  // Re-fetch on contentVersion change
+  useEffect(() => {
+    if (contentVersion > 0) {
+      fetchEvents()
+    }
+  }, [contentVersion, fetchEvents])
 
   // Fetch stats, goals, and projects
   const fetchMetadata = useCallback(async () => {
@@ -150,19 +177,73 @@ export default function SecondBrain() {
       style={{ background: '#08080C' }}
     >
       <div className="max-w-6xl mx-auto flex flex-col gap-8">
-        {/* Header */}
-        <CalendarHeader
-          currentDate={currentDate}
-          view={view}
-          onViewChange={setView}
-          onPrev={handlePrev}
-          onNext={handleNext}
-          onToday={handleToday}
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          onToggleFilters={() => setIsFilterOpen((prev) => !prev)}
-          activeFilterCount={activeFilterCount}
-        />
+        {/* Workspace Mode Switcher */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-2 sm:p-2.5 rounded-2xl border border-hairline bg-[#0E0E14] shadow-sm">
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <button
+              onClick={() => {
+                setBrainMode('calendar')
+                navigate('/calendar')
+              }}
+              className={`flex-1 sm:flex-initial px-5 py-2.5 rounded-xl text-xs font-mono font-medium flex items-center justify-center gap-2 cursor-pointer transition-all ${
+                brainMode === 'calendar'
+                  ? 'bg-white/10 text-white border border-white/20 shadow-md'
+                  : 'text-muted hover:text-white border border-transparent hover:bg-white/5'
+              }`}
+            >
+              <Calendar className="w-4 h-4 text-accent" />
+              <span>Calendar & Planning</span>
+            </button>
+
+            <button
+              onClick={() => {
+                setBrainMode('dsa')
+                navigate('/calendar/dsa')
+              }}
+              className={`flex-1 sm:flex-initial px-5 py-2.5 rounded-xl text-xs font-mono font-medium flex items-center justify-center gap-2 cursor-pointer transition-all ${
+                brainMode === 'dsa'
+                  ? 'bg-accent text-[#08080C] font-bold shadow-lg shadow-accent/20'
+                  : 'text-muted hover:text-white border border-transparent hover:bg-white/5'
+              }`}
+            >
+              <Flame className="w-4 h-4 text-amber-400 fill-amber-400" />
+              <span>⚔️ DSA Training Arena</span>
+            </button>
+          </div>
+
+          <div className="hidden sm:flex items-center gap-3 text-[11px] font-mono text-muted pr-3">
+            <span className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
+              <span>Personal Second Brain</span>
+            </span>
+            <span className="text-white/20">•</span>
+            <span className="text-[#A0A0B0]">{brainMode === 'dsa' ? 'Interview Practice Mode' : 'Productivity Command Center'}</span>
+          </div>
+        </div>
+
+        {/* DSA Training Arena Workspace */}
+        {brainMode === 'dsa' ? (
+          <DsaWorkspace
+            onSwitchToCalendar={() => {
+              setBrainMode('calendar')
+              navigate('/calendar')
+            }}
+          />
+        ) : (
+          <>
+            {/* Header */}
+            <CalendarHeader
+              currentDate={currentDate}
+              view={view}
+              onViewChange={setView}
+              onPrev={handlePrev}
+              onNext={handleNext}
+              onToday={handleToday}
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+              onToggleFilters={() => setIsFilterOpen((prev) => !prev)}
+              activeFilterCount={activeFilterCount}
+            />
 
         {/* Filter Drawer */}
         <FilterDrawer
@@ -293,6 +374,8 @@ export default function SecondBrain() {
           isOpen={!!selectedEvent}
           onClose={() => setSelectedEvent(null)}
         />
+          </>
+        )}
       </div>
     </main>
   )

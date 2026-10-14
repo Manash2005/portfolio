@@ -2,12 +2,13 @@ import { Link } from 'react-router-dom'
 import {
   ChevronLeft,
   ChevronRight,
-  Calendar as CalendarIcon,
   Search,
   SlidersHorizontal,
   X,
   ArrowLeft,
+  Plus,
 } from 'lucide-react'
+import { useAdmin } from '../../context/AdminContext'
 
 const VIEWS = [
   { id: 'month', label: 'Month' },
@@ -28,6 +29,8 @@ export default function CalendarHeader({
   onToggleFilters,
   activeFilterCount = 0,
 }) {
+  const { isAdmin, isEditMode, openCreateEvent } = useAdmin()
+
   const formatPeriodTitle = () => {
     if (view === 'day') {
       return currentDate.toLocaleDateString('en-US', {
@@ -70,11 +73,38 @@ export default function CalendarHeader({
           <span>Back to Portfolio</span>
         </Link>
 
-        <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
-          <span className="text-xs font-mono text-muted">
-            Live Public Feed · Read-Only
-          </span>
+        <div className="flex items-center gap-3">
+          {isAdmin ? (
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-[#B8FF3C] animate-pulse" />
+              <span className="text-xs font-mono text-[#B8FF3C] font-semibold">
+                Admin Mode Active · Private & Public Events
+              </span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
+              <span className="text-xs font-mono text-muted">
+                Live Public Feed · Read-Only
+              </span>
+            </div>
+          )}
+
+          {isAdmin && isEditMode && (
+            <button
+              onClick={openCreateEvent}
+              className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono border transition-all cursor-pointer shadow-sm hover:scale-105"
+              style={{
+                background: 'rgba(184, 255, 60, 0.15)',
+                borderColor: 'rgba(184, 255, 60, 0.4)',
+                color: '#B8FF3C',
+              }}
+              title="Add a new calendar event"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Add Event</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -93,7 +123,7 @@ export default function CalendarHeader({
               </span>
             </h1>
             <p className="text-xs font-mono text-muted mt-1">
-              Curated public roadmap, learning sessions, milestones & technical logs.
+              Curated roadmap, learning sessions, milestones & technical logs.
             </p>
           </div>
 
@@ -147,7 +177,7 @@ export default function CalendarHeader({
               type="text"
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
-              placeholder="Search public logs..."
+              placeholder="Search logs..."
               className="w-full bg-[#0E0E14] border border-hairline rounded-xl pl-8 pr-7 py-1.5 text-xs font-mono text-white placeholder:text-muted/60 focus:outline-none focus:border-accent transition-colors"
             />
             {searchQuery && (

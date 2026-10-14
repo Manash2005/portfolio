@@ -1,20 +1,56 @@
+import { useState, useEffect } from 'react'
 import { motion } from 'motion/react'
 import { Link } from 'react-router-dom'
 import data from '../data/portfolio_data.json'
+import { useAdmin } from '../context/AdminContext'
 
 export default function AllProjects() {
+  const { isAdmin, isEditMode, openCreateProject, openEditProject, contentVersion, authFetch } = useAdmin()
+  const [projects, setProjects] = useState(data.projects)
+
+  useEffect(() => {
+    const endpoint = isAdmin ? '/api/v1/admin/projects' : '/api/portfolio/projects'
+    authFetch(endpoint)
+      .then(res => res.json())
+      .then(json => {
+        if (json.data && Array.isArray(json.data) && json.data.length > 0) {
+          setProjects(json.data)
+        }
+      })
+      .catch(() => {
+        // fallback to data.projects
+      })
+  }, [isAdmin, contentVersion, authFetch])
+
   return (
     <main className="content-layer px-6 md:px-12 pt-32 pb-24">
       <div className="max-w-5xl mx-auto">
-        <Link
-          to="/"
-          className="text-label mb-12 block transition-colors"
-          style={{ color: 'var(--color-muted)' }}
-          onMouseEnter={e => e.currentTarget.style.color = 'var(--color-text)'}
-          onMouseLeave={e => e.currentTarget.style.color = 'var(--color-muted)'}
-        >
-          ← Back
-        </Link>
+        <div className="flex items-center justify-between mb-12">
+          <Link
+            to="/"
+            className="text-label block transition-colors"
+            style={{ color: 'var(--color-muted)' }}
+            onMouseEnter={e => e.currentTarget.style.color = 'var(--color-text)'}
+            onMouseLeave={e => e.currentTarget.style.color = 'var(--color-muted)'}
+          >
+            ← Back to Home
+          </Link>
+
+          {isAdmin && isEditMode && (
+            <button
+              onClick={openCreateProject}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-mono border transition-all cursor-pointer"
+              style={{
+                background: 'rgba(184, 255, 60, 0.12)',
+                borderColor: 'rgba(184, 255, 60, 0.4)',
+                color: '#B8FF3C',
+              }}
+            >
+              <span>+</span>
+              <span>Create Project</span>
+            </button>
+          )}
+        </div>
 
         <div style={{ overflow: 'hidden' }}>
           <motion.h1
@@ -30,13 +66,13 @@ export default function AllProjects() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-px"
           style={{ border: '1px solid var(--color-hairline)', background: 'var(--color-hairline)' }}>
-          {data.projects.map((project, i) => (
+          {projects.map((project, i) => (
             <motion.article
-              key={project.title}
+              key={project.id || project.title}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: i * 0.07 }}
-              className="p-8 group"
+              className="p-8 group relative"
               style={{ background: 'var(--color-bg)' }}
             >
               {project.image && (
@@ -51,7 +87,36 @@ export default function AllProjects() {
                   />
                 </div>
               )}
-              <p className="text-label mb-2">{project.category}</p>
+
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <p className="text-label">{project.category}</p>
+                  {project.is_published === false && (
+                    <span
+                      className="text-[0.65rem] px-2 py-0.5 rounded font-mono font-semibold"
+                      style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#F87171', border: '1px solid rgba(239, 68, 68, 0.4)' }}
+                    >
+                      DRAFT
+                    </span>
+                  )}
+                </div>
+
+                {isAdmin && isEditMode && (
+                  <button
+                    onClick={() => openEditProject(project)}
+                    className="px-2.5 py-0.5 rounded text-[0.68rem] font-mono border transition-all cursor-pointer"
+                    style={{
+                      background: 'rgba(184, 255, 60, 0.1)',
+                      borderColor: 'rgba(184, 255, 60, 0.4)',
+                      color: '#B8FF3C',
+                    }}
+                    title="Edit project"
+                  >
+                    ✎ Edit
+                  </button>
+                )}
+              </div>
+
               <h2
                 style={{
                   fontFamily: 'var(--font-display)',
@@ -72,7 +137,7 @@ export default function AllProjects() {
                   marginBottom: '1.25rem',
                 }}
               >
-                {project.outcome || project.short_description}
+                {project.outcome || project.short_description || project.description}
               </p>
               <p
                 style={{
@@ -83,7 +148,7 @@ export default function AllProjects() {
                   marginBottom: '1.5rem',
                 }}
               >
-                {project.techStack.join(' · ')}
+                {Array.isArray(project.techStack) ? project.techStack.join(' · ') : ''}
               </p>
               <div className="flex gap-5">
                 {project.liveLink && (

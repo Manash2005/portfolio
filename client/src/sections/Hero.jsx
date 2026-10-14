@@ -1,5 +1,8 @@
+import { useState, useEffect } from 'react'
 import { motion } from 'motion/react'
 import data from '../data/portfolio_data.json'
+import { useAdmin } from '../context/AdminContext'
+import { API_BASE_URL } from '../utils/apiConfig'
 
 // Subtle text reveal — mask translate up
 function Reveal({ children, delay = 0, className = '' }) {
@@ -19,27 +22,66 @@ function Reveal({ children, delay = 0, className = '' }) {
 }
 
 export default function Hero() {
+  const { isAdmin, isEditMode, openEditAbout, contentVersion } = useAdmin()
+  const [personal, setPersonal] = useState(data.personal)
+
+  const apiUrl = API_BASE_URL
+
+  useEffect(() => {
+    fetch(`${apiUrl}/api/portfolio/content`)
+      .then(res => res.json())
+      .then(json => {
+        if (json.data?.personal) {
+          setPersonal(json.data.personal)
+        }
+      })
+      .catch(() => {
+        // fallback
+      })
+  }, [apiUrl, contentVersion])
+
+  const headline = personal.headline || data.personal.headline
+  const sub = personal.sub || data.personal.sub
+  const name = personal.name || data.personal.name
+
   return (
     <section
       id="hero"
-      className="content-layer min-h-screen flex flex-col justify-center px-6 md:px-12 section-padding"
+      className="content-layer min-h-screen flex flex-col justify-center px-6 md:px-12 section-padding relative"
       aria-label="Introduction"
     >
       <div className="max-w-5xl mx-auto w-full pt-20 md:pt-16">
-        {/* Status pill — static, no animation */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.6 }}
-          className="flex items-center gap-2 mb-10"
-        >
-          <span
-            className="w-1.5 h-1.5 rounded-full"
-            style={{ background: 'var(--color-accent)' }}
-            aria-hidden
-          />
-          <span className="text-label">Open to work</span>
-        </motion.div>
+        {/* Status pill & Admin Edit Hero Button */}
+        <div className="flex items-center justify-between mb-10">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.6 }}
+            className="flex items-center gap-2"
+          >
+            <span
+              className="w-1.5 h-1.5 rounded-full"
+              style={{ background: 'var(--color-accent)' }}
+              aria-hidden
+            />
+            <span className="text-label">Open to work</span>
+          </motion.div>
+
+          {isAdmin && isEditMode && (
+            <button
+              onClick={openEditAbout}
+              className="px-2.5 py-1 rounded-full text-xs font-mono border transition-all cursor-pointer hover:bg-[#B8FF3C]/20"
+              style={{
+                background: 'rgba(184, 255, 60, 0.1)',
+                borderColor: 'rgba(184, 255, 60, 0.4)',
+                color: '#B8FF3C',
+              }}
+              title="Edit Hero Headline & Bio"
+            >
+              ✎ Edit Headline
+            </button>
+          )}
+        </div>
 
         {/* Name */}
         <Reveal>
@@ -47,7 +89,7 @@ export default function Hero() {
             className="text-display mb-6"
             style={{ fontFamily: 'var(--font-display)', color: 'var(--color-text)' }}
           >
-            {data.personal.name}
+            {name}
           </h1>
         </Reveal>
 
@@ -64,22 +106,26 @@ export default function Hero() {
               marginBottom: '2.5rem',
             }}
           >
-            {data.personal.headline.split('and AI agents').map((part, i) =>
-              i === 0 ? (
-                <span key={i}>
-                  {part}
-                  <span style={{ color: 'var(--color-accent)' }}>and AI agents</span>
-                </span>
-              ) : (
-                <span key={i}>{part}</span>
+            {headline.includes('and AI agents') ? (
+              headline.split('and AI agents').map((part, i) =>
+                i === 0 ? (
+                  <span key={i}>
+                    {part}
+                    <span style={{ color: 'var(--color-accent)' }}>and AI agents</span>
+                  </span>
+                ) : (
+                  <span key={i}>{part}</span>
+                )
               )
+            ) : (
+              <span>{headline}</span>
             )}
           </p>
         </Reveal>
 
         {/* Sub line */}
         <Reveal delay={0.14}>
-          <p className="text-label mb-12">{data.personal.sub}</p>
+          <p className="text-label mb-12">{sub}</p>
         </Reveal>
 
         {/* CTAs */}
@@ -88,42 +134,21 @@ export default function Hero() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          className="flex flex-wrap items-center gap-4"
+          className="flex flex-wrap items-center gap-6"
         >
           <a
             href="#projects"
-            onClick={e => {
-              e.preventDefault()
-              document.getElementById('projects')?.scrollIntoView({ behavior: 'smooth' })
-            }}
-            className="px-6 py-3 rounded-full text-sm font-mono transition-all"
-            style={{
-              fontFamily: 'var(--font-mono)',
-              background: 'var(--color-accent)',
-              color: '#08080C',
-              fontWeight: 600,
-              letterSpacing: '0.04em',
-            }}
-            onMouseEnter={e => e.currentTarget.style.opacity = '0.85'}
-            onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+            className="btn-primary"
+            style={{ textDecoration: 'none' }}
           >
-            View work ↓
+            See my work ↓
           </a>
           <a
-            href="/resume.pdf"
-            target="_blank"
-            rel="noreferrer"
-            className="px-6 py-3 rounded-full text-sm font-mono transition-all"
-            style={{
-              fontFamily: 'var(--font-mono)',
-              border: '1px solid var(--color-hairline)',
-              color: 'var(--color-muted)',
-              letterSpacing: '0.04em',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; e.currentTarget.style.color = 'var(--color-text)' }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-hairline)'; e.currentTarget.style.color = 'var(--color-muted)' }}
+            href="#contact"
+            className="btn-ghost"
+            style={{ textDecoration: 'none' }}
           >
-            Résumé ↗
+            Get in touch
           </a>
         </motion.div>
       </div>

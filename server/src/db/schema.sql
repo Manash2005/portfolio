@@ -21,11 +21,23 @@ CREATE TABLE IF NOT EXISTS projects (
   id TEXT PRIMARY KEY,
   title TEXT NOT NULL,
   description TEXT,
+  short_description TEXT,
+  outcome TEXT,
+  problem TEXT,
+  architecture TEXT,
+  key_challenge TEXT,
+  solution TEXT,
+  metrics TEXT, -- JSON array of strings
   category TEXT NOT NULL DEFAULT 'AI / Automation',
   status TEXT NOT NULL DEFAULT 'active', -- 'planned', 'active', 'completed'
   tech_stack TEXT, -- JSON array of strings
   live_link TEXT,
   github_link TEXT,
+  image TEXT,
+  featured INTEGER NOT NULL DEFAULT 0, -- 1 = true, 0 = false
+  reflection TEXT,
+  is_published INTEGER NOT NULL DEFAULT 1, -- 1 = published, 0 = draft
+  display_order INTEGER NOT NULL DEFAULT 0,
   goal_id TEXT REFERENCES goals(id) ON DELETE SET NULL,
   created_at TEXT DEFAULT (datetime('now')),
   updated_at TEXT DEFAULT (datetime('now'))
@@ -57,7 +69,40 @@ CREATE TABLE IF NOT EXISTS events (
   updated_at TEXT DEFAULT (datetime('now'))
 );
 
--- 4. Indexes for high performance
+-- 4. Admin Users Table
+CREATE TABLE IF NOT EXISTS admin_users (
+  id TEXT PRIMARY KEY,
+  username TEXT UNIQUE NOT NULL,
+  password_hash TEXT NOT NULL,
+  salt TEXT NOT NULL,
+  created_at TEXT DEFAULT (datetime('now')),
+  updated_at TEXT DEFAULT (datetime('now'))
+);
+
+-- 5. Persistent Sessions Table
+CREATE TABLE IF NOT EXISTS sessions (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES admin_users(id) ON DELETE CASCADE,
+  session_token TEXT UNIQUE NOT NULL,
+  expires_at TEXT NOT NULL,
+  created_at TEXT DEFAULT (datetime('now')),
+  last_active_at TEXT DEFAULT (datetime('now'))
+);
+
+-- 6. Login Rate Limiting Table (IP & Timestamp based sliding window)
+CREATE TABLE IF NOT EXISTS login_attempts (
+  ip TEXT NOT NULL,
+  attempt_time INTEGER NOT NULL
+);
+
+-- 7. Portfolio Content Table (Key-Value storage for dynamic editable sections)
+CREATE TABLE IF NOT EXISTS portfolio_content (
+  section_key TEXT PRIMARY KEY,
+  content_json TEXT NOT NULL,
+  updated_at TEXT DEFAULT (datetime('now'))
+);
+
+-- 8. Indexes for high performance
 CREATE INDEX IF NOT EXISTS idx_events_start_at ON events(start_at);
 CREATE INDEX IF NOT EXISTS idx_events_end_at ON events(end_at);
 CREATE INDEX IF NOT EXISTS idx_events_visibility ON events(visibility);
@@ -67,3 +112,7 @@ CREATE INDEX IF NOT EXISTS idx_events_heatmap ON events(show_on_portfolio_heatma
 CREATE INDEX IF NOT EXISTS idx_events_goal ON events(goal_id);
 CREATE INDEX IF NOT EXISTS idx_events_project ON events(project_id);
 CREATE INDEX IF NOT EXISTS idx_projects_goal ON projects(goal_id);
+CREATE INDEX IF NOT EXISTS idx_projects_published ON projects(is_published);
+CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions(session_token);
+CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at);
+CREATE INDEX IF NOT EXISTS idx_login_attempts_ip_time ON login_attempts(ip, attempt_time);

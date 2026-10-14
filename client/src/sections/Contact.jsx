@@ -1,7 +1,9 @@
 import { motion } from 'motion/react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { fetchWithRetry } from '../utils/fetchWithRetry'
 import data from '../data/portfolio_data.json'
+import { useAdmin } from '../context/AdminContext'
+import { API_BASE_URL } from '../utils/apiConfig'
 
 const FIELD_STYLE = {
   background: 'transparent',
@@ -17,15 +19,36 @@ const FIELD_STYLE = {
 }
 
 export default function Contact() {
+  const { isAdmin, isEditMode, openEditAbout, contentVersion } = useAdmin()
+  const [contact, setContact] = useState(data.contact)
   const [form, setForm] = useState({ name: '', email: '', message: '' })
   const [status, setStatus] = useState('idle') // idle | sending | success | error
   const [errorMsg, setErrorMsg] = useState('')
   const [copied, setCopied] = useState(false)
 
+  const apiUrl = API_BASE_URL
+
+  useEffect(() => {
+    fetch(`${apiUrl}/api/portfolio/content`)
+      .then(res => res.json())
+      .then(json => {
+        if (json.data?.contact) {
+          setContact(json.data.contact)
+        }
+      })
+      .catch(() => {
+        // fallback
+      })
+  }, [apiUrl, contentVersion])
+
+  const email = contact.email || data.contact.email
+  const github = contact.github || data.contact.github
+  const linkedin = contact.linkedin || data.contact.linkedin
+
   const handleChange = e => setForm({ ...form, [e.target.name]: e.target.value })
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(data.contact.email)
+    navigator.clipboard.writeText(email)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
@@ -113,7 +136,7 @@ export default function Contact() {
                 transition: 'color 0.2s',
               }}
             >
-              {data.contact.email}
+              {email}
             </span>
             <span
               className="text-label"
@@ -123,7 +146,7 @@ export default function Contact() {
             </span>
           </motion.button>
 
-          {/* Social links */}
+          {/* Social links & Admin Edit trigger */}
           <motion.div
             className="flex flex-col gap-3"
             initial={{ opacity: 0 }}
@@ -132,8 +155,8 @@ export default function Contact() {
             transition={{ delay: 0.2 }}
           >
             {[
-              { label: 'GitHub', href: data.contact.github },
-              { label: 'LinkedIn', href: data.contact.linkedin },
+              { label: 'GitHub', href: github },
+              { label: 'LinkedIn', href: linkedin },
             ].map(link => (
               <a
                 key={link.label}
@@ -148,6 +171,16 @@ export default function Contact() {
                 {link.label} ↗
               </a>
             ))}
+
+            {isAdmin && isEditMode && (
+              <button
+                type="button"
+                onClick={openEditAbout}
+                className="text-left text-xs font-mono text-[#B8FF3C] hover:underline pt-2 cursor-pointer"
+              >
+                ✎ Edit Contact Details & Links
+              </button>
+            )}
           </motion.div>
         </div>
 

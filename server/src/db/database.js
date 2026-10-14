@@ -18,6 +18,37 @@ if (!fs.existsSync(dbDir)) {
 
 let dbInstance = null
 
+function ensureSchemaUpgrades(db) {
+  try {
+    const hasProjects = db.prepare("SELECT count(*) as c FROM sqlite_master WHERE type='table' AND name='projects'").get().c > 0
+    if (hasProjects) {
+      const projectCols = db.prepare("PRAGMA table_info(projects)").all().map(c => c.name)
+      const requiredProjectCols = [
+        { name: 'short_description', type: 'TEXT' },
+        { name: 'outcome', type: 'TEXT' },
+        { name: 'problem', type: 'TEXT' },
+        { name: 'architecture', type: 'TEXT' },
+        { name: 'key_challenge', type: 'TEXT' },
+        { name: 'solution', type: 'TEXT' },
+        { name: 'metrics', type: 'TEXT' },
+        { name: 'image', type: 'TEXT' },
+        { name: 'featured', type: 'INTEGER NOT NULL DEFAULT 0' },
+        { name: 'reflection', type: 'TEXT' },
+        { name: 'is_published', type: 'INTEGER NOT NULL DEFAULT 1' },
+        { name: 'display_order', type: 'INTEGER NOT NULL DEFAULT 0' }
+      ]
+
+      for (const col of requiredProjectCols) {
+        if (!projectCols.includes(col.name)) {
+          db.exec(`ALTER TABLE projects ADD COLUMN ${col.name} ${col.type}`)
+        }
+      }
+    }
+  } catch (err) {
+    console.error('Schema upgrade check error:', err)
+  }
+}
+
 export function getDatabase() {
   if (!dbInstance) {
     dbInstance = new Database(dbPath)
@@ -26,15 +57,31 @@ export function getDatabase() {
     dbInstance.pragma('foreign_keys = ON')
     dbInstance.pragma('busy_timeout = 5000')
 
-    // Initialize schema if not present
-    const schemaPath = path.join(__dirname, 'schema.sql')
-    if (fs.existsSync(schemaPath)) {
-      const schemaSql = fs.readFileSync(schemaPath, 'utf8')
-      dbInstance.exec(schemaSql)
+    // Run upgrades first if table already exists from older version
+    ensureSchemaUpgrades(dbInstance)
+
+    // Initialize DSA schema if present
+    const dsaSchemaPath = path.join(__dirname, 'dsaSchema.sql')
+    if (fs.existsSync(dsaSchemaPath)) {
+      const dsaSchemaSql = fs.readFileSync(dsaSchemaPath, 'utf8')
+      dbInstance.exec(dsaSchemaSql)
+
+      // Auto-seed curated catalog if empty
+      try {
+        const problemCount = dbInstance.prepare("SELECT count(*) as c FROM dsa_problems").get().c
+        if (problemCount === 0) {
+          import('./seedDsaCatalog.js').then(m => m.seedDsaCatalog?.()).catch(err => console.error('DSA seed err:', err))
+        }
+      } catch (err) {
+        console.error('DSA count check error:', err)
+      }
     }
+
+    ensureSchemaUpgrades(dbInstance)
   }
   return dbInstance
 }
+
 
 export function closeDatabase() {
   if (dbInstance) {
@@ -44,3 +91,4 @@ export function closeDatabase() {
 }
 
 export const db = getDatabase()
+

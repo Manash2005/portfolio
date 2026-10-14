@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { generateSkylineDays } from '../utils/activityStats'
 import portfolioData from '../data/portfolio_data.json'
+import { API_BASE_URL } from '../utils/apiConfig'
 
 const STORAGE_KEY = 'portfolio_activity_cache_v6'
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000 // 6 hours
@@ -85,7 +86,7 @@ export function useActivityData() {
 
     slowTimerRef.current = setTimeout(() => { setIsSlow(true) }, SLOW_THRESHOLD_MS)
 
-    const apiUrl = import.meta.env.VITE_API_URL || 'https://portfolio-c43c.onrender.com'
+    const apiUrl = API_BASE_URL
 
     try {
       // 1. GitHub contributions (jogruber API — already CORS-safe)

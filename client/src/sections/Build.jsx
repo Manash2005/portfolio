@@ -2,6 +2,7 @@ import { motion } from 'motion/react'
 import data from '../data/portfolio_data.json'
 import { useEffect, useState } from 'react'
 import { fetchWithRetry } from '../utils/fetchWithRetry'
+import { API_BASE_URL } from '../utils/apiConfig'
 
 function Reveal({ children, delay = 0, className = '' }) {
   return (
@@ -34,7 +35,7 @@ export default function Build() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const apiUrl = import.meta.env.VITE_API_URL || 'https://portfolio-c43c.onrender.com'
+        const apiUrl = API_BASE_URL
         const res = await fetchWithRetry(`${apiUrl}/api/v1/leetcode/stats/Manash_22`)
         const d = await res.json()
         if (d.success && d.stats) {

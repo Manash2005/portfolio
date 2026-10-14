@@ -1,9 +1,8 @@
-import { useRef } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { motion, useScroll, useTransform } from 'motion/react'
 import { Link } from 'react-router-dom'
 import data from '../data/portfolio_data.json'
-
-const FEATURED = data.projects.filter(p => p.featured)
+import { useAdmin } from '../context/AdminContext'
 
 // Animated tech stack pill
 function TechPill({ tech, delay }) {
@@ -68,10 +67,12 @@ function DrawLink({ href, label, accent }) {
 }
 
 function ProjectRow({ project, index }) {
+  const { isAdmin, isEditMode, openEditProject } = useAdmin()
   const imageRef = useRef(null)
   const { scrollYProgress } = useScroll({ target: imageRef, offset: ['start end', 'end start'] })
   const imageY = useTransform(scrollYProgress, [0, 1], ['4%', '-4%'])
   const liveUrl = project.liveLink || project.githubLink
+  const techList = Array.isArray(project.techStack) ? project.techStack : []
 
   return (
     <motion.article
@@ -123,9 +124,38 @@ function ProjectRow({ project, index }) {
           </motion.p>
         </div>
 
-        <p className="text-label mb-3" style={{ position: 'relative' }}>
-          {String(index + 1).padStart(2, '0')} / {project.category}
-        </p>
+        <div className="flex items-center gap-3 mb-3" style={{ position: 'relative' }}>
+          <p className="text-label">
+            {String(index + 1).padStart(2, '0')} / {project.category}
+          </p>
+
+          {/* Draft Indicator */}
+          {project.is_published === false && (
+            <span
+              className="text-[0.65rem] px-2 py-0.5 rounded font-mono font-semibold"
+              style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#F87171', border: '1px solid rgba(239, 68, 68, 0.4)' }}
+            >
+              DRAFT
+            </span>
+          )}
+
+          {/* In-place edit button for admin */}
+          {isAdmin && isEditMode && (
+            <button
+              onClick={() => openEditProject(project)}
+              className="px-2.5 py-0.5 rounded-full text-[0.68rem] font-mono border transition-all cursor-pointer hover:bg-[#B8FF3C]/20"
+              style={{
+                background: 'rgba(184, 255, 60, 0.1)',
+                borderColor: 'rgba(184, 255, 60, 0.4)',
+                color: '#B8FF3C',
+              }}
+              title="Edit project details"
+            >
+              ✎ Edit
+            </button>
+          )}
+        </div>
+
         <h3
           style={{
             fontFamily: 'var(--font-display)',
@@ -148,12 +178,12 @@ function ProjectRow({ project, index }) {
             maxWidth: '42ch',
           }}
         >
-          {project.outcome}
+          {project.outcome || project.short_description || project.description}
         </p>
 
         {/* Tech stack pills */}
         <div className="flex flex-wrap gap-2 mb-6">
-          {project.techStack.map((tech, i) => (
+          {techList.map((tech, i) => (
             <TechPill key={tech} tech={tech} delay={0.05 * i} />
           ))}
         </div>
@@ -236,6 +266,27 @@ function ProjectRow({ project, index }) {
 }
 
 export default function Projects() {
+  const { isAdmin, isEditMode, openCreateProject, contentVersion, authFetch } = useAdmin()
+  const [projects, setProjects] = useState(() => data.projects.filter(p => p.featured))
+
+  useEffect(() => {
+    const endpoint = isAdmin ? '/api/v1/admin/projects' : '/api/portfolio/projects'
+    authFetch(endpoint)
+      .then(res => res.json())
+      .then(json => {
+        if (json.data && Array.isArray(json.data) && json.data.length > 0) {
+          // If admin, show all featured or all projects; if visitor, only published featured
+          const featured = isAdmin
+            ? json.data.filter(p => p.featured || !p.is_published)
+            : json.data.filter(p => p.featured)
+          setProjects(featured.length > 0 ? featured : json.data)
+        }
+      })
+      .catch(() => {
+        // graceful fallback to data.projects
+      })
+  }, [isAdmin, contentVersion, authFetch])
+
   return (
     <section
       id="projects"
@@ -243,17 +294,38 @@ export default function Projects() {
       aria-label="Selected work"
     >
       <div className="max-w-5xl mx-auto">
-        <div style={{ overflow: 'hidden' }}>
-          <motion.p
-            className="text-label mb-6"
-            initial={{ y: '105%', opacity: 0 }}
-            whileInView={{ y: 0, opacity: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.75, ease: [0.16, 1, 0.3, 1] }}
-          >
-            Selected work
-          </motion.p>
+        <div className="flex items-center justify-between mb-6">
+          <div style={{ overflow: 'hidden' }}>
+            <motion.p
+              className="text-label"
+              initial={{ y: '105%', opacity: 0 }}
+              whileInView={{ y: 0, opacity: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.75, ease: [0.16, 1, 0.3, 1] }}
+            >
+              Selected work
+            </motion.p>
+          </div>
+
+          {isAdmin && isEditMode && (
+            <motion.button
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              onClick={openCreateProject}
+              className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono border transition-all cursor-pointer"
+              style={{
+                background: 'rgba(184, 255, 60, 0.12)',
+                borderColor: 'rgba(184, 255, 60, 0.4)',
+                color: '#B8FF3C',
+              }}
+              title="Add a new project"
+            >
+              <span>+</span>
+              <span>New Project</span>
+            </motion.button>
+          )}
         </div>
+
         <div style={{ overflow: 'hidden' }}>
           <motion.h2
             className="text-heading mb-4"
@@ -268,12 +340,12 @@ export default function Projects() {
         </div>
 
         {/* Project rows */}
-        {FEATURED.map((project, i) => (
-          <ProjectRow key={project.title} project={project} index={i} />
+        {projects.map((project, i) => (
+          <ProjectRow key={project.id || project.title} project={project} index={i} />
         ))}
 
         {/* See all link */}
-        <div className="pt-8" style={{ borderTop: '1px solid var(--color-hairline)' }}>
+        <div className="pt-8 flex items-center justify-between" style={{ borderTop: '1px solid var(--color-hairline)' }}>
           <Link
             to="/projects"
             className="text-label transition-colors"
@@ -283,6 +355,15 @@ export default function Projects() {
           >
             See all projects →
           </Link>
+
+          {isAdmin && isEditMode && (
+            <button
+              onClick={openCreateProject}
+              className="text-label text-[#B8FF3C] hover:underline cursor-pointer"
+            >
+              + Create Another Project
+            </button>
+          )}
         </div>
       </div>
     </section>

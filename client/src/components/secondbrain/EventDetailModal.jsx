@@ -11,11 +11,15 @@ import {
   FolderGit2,
   CheckCircle2,
   AlertCircle,
-  HelpCircle,
+  Lock,
+  Edit2,
 } from 'lucide-react'
 import { getEventColor } from '../../utils/activityStats'
+import { useAdmin } from '../../context/AdminContext'
 
 export default function EventDetailModal({ event, isOpen, onClose }) {
+  const { isAdmin, isEditMode, openEditEvent } = useAdmin()
+
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') onClose()
@@ -72,6 +76,11 @@ export default function EventDetailModal({ event, isOpen, onClose }) {
 
   const durationStr = getDuration()
 
+  const handleEditClick = () => {
+    onClose()
+    openEditEvent(event)
+  }
+
   return (
     <AnimatePresence>
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
@@ -115,7 +124,7 @@ export default function EventDetailModal({ event, isOpen, onClose }) {
             <X className="w-4 h-4" />
           </button>
 
-          {/* Badges: Category & Status */}
+          {/* Badges: Category, Status, Privacy */}
           <div className="flex flex-wrap items-center gap-2 mb-3">
             {/* Category Pill */}
             <span
@@ -151,22 +160,55 @@ export default function EventDetailModal({ event, isOpen, onClose }) {
               <span>{event.status}</span>
             </span>
 
+            {/* Privacy Badge */}
+            {event.visibility === 'Private' && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-mono border border-purple-500/40 bg-purple-500/10 text-purple-300">
+                <Lock className="w-3 h-3" />
+                <span>Private</span>
+              </span>
+            )}
+
+            {/* Heatmap Badge */}
+            {Boolean(event.show_on_portfolio_heatmap) && (
+              <span className="text-[11px] font-mono px-2 py-0.5 rounded border border-[#B8FF3C]/40 bg-[#B8FF3C]/10 text-[#B8FF3C]">
+                Heatmap Active
+              </span>
+            )}
+
             {/* Priority */}
             {event.priority && (
               <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded border border-white/10 text-muted">
-                {event.priority} priority
+                {event.priority}
               </span>
             )}
           </div>
 
-          {/* Title */}
-          <h3
-            id="event-title"
-            className="text-xl sm:text-2xl font-display font-bold tracking-tight text-white mb-3"
-            style={{ fontFamily: 'var(--font-display)' }}
-          >
-            {event.title}
-          </h3>
+          {/* Title and Admin Edit Button */}
+          <div className="flex items-start justify-between gap-3 mb-3">
+            <h3
+              id="event-title"
+              className="text-xl sm:text-2xl font-display font-bold tracking-tight text-white"
+              style={{ fontFamily: 'var(--font-display)' }}
+            >
+              {event.title}
+            </h3>
+
+            {isAdmin && isEditMode && (
+              <button
+                onClick={handleEditClick}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-mono border transition-all cursor-pointer hover:bg-[#B8FF3C]/20 shrink-0"
+                style={{
+                  background: 'rgba(184, 255, 60, 0.1)',
+                  borderColor: 'rgba(184, 255, 60, 0.4)',
+                  color: '#B8FF3C',
+                }}
+                title="Edit this event"
+              >
+                <Edit2 className="w-3 h-3" />
+                <span>Edit</span>
+              </button>
+            )}
+          </div>
 
           {/* Description */}
           {event.description && (
@@ -194,6 +236,19 @@ export default function EventDetailModal({ event, isOpen, onClose }) {
               </div>
             )}
           </div>
+
+          {/* Private Notes Section (Strictly when available to authenticated admin) */}
+          {event.private_notes && (
+            <div className="p-3.5 rounded-xl border border-yellow-500/30 bg-yellow-500/10 mb-5">
+              <div className="flex items-center gap-1.5 text-yellow-400 font-mono text-xs font-semibold mb-1.5">
+                <Lock className="w-3.5 h-3.5" />
+                <span>Confidential Private Notes (Admin Only)</span>
+              </div>
+              <p className="text-xs font-sans text-yellow-200/90 leading-relaxed whitespace-pre-wrap">
+                {event.private_notes}
+              </p>
+            </div>
+          )}
 
           {/* Relationships: Goal & Project */}
           {(event.goal_title || event.project_title) && (
@@ -248,7 +303,7 @@ export default function EventDetailModal({ event, isOpen, onClose }) {
               </a>
 
               <span className="text-[11px] font-mono text-muted/60">
-                Public Record
+                {event.visibility === 'Private' ? 'Protected Record' : 'Public Record'}
               </span>
             </div>
           )}

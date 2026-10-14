@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "node test/secondBrainTest.js",
+    "test": "node test/secondBrainTest.js && node test/adminAuthTest.js",
+    "test:admin": "node test/adminAuthTest.js",
     "test:second-brain": "node test/secondBrainTest.js",
     "migrate": "node src/db/migrate.js",
     "dev": "nodemon src/server.js",
@@ -16,6 +17,7 @@
   "type": "module",
   "dependencies": {
     "better-sqlite3": "^13.0.3",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",

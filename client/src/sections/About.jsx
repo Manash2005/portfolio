@@ -1,6 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, useMotionValue, useTransform } from 'motion/react'
 import data from '../data/portfolio_data.json'
+import { useAdmin } from '../context/AdminContext'
+import { API_BASE_URL } from '../utils/apiConfig'
 
 function PhotoCard({ linkedinUrl }) {
   const [hovered, setHovered] = useState(false)
@@ -108,7 +110,26 @@ function Reveal({ children, delay = 0 }) {
 }
 
 export default function About() {
-  const { about, now } = data.personal
+  const { isAdmin, isEditMode, openEditAbout, contentVersion } = useAdmin()
+  const [personal, setPersonal] = useState(data.personal)
+  const [contact, setContact] = useState(data.contact)
+
+  const apiUrl = API_BASE_URL
+
+  useEffect(() => {
+    fetch(`${apiUrl}/api/portfolio/content`)
+      .then(res => res.json())
+      .then(json => {
+        if (json.data?.personal) setPersonal(json.data.personal)
+        if (json.data?.contact) setContact(json.data.contact)
+      })
+      .catch(() => {
+        // graceful fallback to data.personal
+      })
+  }, [apiUrl, contentVersion])
+
+  const about = personal.about || data.personal.about
+  const now = personal.now || data.personal.now
 
   return (
     <section
@@ -119,9 +140,30 @@ export default function About() {
       <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-16 items-start">
         {/* Text */}
         <div>
-          <Reveal>
-            <p className="text-label mb-6">About</p>
-          </Reveal>
+          <div className="flex items-center justify-between mb-6">
+            <Reveal>
+              <p className="text-label">About</p>
+            </Reveal>
+
+            {isAdmin && isEditMode && (
+              <motion.button
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                onClick={openEditAbout}
+                className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono border transition-all cursor-pointer"
+                style={{
+                  background: 'rgba(184, 255, 60, 0.12)',
+                  borderColor: 'rgba(184, 255, 60, 0.4)',
+                  color: '#B8FF3C',
+                }}
+                title="Edit bio, headline, and current status"
+              >
+                <span>✎</span>
+                <span>Edit Bio & Now</span>
+              </motion.button>
+            )}
+          </div>
+
           <Reveal delay={0.06}>
             <h2
               className="text-heading mb-10"
@@ -158,13 +200,23 @@ export default function About() {
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
             transition={{ duration: 0.6, delay: 0.3 }}
-            className="p-5 rounded-xl"
+            className="p-5 rounded-xl relative group"
             style={{
               background: 'var(--color-surface)',
               border: '1px solid var(--color-hairline)',
             }}
           >
-            <p className="text-label mb-4">Now</p>
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-label">Now</p>
+              {isAdmin && isEditMode && (
+                <button
+                  onClick={openEditAbout}
+                  className="text-xs text-[#B8FF3C] hover:underline font-mono cursor-pointer"
+                >
+                  Edit Now Focus
+                </button>
+              )}
+            </div>
             {Object.entries(now).map(([key, val]) => (
               <div
                 key={key}
@@ -198,7 +250,7 @@ export default function About() {
           viewport={{ once: true }}
           transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1], delay: 0.1 }}
         >
-          <PhotoCard linkedinUrl={data.contact.linkedin} />
+          <PhotoCard linkedinUrl={contact.linkedin || data.contact.linkedin} />
         </motion.div>
       </div>
     </section>
