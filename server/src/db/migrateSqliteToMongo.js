@@ -6,6 +6,7 @@ import {
   EventModel,
   PortfolioContentModel,
   AdminUserModel,
+  DsaProblemModel,
 } from '../models/index.js'
 
 function safeJsonParse(val, fallback = []) {
@@ -156,8 +157,38 @@ export async function syncSqliteToMongo() {
       }
     }
 
+    // 6. Sync DSA Problems
+    const sqliteProblems = sqliteDb.prepare('SELECT * FROM dsa_problems').all()
+    let problemsMigrated = 0
+    for (const p of sqliteProblems) {
+      const exists = await DsaProblemModel.findOne({ id: p.id })
+      if (!exists) {
+        await DsaProblemModel.create({
+          _id: p.id,
+          id: p.id,
+          platform: p.platform || 'leetcode',
+          platform_problem_id: p.platform_problem_id || null,
+          title: p.title,
+          slug: p.slug,
+          canonical_url: p.canonical_url,
+          difficulty: p.difficulty || 'Medium',
+          primary_topic: p.primary_topic || 'Arrays',
+          secondary_topics: safeJsonParse(p.secondary_topics, []),
+          patterns: safeJsonParse(p.patterns, []),
+          is_free: p.is_free !== undefined ? p.is_free : 1,
+          access_status: p.access_status || 'free',
+          estimated_solve_time: p.estimated_solve_time || 25,
+          acceptance_rate: p.acceptance_rate || null,
+          source: p.source || 'curated_catalog',
+          created_at: p.created_at || new Date().toISOString(),
+          updated_at: p.updated_at || new Date().toISOString(),
+        })
+        problemsMigrated++
+      }
+    }
+
     console.log(
-      `[Mongo Migration Complete] Goals: +${goalsMigrated}, Projects: +${projectsMigrated}, Events: +${eventsMigrated}, Content: +${contentMigrated}, Admins: +${adminsMigrated}`
+      `[Mongo Migration Complete] Goals: +${goalsMigrated}, Projects: +${projectsMigrated}, Events: +${eventsMigrated}, Content: +${contentMigrated}, Admins: +${adminsMigrated}, Problems: +${problemsMigrated}`
     )
 
     return {
@@ -167,6 +198,7 @@ export async function syncSqliteToMongo() {
       eventsMigrated,
       contentMigrated,
       adminsMigrated,
+      problemsMigrated,
     }
   } catch (err) {
     console.error('[Mongo Migration Error]', err)

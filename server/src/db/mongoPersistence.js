@@ -8,6 +8,7 @@ import {
   AdminUserModel,
   SessionModel,
   LoginAttemptModel,
+  DsaProblemModel,
 } from '../models/index.js'
 
 function safeJsonParse(val, fallback = []) {
@@ -207,6 +208,44 @@ export async function persistPortfolioContentToMongo(sectionKey, contentJson) {
     )
   } catch (err) {
     console.error('[MongoDB Atlas] Error persisting portfolio content:', err.message)
+  }
+}
+
+/**
+ * Persist or update a DSA Problem in MongoDB Atlas
+ */
+export async function persistProblemToMongo(problem) {
+  if (!problem || !problem.id) return
+  try {
+    if (!isMongoConnected()) await connectMongo()
+    if (!isMongoConnected()) return
+
+    await DsaProblemModel.findOneAndUpdate(
+      { id: problem.id },
+      {
+        _id: problem.id,
+        id: problem.id,
+        platform: problem.platform || 'leetcode',
+        platform_problem_id: problem.platform_problem_id || null,
+        title: problem.title,
+        slug: problem.slug,
+        canonical_url: problem.canonical_url,
+        difficulty: problem.difficulty || 'Medium',
+        primary_topic: problem.primary_topic || 'Arrays',
+        secondary_topics: Array.isArray(problem.secondary_topics) ? problem.secondary_topics : safeJsonParse(problem.secondary_topics, []),
+        patterns: Array.isArray(problem.patterns) ? problem.patterns : safeJsonParse(problem.patterns, []),
+        is_free: problem.is_free !== undefined ? problem.is_free : 1,
+        access_status: problem.access_status || 'free',
+        estimated_solve_time: problem.estimated_solve_time || 25,
+        acceptance_rate: problem.acceptance_rate || null,
+        source: problem.source || 'curated_catalog',
+        created_at: problem.created_at || new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+      { upsert: true, returnDocument: 'after' }
+    )
+  } catch (err) {
+    console.error('[MongoDB Atlas] Error persisting DSA problem:', err.message)
   }
 }
 
@@ -424,6 +463,63 @@ export async function syncMongoAndSqlite() {
           content_json: JSON.stringify(c.content_json || {}),
           updated_at: c.updated_at || new Date().toISOString(),
         })
+      }
+    }
+
+    // 5. Sync DSA Problems
+    const mongoProblems = await DsaProblemModel.find().lean()
+    const sqliteProblems = sqliteDb.prepare('SELECT * FROM dsa_problems').all()
+
+    if (mongoProblems.length > 0) {
+      const upsertSqliteProblem = sqliteDb.prepare(`
+        INSERT INTO dsa_problems (
+          id, platform, platform_problem_id, title, slug, canonical_url,
+          difficulty, primary_topic, secondary_topics, patterns,
+          is_free, access_status, estimated_solve_time, acceptance_rate, source,
+          created_at, updated_at
+        ) VALUES (
+          @id, @platform, @platform_problem_id, @title, @slug, @canonical_url,
+          @difficulty, @primary_topic, @secondary_topics, @patterns,
+          @is_free, @access_status, @estimated_solve_time, @acceptance_rate, @source,
+          @created_at, @updated_at
+        )
+        ON CONFLICT(id) DO UPDATE SET
+          title = excluded.title,
+          slug = excluded.slug,
+          canonical_url = excluded.canonical_url,
+          difficulty = excluded.difficulty,
+          primary_topic = excluded.primary_topic,
+          secondary_topics = excluded.secondary_topics,
+          patterns = excluded.patterns,
+          is_free = excluded.is_free,
+          access_status = excluded.access_status,
+          updated_at = excluded.updated_at
+      `)
+
+      for (const p of mongoProblems) {
+        upsertSqliteProblem.run({
+          id: p.id,
+          platform: p.platform || 'leetcode',
+          platform_problem_id: p.platform_problem_id || null,
+          title: p.title,
+          slug: p.slug,
+          canonical_url: p.canonical_url,
+          difficulty: p.difficulty || 'Medium',
+          primary_topic: p.primary_topic || 'Arrays',
+          secondary_topics: JSON.stringify(Array.isArray(p.secondary_topics) ? p.secondary_topics : []),
+          patterns: JSON.stringify(Array.isArray(p.patterns) ? p.patterns : []),
+          is_free: p.is_free !== undefined ? p.is_free : 1,
+          access_status: p.access_status || 'free',
+          estimated_solve_time: p.estimated_solve_time || 25,
+          acceptance_rate: p.acceptance_rate || null,
+          source: p.source || 'curated_catalog',
+          created_at: p.created_at || new Date().toISOString(),
+          updated_at: p.updated_at || new Date().toISOString(),
+        })
+      }
+    } else if (sqliteProblems.length > 0) {
+      for (const p of sqliteProblems) {
+        await persistProblemToMongo(p)
       }
     }
 

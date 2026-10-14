@@ -1,4 +1,5 @@
 import { db } from './database.js'
+import { comprehensiveProblems } from './comprehensiveDsaCatalog.js'
 
 export const curatedProblems = [
   // FOUNDATIONS: Arrays, Strings, Hashing, Math, Bit Manipulation
@@ -1154,7 +1155,7 @@ export function seedDsaCatalog(targetDb = null) {
     return count
   })
 
-  const problemCount = insertManyProblems(curatedProblems)
+  const problemCount = insertManyProblems(comprehensiveProblems && comprehensiveProblems.length > 0 ? comprehensiveProblems : curatedProblems)
   const achievementCount = insertManyAchievements(defaultAchievements)
 
   console.log(`[DSA Seeder] Seeded ${problemCount} curated problems and ${achievementCount} achievements.`)

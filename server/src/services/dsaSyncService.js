@@ -1,5 +1,6 @@
 import { db } from '../db/database.js'
 import crypto from 'node:crypto'
+import { persistProblemToMongo } from '../db/mongoPersistence.js'
 
 /**
  * Sync recently solved problems from LeetCode GraphQL without fabricating durations
@@ -61,9 +62,23 @@ export async function syncLeetCodeRecentSubmissions(username = 'Manash_22') {
             sub.id,
             title,
             slug,
-            `https://leetcode.com/problems/${slug}/`
-          )
           problem = { id: problemId }
+          persistProblemToMongo({
+            id: problemId,
+            platform: 'leetcode',
+            platform_problem_id: sub.id,
+            title,
+            slug,
+            canonical_url: `https://leetcode.com/problems/${slug}/`,
+            difficulty: 'Medium',
+            primary_topic: 'Arrays',
+            secondary_topics: [],
+            patterns: [],
+            is_free: 1,
+            access_status: 'free',
+            estimated_solve_time: 25,
+            source: 'leetcode_sync'
+          }).catch(() => {})
         }
 
         // 2. Check if this exact submission was already imported

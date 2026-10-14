@@ -28,6 +28,7 @@ import {
 } from '../services/dsaAiCoachService.js'
 import { syncLeetCodeRecentSubmissions } from '../services/dsaSyncService.js'
 import { db } from '../db/database.js'
+import { persistProblemToMongo } from '../db/mongoPersistence.js'
 
 /**
  * GET /api/v1/dsa/overview
@@ -479,6 +480,7 @@ export async function createProblem(req, res) {
     `).run(problemData)
 
     const created = getProblemById(id)
+    persistProblemToMongo(created).catch(() => {})
     return res.status(201).json({ success: true, message: 'Problem added to catalog successfully', problem: created })
   } catch (err) {
     console.error('createProblem error:', err)
