@@ -1,4 +1,4 @@
-import { parseDateString } from '../../utils/activityStats'
+import { parseDateString, getEventColor } from '../../utils/activityStats'
 
 const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -47,6 +47,38 @@ export default function ActivityTooltip({ day, position, visible }) {
         </span>
       </div>
 
+      {day.event && (() => {
+        const eventColor = getEventColor(day.event)
+        return (
+          <div
+            className="mb-2 p-2 rounded text-left transition-all"
+            style={{
+              border: `1px solid ${eventColor}55`,
+              backgroundColor: `${eventColor}14`,
+            }}
+          >
+            <div
+              className="flex items-center gap-1.5 text-[11px] font-mono font-semibold"
+              style={{ color: eventColor }}
+            >
+              <span
+                className="w-1.5 h-1.5 rounded-full"
+                style={{
+                  backgroundColor: eventColor,
+                  boxShadow: `0 0 6px ${eventColor}`,
+                }}
+              />
+              <span>{day.event.title}</span>
+            </div>
+            {day.event.description && (
+              <p className="text-[10px] font-sans text-white/80 mt-1 leading-snug">
+                {day.event.description}
+              </p>
+            )}
+          </div>
+        )
+      })()}
+
       <div
         className="pt-1.5 border-t border-hairline flex items-center justify-between text-[11px] font-mono"
         style={{ color: 'var(--color-muted)' }}
@@ -62,6 +94,14 @@ export default function ActivityTooltip({ day, position, visible }) {
         <span>
           GFG <strong style={{ color: day.gfg > 0 ? 'var(--color-text)' : 'var(--color-muted)' }}>{day.gfg}</strong>
         </span>
+        {day.calendar > 0 && (
+          <>
+            <span>·</span>
+            <span>
+              Second Brain <strong style={{ color: 'var(--color-accent)' }}>{day.calendar}</strong>
+            </span>
+          </>
+        )}
       </div>
     </div>
   )

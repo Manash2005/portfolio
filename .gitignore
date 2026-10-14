@@ -28,3 +28,12 @@ npm-debug.log*
 
 # Vite cache
 .vite/
+
+# SQLite & Second Brain Private Data
+*.db
+*.db-journal
+*.db-wal
+*.sqlite
+data/
+server/data/
+server/messages.json

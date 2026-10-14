@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { generateSkylineDays } from '../utils/activityStats'
 import portfolioData from '../data/portfolio_data.json'
 
-const STORAGE_KEY = 'portfolio_activity_cache_v5'
+const STORAGE_KEY = 'portfolio_activity_cache_v6'
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000 // 6 hours
 const SLOW_THRESHOLD_MS = 4000
 
@@ -27,20 +27,28 @@ function getInitialCache() {
       // If both LC and GFG are empty this is a stale pre-fix cache; force re-fetch
       if (lcCount + gfgCount === 0) {
         localStorage.removeItem(STORAGE_KEY)
-        return { days: [], updatedAt: null, isCached: false, status: 'loading', isFresh: false }
+        return { days: [], updatedAt: null, isCached: false, status: 'loading', isFresh: false, activityEvents: portfolioData.activity_events || [] }
       }
       const normalized = generateSkylineDays(
         cached.githubMap || {},
         cached.leetcodeMap || {},
-        cached.gfgMap || {}
+        cached.gfgMap || {},
+        cached.calendarMap || {}
       )
       const isFresh = Date.now() - cached.timestamp < CACHE_TTL_MS
-      return { days: normalized, updatedAt: cached.timestamp, isCached: true, status: 'ready', isFresh }
+      return {
+        days: normalized,
+        updatedAt: cached.timestamp,
+        isCached: true,
+        status: 'ready',
+        isFresh,
+        activityEvents: cached.activityEvents || portfolioData.activity_events || [],
+      }
     }
   } catch (err) {
     console.warn('Cache parse error:', err)
   }
-  return { days: [], updatedAt: null, isCached: false, status: 'loading', isFresh: false }
+  return { days: [], updatedAt: null, isCached: false, status: 'loading', isFresh: false, activityEvents: portfolioData.activity_events || [] }
 }
 
 export function useActivityData() {
@@ -51,6 +59,7 @@ export function useActivityData() {
   const [isCached, setIsCached] = useState(initial.isCached)
   const [updatedAt, setUpdatedAt] = useState(initial.updatedAt)
   const [errorMessage, setErrorMessage] = useState(null)
+  const [activityEvents, setActivityEvents] = useState(initial.activityEvents || portfolioData.activity_events || [])
   const [leetcodeSummary, setLeetcodeSummary] = useState({
     total: portfolioData.stats.leetcode_fallback || 124,
     easy: 75,
@@ -148,7 +157,40 @@ export function useActivityData() {
         console.warn('GFG calendar proxy failed:', gfgErr)
       }
 
-      // 4. LeetCode difficulty stats
+      // 4. Second Brain Calendar Activity Heatmap
+      let calendarMap = {}
+      try {
+        const calRes = await fetch(`${apiUrl}/api/v1/second-brain/heatmap`, {
+          signal: AbortSignal.timeout(8000),
+        })
+        if (calRes.ok) {
+          const calJson = await calRes.json()
+          if (Array.isArray(calJson.heatmapData)) {
+            calJson.heatmapData.forEach((item) => {
+              if (item.date) calendarMap[item.date] = Number(item.count || 0)
+            })
+          }
+        }
+      } catch (calErr) {
+        console.warn('Second Brain calendar heatmap fetch failed:', calErr)
+      }
+
+      // 5. Dynamic Activity Callout Events for Skyline
+      let dynamicEvents = portfolioData.activity_events || []
+      try {
+        const evtRes = await fetch(`${apiUrl}/api/v1/second-brain/activity-events`, {
+          signal: AbortSignal.timeout(8000),
+        })
+        if (evtRes.ok) {
+          const evtJson = await evtRes.json()
+          if (Array.isArray(evtJson.events) && evtJson.events.length > 0) {
+            dynamicEvents = evtJson.events
+          }
+        }
+      } catch { /* use defaults */ }
+      setActivityEvents(dynamicEvents)
+
+      // 6. LeetCode difficulty stats
       try {
         const lcStatsRes = await fetch(`${apiUrl}/api/v1/leetcode/stats/Manash_22`, {
           signal: AbortSignal.timeout(8000),
@@ -169,7 +211,7 @@ export function useActivityData() {
 
       clearTimeout(slowTimerRef.current)
 
-      const normalizedDays = generateSkylineDays(githubMap, leetcodeMap, gfgMap)
+      const normalizedDays = generateSkylineDays(githubMap, leetcodeMap, gfgMap, calendarMap)
       setDays(normalizedDays)
       setStatus('ready')
       setIsSlow(false)
@@ -183,6 +225,8 @@ export function useActivityData() {
           githubMap,
           leetcodeMap,
           gfgMap,
+          calendarMap,
+          activityEvents: dynamicEvents,
         }))
       } catch (stErr) {
         console.warn('localStorage save failed:', stErr)
@@ -197,12 +241,14 @@ export function useActivityData() {
           const fallbackDays = generateSkylineDays(
             cached.githubMap || {},
             cached.leetcodeMap || {},
-            cached.gfgMap || {}
+            cached.gfgMap || {},
+            cached.calendarMap || {}
           )
           setDays(fallbackDays)
           setUpdatedAt(cached.timestamp)
           setIsCached(true)
           setStatus('ready')
+          if (cached.activityEvents) setActivityEvents(cached.activityEvents)
           return
         }
       } catch { /* ignore */ }
@@ -234,6 +280,7 @@ export function useActivityData() {
     errorMessage,
     leetcodeSummary,
     gfgSummary,
+    activityEvents,
     retry: () => fetchData(),
   }
 }

@@ -1,12 +1,15 @@
 import { motion, AnimatePresence } from 'motion/react'
 import { SiLeetcode, SiGeeksforgeeks } from 'react-icons/si'
 import { FaGithub } from 'react-icons/fa'
+import { Calendar } from 'lucide-react'
+import { Link } from 'react-router-dom'
 
 const TABS = [
   { key: 'all',      label: 'All' },
   { key: 'github',   label: 'GitHub',   Icon: FaGithub },
   { key: 'leetcode', label: 'LeetCode', Icon: SiLeetcode },
   { key: 'gfg',      label: 'GFG',      Icon: SiGeeksforgeeks },
+  { key: 'calendar', label: 'Second Brain', Icon: Calendar },
 ]
 
 export default function SourceTabs({
@@ -146,6 +149,30 @@ export default function SourceTabs({
             </motion.div>
           )}
 
+          {activeTab === 'calendar' && (
+            <motion.div
+              key="cal-summary"
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.2 }}
+              className="flex items-center gap-2 text-xs font-mono"
+              style={{ color: 'var(--color-muted)' }}
+            >
+              <span>
+                Verified activities & sessions from my SQLite database
+              </span>
+              <span>·</span>
+              <Link
+                to="/calendar"
+                className="hover:underline transition-colors font-medium flex items-center gap-1"
+                style={{ color: 'var(--color-accent)' }}
+              >
+                Open Second Brain ↗
+              </Link>
+            </motion.div>
+          )}
+
           {activeTab === 'all' && (
             <motion.div
               key="all-summary"
@@ -155,7 +182,7 @@ export default function SourceTabs({
               className="text-xs font-mono"
               style={{ color: 'var(--color-muted)' }}
             >
-              Merged rolling 12-month activity across GitHub, LeetCode & GFG
+              Merged rolling 12-month activity across GitHub, LeetCode, GFG & Second Brain
             </motion.div>
           )}
         </AnimatePresence>

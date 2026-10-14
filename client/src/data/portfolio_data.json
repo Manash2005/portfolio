@@ -46,6 +46,20 @@
     "gfg_fallback": 174,
     "projects": 4
   },
+  "activity_events": [
+    {
+      "date": "2026-10-13",
+      "category": "failed",
+      "title": "Failed DSA Interview",
+      "description": "5 questions ranging from recursion to dynamic programming."
+    },
+    {
+      "date": "2026-10-14",
+      "category": "rejected",
+      "title": "Application rejected at IBM",
+      "description": "Applied for AI Intern position and got rejected."
+    }
+  ],
   "projects": [
     {
       "title": "Safe NL-to-SQL",

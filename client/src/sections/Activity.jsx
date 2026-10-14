@@ -6,6 +6,7 @@ import SourceTabs from '../components/activity/SourceTabs'
 import InsightsRow from '../components/activity/InsightsRow'
 import FlatGrid from '../components/activity/FlatGrid'
 import SkylineCanvas from '../components/activity/SkylineCanvas'
+import portfolioData from '../data/portfolio_data.json'
 
 const LEVEL_COLORS = [
   'rgba(255, 255, 255, 0.05)',
@@ -25,6 +26,7 @@ export default function Activity() {
     errorMessage,
     leetcodeSummary,
     gfgSummary,
+    activityEvents,
     retry,
   } = useActivityData()
 
@@ -100,6 +102,12 @@ export default function Activity() {
     if (focusedMonth === null) return null
     return months.find((m) => m.monthIndex === focusedMonth)
   }, [months, focusedMonth])
+
+  // Events from database with fallback to portfolio_data.json
+  const events = useMemo(() => {
+    if (activityEvents && activityEvents.length > 0) return activityEvents
+    return portfolioData.activity_events || portfolioData.events || []
+  }, [activityEvents])
 
   return (
     <section
@@ -219,6 +227,7 @@ export default function Activity() {
                   focusedMonth={focusedMonth}
                   isReplaying={isReplaying}
                   onResetMonthFocus={() => setFocusedMonth(null)}
+                  events={events}
                 />
               ) : (
                 <FlatGrid
@@ -227,6 +236,7 @@ export default function Activity() {
                   focusedMonth={focusedMonth}
                   onMonthFocus={(mIdx) => setFocusedMonth(mIdx)}
                   onResetMonthFocus={() => setFocusedMonth(null)}
+                  events={events}
                 />
               )}
 

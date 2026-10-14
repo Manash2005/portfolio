@@ -1,5 +1,5 @@
-import { useState, useRef, useCallback } from 'react'
-import { computeQuantiles, getMonthBoundaries, parseDateString } from '../../utils/activityStats'
+import { useState, useRef, useCallback, useMemo } from 'react'
+import { computeQuantiles, getMonthBoundaries, parseDateString, getEventColor } from '../../utils/activityStats'
 import ActivityTooltip from './ActivityTooltip'
 
 const LEVEL_COLORS = [
@@ -18,12 +18,23 @@ export default function FlatGrid({
   focusedMonth,
   onMonthFocus,
   onResetMonthFocus,
+  events = [],
 }) {
   const [hoveredDay, setHoveredDay] = useState(null)
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 })
   const [activeCellIdx, setActiveCellIdx] = useState(0)
   const [liveAnnouncement, setLiveAnnouncement] = useState('')
   const containerRef = useRef(null)
+
+  const eventsMap = useMemo(() => {
+    const map = {}
+    events.forEach((evt) => {
+      if (evt && evt.date) {
+        map[evt.date] = evt
+      }
+    })
+    return map
+  }, [events])
 
   const quantiles = computeQuantiles(days, sourceKey)
   const months = getMonthBoundaries(days, sourceKey)
@@ -168,6 +179,9 @@ export default function FlatGrid({
               const dimmed = isCellDimmed(day)
               const isHovered = hoveredDay?.date === day.date
               const isToday = day.date === new Date().toISOString().split('T')[0]
+              const event = eventsMap[day.date]
+              const eventColor = event ? getEventColor(event) : null
+              const dayWithEvent = event ? { ...day, event } : day
 
               return (
                 <button
@@ -175,12 +189,12 @@ export default function FlatGrid({
                   data-cell-idx={idx}
                   tabIndex={activeCellIdx === idx ? 0 : -1}
                   disabled={day.isFuture}
-                  onClick={() => announceDay(day)}
-                  onMouseEnter={(e) => handleMouseEnter(day, e)}
+                  onClick={() => announceDay(dayWithEvent)}
+                  onMouseEnter={(e) => handleMouseEnter(dayWithEvent, e)}
                   onMouseLeave={handleMouseLeave}
                   onFocus={() => {
                     setActiveCellIdx(idx)
-                    announceDay(day)
+                    announceDay(dayWithEvent)
                   }}
                   className="w-3 h-3 rounded-[2.5px] transition-all duration-150 relative focus-visible:outline-none"
                   style={{
@@ -191,13 +205,27 @@ export default function FlatGrid({
                     transform: isHovered ? 'scale(1.25)' : 'scale(1)',
                     boxShadow: isHovered
                       ? '0 0 8px var(--color-accent)'
+                      : event
+                      ? `0 0 8px ${eventColor}99`
                       : isToday
                       ? 'inset 0 0 0 1px var(--color-accent)'
                       : 'none',
-                    border: '1px solid rgba(255, 255, 255, 0.03)',
+                    border: event
+                      ? `1px solid ${eventColor}`
+                      : '1px solid rgba(255, 255, 255, 0.03)',
                   }}
-                  aria-label={`${day.date}: ${count} contributions`}
-                />
+                  aria-label={`${day.date}: ${count} contributions${event ? ` - Event: ${event.title}` : ''}`}
+                >
+                  {event && (
+                    <span
+                      className="absolute inset-0 m-auto w-1.5 h-1.5 rounded-full pointer-events-none"
+                      style={{
+                        backgroundColor: eventColor,
+                        boxShadow: `0 0 6px ${eventColor}`,
+                      }}
+                    />
+                  )}
+                </button>
               )
             })}
           </div>

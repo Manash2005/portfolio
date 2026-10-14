@@ -7,6 +7,7 @@ import Lenis from 'lenis'
 import 'lenis/dist/lenis.css'
 import Home from './pages/Home'
 import AllProjects from './pages/AllProjects'
+import SecondBrain from './pages/SecondBrain'
 import Navbar from './layouts/Navbar'
 import Loader from './components/Loader'
 import Footer from './components/Footer'
@@ -60,6 +61,8 @@ function App() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/projects" element={<AllProjects />} />
+            <Route path="/calendar" element={<SecondBrain />} />
+            <Route path="/second-brain" element={<SecondBrain />} />
           </Routes>
           <Footer />
         </>

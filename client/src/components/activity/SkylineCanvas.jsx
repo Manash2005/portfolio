@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { OrbitControls } from '@react-three/drei'
+import { OrbitControls, Html } from '@react-three/drei'
 import * as THREE from 'three'
-import { computeQuantiles, parseDateString } from '../../utils/activityStats'
+import { computeQuantiles, parseDateString, getEventColor } from '../../utils/activityStats'
 import ActivityTooltip from './ActivityTooltip'
 
 const ACCENT_COLOR = new THREE.Color(0xB8FF3C)
@@ -22,6 +22,198 @@ const dummyPosition = new THREE.Vector3()
 const dummyScale = new THREE.Vector3()
 const dummyColor = new THREE.Color()
 
+/**
+ * Calculates responsive stem height and horizontal offset for event callouts.
+ * If points are towards the ends (recent/right or old/left), this offsets the label
+ * inwards towards the center so callouts are never clipped and remain centered in view.
+ */
+function getEventLayout(weekIndex, eventIdx) {
+  // Center is week 26 (out of 53 weeks, 0..52)
+  const diff = weekIndex - 26
+
+  // Stagger height across events so multiple callouts don't overlap vertically
+  const stemHeight = 60 + (eventIdx % 3) * 45
+
+  let badgeOffsetX = 0
+  if (diff > 4) {
+    // Recent events (right side): pull inwards to the left towards center
+    const factor = Math.min(1, (diff - 4) / 22)
+    const basePull = 80 + factor * 60 // 80px to 140px pull
+    const stagger = (eventIdx % 2) * 45 // Stagger horizontal position for events on same/near date
+    badgeOffsetX = -Math.round(basePull + stagger)
+  } else if (diff < -4) {
+    // Older events (left side): pull inwards to the right towards center
+    const factor = Math.min(1, (-diff - 4) / 22)
+    const basePull = 80 + factor * 60 // 80px to 140px pull
+    const stagger = (eventIdx % 2) * 45
+    badgeOffsetX = Math.round(basePull + stagger)
+  } else {
+    // Near center (weeks 22..30): slight stagger if multiple events
+    badgeOffsetX = eventIdx > 0 ? ((eventIdx % 2 === 1 ? -1 : 1) * 35) : 0
+  }
+
+  return { stemHeight, badgeOffsetX }
+}
+
+/**
+ * Generates an elbowed connector path with rounded 90-degree corners.
+ * Drops vertically from badge, bends horizontally towards the target date column,
+ * then bends vertically down to touch the dot on top of the building.
+ */
+function generateElbowPath(startX, startY, endX, endY) {
+  const dx = endX - startX
+  const dy = endY - startY
+
+  if (Math.abs(dx) < 6) {
+    return `M ${endX} ${startY} L ${endX} ${endY}`
+  }
+
+  const dropFirst = 14
+  const elbowY = startY + dropFirst
+  const radius = Math.min(8, Math.abs(dx) / 2, Math.abs(dy - dropFirst) / 2)
+  const dirX = dx > 0 ? 1 : -1
+
+  return [
+    `M ${startX} ${startY}`,
+    `L ${startX} ${elbowY - radius}`,
+    `Q ${startX} ${elbowY} ${startX + dirX * radius} ${elbowY}`,
+    `L ${endX - dirX * radius} ${elbowY}`,
+    `Q ${endX} ${elbowY} ${endX} ${elbowY + radius}`,
+    `L ${endX} ${endY}`,
+  ].join(' ')
+}
+
+function SkylineEventCallout({
+  event,
+  dayIndex,
+  days,
+  currentHeightsRef,
+  focusedMonth,
+  eventIdx = 0,
+}) {
+  const groupRef = useRef()
+  const [hovered, setHovered] = useState(false)
+  const day = days[dayIndex]
+
+  useFrame(() => {
+    if (!groupRef.current) return
+    const h = currentHeightsRef.current?.[dayIndex] || 0.04
+    groupRef.current.position.y = Math.max(0.04, h)
+  })
+
+  if (!day) return null
+  const posX = (day.weekIndex - 26) * 0.20
+  const posZ = (day.dayOfWeek - 3) * 0.20
+
+  const isDimmed =
+    focusedMonth !== null &&
+    focusedMonth !== undefined &&
+    parseDateString(day.date).getMonth() !== focusedMonth
+
+  const { stemHeight, badgeOffsetX } = getEventLayout(day.weekIndex, eventIdx)
+  const eventColor = getEventColor(event)
+  const elbowPath = generateElbowPath(badgeOffsetX, -stemHeight, 0, -3)
+
+  return (
+    <group ref={groupRef} position={[posX, 0.04, posZ]}>
+      <Html
+        position={[0, 0, 0]}
+        center={false}
+        zIndexRange={[100, 0]}
+        style={{
+          pointerEvents: 'none',
+          transition: 'opacity 0.2s ease',
+          opacity: isDimmed ? 0.2 : 1,
+        }}
+      >
+        <div className="relative select-none" style={{ filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.65))' }}>
+          {/* Small title badge positioned at (badgeOffsetX, -stemHeight) */}
+          <div
+            onMouseEnter={() => setHovered(true)}
+            onMouseLeave={() => setHovered(false)}
+            className="absolute cursor-pointer pointer-events-auto transition-all duration-200"
+            style={{
+              left: `${badgeOffsetX}px`,
+              top: `${-stemHeight}px`,
+              transform: 'translate(-50%, -100%)',
+              marginBottom: '-1px',
+            }}
+          >
+            <div
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[11px] font-mono whitespace-nowrap shadow-xl transition-all duration-200 ${
+                hovered ? 'scale-105' : ''
+              }`}
+              style={{
+                backgroundColor: hovered ? '#121218' : 'rgba(14, 14, 20, 0.95)',
+                borderColor: hovered ? eventColor : `${eventColor}70`,
+                color: hovered ? eventColor : '#FFFFFF',
+                boxShadow: hovered ? `0 0 14px ${eventColor}55` : '0 4px 12px rgba(0,0,0,0.5)',
+              }}
+            >
+              <span
+                className="w-1.5 h-1.5 rounded-full"
+                style={{
+                  backgroundColor: eventColor,
+                  boxShadow: `0 0 6px ${eventColor}`,
+                }}
+              />
+              <span className="font-semibold tracking-tight">{event.title}</span>
+            </div>
+
+            {/* Hover details popover */}
+            {hovered && (event.description || day.date) && (
+              <div
+                className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 p-2.5 rounded-lg border border-hairline bg-[#0E0E14]/98 backdrop-blur-xl text-left pointer-events-none z-50 shadow-2xl"
+                style={{
+                  boxShadow: `0 10px 28px rgba(0,0,0,0.85), 0 0 0 1px ${eventColor}40`,
+                }}
+              >
+                <div
+                  className="text-[10px] font-mono mb-1 font-semibold flex items-center justify-between"
+                  style={{ color: eventColor }}
+                >
+                  <span>{event.title}</span>
+                  <span className="text-muted/80">{day.date}</span>
+                </div>
+                {event.description && (
+                  <p className="text-[11px] font-sans text-muted leading-relaxed">
+                    {event.description}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Elbowed connector SVG with dot at (0, -3) */}
+          <svg
+            style={{
+              position: 'absolute',
+              left: 0,
+              top: 0,
+              overflow: 'visible',
+              pointerEvents: 'none',
+            }}
+          >
+            {/* The elbowed leader line */}
+            <path
+              d={elbowPath}
+              fill="none"
+              stroke={eventColor}
+              strokeWidth="1.5"
+              strokeOpacity="0.85"
+              strokeLinecap="round"
+            />
+
+            {/* Single dot at the end touching the building */}
+            <circle cx="0" cy="-3" r="3" fill={eventColor} />
+            <circle cx="0" cy="-3" r="6" stroke={eventColor} strokeWidth="1" strokeOpacity="0.35" />
+          </svg>
+        </div>
+      </Html>
+    </group>
+  )
+}
+
 function SkylineScene({
   days,
   sourceKey,
@@ -29,6 +221,7 @@ function SkylineScene({
   isReplaying,
   onDayHover,
   onDoubleReset,
+  events = [],
 }) {
   const meshRef = useRef()
   const controlsRef = useRef()
@@ -68,13 +261,17 @@ function SkylineScene({
       }
     }
 
+    const maxVal = quantiles.maxVal || 1
+    // Strictly linear unit height: count * unitHeight ensures value 6 is exactly 2x value 3 and 6x value 1
+    const unitHeight = Math.max(0.06, Math.min(0.2, 1.8 / maxVal))
+
     days.forEach((day, i) => {
       if (day.isFuture) {
         targetHeights.current[i] = 0.01
         return
       }
       const count = day[sourceKey] || 0
-      targetHeights.current[i] = count > 0 ? quantiles.getNormalizedHeight(count) * 1.6 : 0.04
+      targetHeights.current[i] = count > 0 ? count * unitHeight : 0.04
     })
     invalidate()
   }, [days, sourceKey, quantiles, instanceCount, invalidate])
@@ -260,6 +457,17 @@ function SkylineScene({
     if (onDoubleReset) onDoubleReset()
   }
 
+  const eventItems = useMemo(() => {
+    if (!events || events.length === 0 || !days || days.length === 0) return []
+    return events
+      .map((evt, idx) => {
+        const dayIdx = days.findIndex((d) => d.date === evt.date)
+        if (dayIdx === -1) return null
+        return { event: evt, dayIndex: dayIdx, key: `${evt.date}-${idx}`, eventIdx: idx }
+      })
+      .filter(Boolean)
+  }, [events, days])
+
   return (
     <>
       <ambientLight intensity={0.65} />
@@ -301,6 +509,19 @@ function SkylineScene({
           opacity={0.98}
         />
       </instancedMesh>
+
+      {/* Important event callouts pointing from buildings */}
+      {eventItems.map((item) => (
+        <SkylineEventCallout
+          key={item.key}
+          event={item.event}
+          dayIndex={item.dayIndex}
+          days={days}
+          currentHeightsRef={currentHeights}
+          focusedMonth={focusedMonth}
+          eventIdx={item.eventIdx}
+        />
+      ))}
     </>
   )
 }
@@ -311,15 +532,31 @@ export default function SkylineCanvas({
   focusedMonth,
   isReplaying,
   onResetMonthFocus,
+  events = [],
 }) {
   const [hoveredDay, setHoveredDay] = useState(null)
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 })
   const containerRef = useRef(null)
 
+  const eventsMap = useMemo(() => {
+    const map = {}
+    events.forEach((evt) => {
+      if (evt && evt.date) {
+        map[evt.date] = evt
+      }
+    })
+    return map
+  }, [events])
+
   const handleDayHover = useCallback((day, pos) => {
-    setHoveredDay(day)
+    if (!day) {
+      setHoveredDay(null)
+      return
+    }
+    const dayWithEvent = eventsMap[day.date] ? { ...day, event: eventsMap[day.date] } : day
+    setHoveredDay(dayWithEvent)
     if (pos) setTooltipPos(pos)
-  }, [])
+  }, [eventsMap])
 
   return (
     <div
@@ -345,6 +582,7 @@ export default function SkylineCanvas({
           isReplaying={isReplaying}
           onDayHover={handleDayHover}
           onDoubleReset={onResetMonthFocus}
+          events={events}
         />
       </Canvas>
 

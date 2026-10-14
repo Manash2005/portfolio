@@ -23,3 +23,11 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# SQLite & Data
+*.db
+*.db-journal
+*.db-wal
+*.sqlite
+data/
+messages.json

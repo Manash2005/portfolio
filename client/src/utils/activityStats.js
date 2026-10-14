@@ -25,9 +25,9 @@ export function parseDateString(str) {
  * Generates an array of exactly 371 days (53 weeks x 7 days),
  * Sunday-aligned, ending on the Saturday of the current week.
  *
- * Merges githubMap, leetcodeMap, and gfgMap by 'YYYY-MM-DD'.
+ * Merges githubMap, leetcodeMap, gfgMap, and calendarMap by 'YYYY-MM-DD'.
  */
-export function generateSkylineDays(githubMap = {}, leetcodeMap = {}, gfgMap = {}) {
+export function generateSkylineDays(githubMap = {}, leetcodeMap = {}, gfgMap = {}, calendarMap = {}) {
   const today = new Date()
   const todayStr = formatDate(today)
 
@@ -52,13 +52,15 @@ export function generateSkylineDays(githubMap = {}, leetcodeMap = {}, gfgMap = {
     const gh = isFuture ? 0 : Number(githubMap[dateStr] || 0)
     const lc = isFuture ? 0 : Number(leetcodeMap[dateStr] || 0)
     const gfg = isFuture ? 0 : Number(gfgMap[dateStr] || 0)
-    const all = gh + lc + gfg
+    const cal = isFuture ? 0 : Number(calendarMap[dateStr] || 0)
+    const all = gh + lc + gfg + cal
 
     days.push({
       date: dateStr,
       github: gh,
       leetcode: lc,
       gfg: gfg,
+      calendar: cal,
       all,
       dayOfWeek,
       weekIndex,
@@ -167,13 +169,15 @@ export function computeQuantiles(days, sourceKey = 'all') {
       q50: 1,
       q75: 1,
       p95: 1,
+      maxVal: 1,
       getLevel: () => 0,
       getNormalizedHeight: () => 0,
     }
   }
 
+  const maxVal = nonZero[nonZero.length - 1] || 1
   const p95Idx = Math.floor(nonZero.length * 0.95)
-  const p95 = Math.max(1, nonZero[p95Idx] || nonZero[nonZero.length - 1])
+  const p95 = Math.max(1, nonZero[p95Idx] || maxVal)
 
   const q25 = nonZero[Math.floor(nonZero.length * 0.25)] || 1
   const q50 = nonZero[Math.floor(nonZero.length * 0.5)] || 1
@@ -184,6 +188,7 @@ export function computeQuantiles(days, sourceKey = 'all') {
     q50,
     q75,
     p95,
+    maxVal,
     getLevel: (count) => {
       if (!count || count <= 0) return 0
       if (count <= q25) return 1
@@ -191,13 +196,11 @@ export function computeQuantiles(days, sourceKey = 'all') {
       if (count <= q75) return 3
       return 4
     },
-    // Height between 0.05 (base tile) and 1.0 (max bar height) using sqrt scaling
+    // Strictly linear normalized height directly proportional to count
+    // (e.g. value 6 is exactly 2x value 3 and 6x value 1)
     getNormalizedHeight: (count) => {
-      if (!count || count <= 0) return 0.02
-      const clamped = Math.min(count, p95)
-      // sqrt scale for balanced skyline heights
-      const ratio = Math.sqrt(clamped) / Math.sqrt(p95)
-      return 0.12 + ratio * 0.88
+      if (!count || count <= 0) return 0
+      return count / maxVal
     },
   }
 }
@@ -240,3 +243,63 @@ export function getMonthBoundaries(days, sourceKey = 'all') {
 
   return months
 }
+
+/**
+ * Event category color palette and helper function.
+ * Supports categories: failed/rejection (red), orange/setback, yellow/interview, green/success.
+ * Also supports direct custom hex code via event.color or auto-detection from title.
+ */
+export const EVENT_CATEGORY_COLORS = {
+  // Red: failure / rejection
+  failed: '#FF4D4D',
+  fail: '#FF4D4D',
+  rejection: '#FF4D4D',
+  rejected: '#FF4D4D',
+  failure: '#FF4D4D',
+  red: '#FF4D4D',
+
+  // Orange: setback / warning / obstacle
+  orange: '#FF8A3D',
+  setback: '#FF8A3D',
+  warning: '#FF8A3D',
+  obstacle: '#FF8A3D',
+
+  // Yellow: interview / assessment / pending / milestone
+  yellow: '#FFD13B',
+  interview: '#FFD13B',
+  assessment: '#FFD13B',
+  pending: '#FFD13B',
+  milestone: '#FFD13B',
+
+  // Green: success / offer / achievement / pass
+  green: '#B8FF3C',
+  lime: '#B8FF3C',
+  success: '#B8FF3C',
+  offer: '#B8FF3C',
+  achievement: '#B8FF3C',
+  win: '#B8FF3C',
+  passed: '#B8FF3C',
+}
+
+export function getEventColor(event) {
+  if (!event) return '#B8FF3C'
+  if (event.color && (event.color.startsWith('#') || event.color.startsWith('rgb'))) {
+    return event.color
+  }
+
+  const key = (event.category || event.type || '').toLowerCase().trim()
+  if (EVENT_CATEGORY_COLORS[key]) {
+    return EVENT_CATEGORY_COLORS[key]
+  }
+
+  // Auto-detect from title if category is omitted
+  const title = (event.title || '').toLowerCase()
+  if (title.includes('fail') || title.includes('reject')) return '#FF4D4D'
+  if (title.includes('interview') || title.includes('assess')) return '#FFD13B'
+  if (title.includes('offer') || title.includes('pass') || title.includes('win') || title.includes('accept') || title.includes('success')) {
+    return '#B8FF3C'
+  }
+
+  return '#B8FF3C'
+}
+
