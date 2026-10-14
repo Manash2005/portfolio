@@ -4,6 +4,15 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 import { db } from '../db/database.js'
 import { getPortfolioDataFallback } from '../db/seedInitialData.js'
+import {
+  persistGoalToMongo,
+  deleteGoalFromMongo,
+  persistProjectToMongo,
+  deleteProjectFromMongo,
+  persistEventToMongo,
+  deleteEventFromMongo,
+  persistPortfolioContentToMongo,
+} from '../db/mongoPersistence.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -154,6 +163,8 @@ export function updatePortfolioContent(req, res) {
         updated_at = datetime('now')
     `).run(section, jsonStr)
 
+    persistPortfolioContentToMongo(section, newContent).catch(() => {})
+
     res.json({
       success: true,
       message: `Section ${section} updated successfully`,
@@ -270,6 +281,7 @@ export function createProject(req, res) {
     )
 
     const created = db.prepare('SELECT * FROM projects WHERE id = ?').get(id)
+    persistProjectToMongo(created).catch(() => {})
     res.status(201).json({ success: true, message: 'Project created successfully', data: formatProjectRow(created) })
   } catch (err) {
     console.error('Error creating project:', err)
@@ -347,6 +359,7 @@ export function updateProject(req, res) {
     )
 
     const updated = db.prepare('SELECT * FROM projects WHERE id = ?').get(id)
+    persistProjectToMongo(updated).catch(() => {})
     res.json({ success: true, message: 'Project updated successfully', data: formatProjectRow(updated) })
   } catch (err) {
     console.error('Error updating project:', err)
@@ -367,6 +380,7 @@ export function deleteProject(req, res) {
     }
 
     db.prepare('DELETE FROM projects WHERE id = ?').run(id)
+    deleteProjectFromMongo(id).catch(() => {})
     res.json({ success: true, message: 'Project deleted successfully', id })
   } catch (err) {
     console.error('Error deleting project:', err)
@@ -476,6 +490,7 @@ export function createEvent(req, res) {
     )
 
     const created = db.prepare('SELECT * FROM events WHERE id = ?').get(id)
+    persistEventToMongo(created).catch(() => {})
     res.status(201).json({ success: true, message: 'Event created successfully', data: formatEventRow(created) })
   } catch (err) {
     console.error('Error creating event:', err)
@@ -545,6 +560,7 @@ export function updateEvent(req, res) {
     )
 
     const updated = db.prepare('SELECT * FROM events WHERE id = ?').get(id)
+    persistEventToMongo(updated).catch(() => {})
     res.json({ success: true, message: 'Event updated successfully', data: formatEventRow(updated) })
   } catch (err) {
     console.error('Error updating event:', err)
@@ -565,6 +581,7 @@ export function deleteEvent(req, res) {
     }
 
     db.prepare('DELETE FROM events WHERE id = ?').run(id)
+    deleteEventFromMongo(id).catch(() => {})
     res.json({ success: true, message: 'Event deleted successfully', id })
   } catch (err) {
     console.error('Error deleting event:', err)
@@ -629,6 +646,7 @@ export function createGoal(req, res) {
     `).run(goalData)
 
     const created = db.prepare('SELECT * FROM goals WHERE id = ?').get(id)
+    persistGoalToMongo(created).catch(() => {})
     res.status(201).json({ success: true, message: 'Goal created successfully', goal: created })
   } catch (err) {
     console.error('Error creating goal:', err)
@@ -669,6 +687,7 @@ export function updateGoal(req, res) {
     `).run(title, description, category, status, target_date, color, id)
 
     const updated = db.prepare('SELECT * FROM goals WHERE id = ?').get(id)
+    persistGoalToMongo(updated).catch(() => {})
     res.json({ success: true, message: 'Goal updated successfully', goal: updated })
   } catch (err) {
     console.error('Error updating goal:', err)
@@ -693,6 +712,7 @@ export function deleteGoal(req, res) {
     db.prepare('UPDATE events SET goal_id = NULL WHERE goal_id = ?').run(id)
 
     db.prepare('DELETE FROM goals WHERE id = ?').run(id)
+    deleteGoalFromMongo(id).catch(() => {})
     res.json({ success: true, message: 'Goal deleted successfully', id })
   } catch (err) {
     console.error('Error deleting goal:', err)

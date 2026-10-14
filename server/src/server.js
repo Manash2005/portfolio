@@ -12,6 +12,8 @@ import dsaRoutes from "./routes/dsaRoutes.js";
 import { getHeatmapActivity } from "./controllers/secondBrainController.js";
 import { getPortfolioContent, getPublicProjects } from "./controllers/adminController.js";
 import { autoProvisionFromEnv } from "./db/provisionAdmin.js";
+import { connectMongo } from "./db/mongo.js";
+import { syncMongoAndSqlite } from "./db/mongoPersistence.js";
 
 dotenv.config();
 
@@ -130,6 +132,13 @@ app.use("/api/v1/admin", adminRoutes);
 
 // Ensure default admin user is initialized
 autoProvisionFromEnv();
+
+// Initialize MongoDB Atlas connection & cloud hydration
+connectMongo()
+  .then(() => syncMongoAndSqlite())
+  .catch((err) => {
+    console.error("[MongoDB Startup Error]", err.message);
+  });
 
 const PORT = process.env.PORT || 8000;
 
