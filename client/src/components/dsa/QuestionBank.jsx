@@ -10,7 +10,12 @@ import {
   RotateCcw,
   Clock,
   Star,
+  BookOpen,
+  Plus,
+  X,
+  Link2,
 } from 'lucide-react'
+import { useAdmin } from '../../context/AdminContext'
 
 export const TOPIC_LIST = [
   'All',
@@ -46,11 +51,60 @@ export default function QuestionBank({
   onSelectProblemForPractice,
   loading = false,
 }) {
+  const { isAdmin, authFetch } = useAdmin()
   const [selectedTopic, setSelectedTopic] = useState(filters.topic || 'All')
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const [addLoading, setAddLoading] = useState(false)
+  const [addError, setAddError] = useState(null)
+  const [addSuccess, setAddSuccess] = useState(null)
+  const [addForm, setAddForm] = useState({
+    url: '',
+    title: '',
+    platform: 'leetcode',
+    difficulty: 'Medium',
+    primary_topic: 'Arrays',
+  })
 
   const handleTopicClick = (topic) => {
     setSelectedTopic(topic)
     onFilterChange({ ...filters, topic, page: 1 })
+  }
+
+  const handleAddProblem = async (e) => {
+    e.preventDefault()
+    if (!addForm.url.trim() && !addForm.title.trim()) {
+      setAddError('Please provide a LeetCode/GFG problem URL or title')
+      return
+    }
+
+    setAddLoading(true)
+    setAddError(null)
+    setAddSuccess(null)
+
+    try {
+      const res = await authFetch('/api/v1/dsa/problems', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(addForm),
+      })
+      const json = await res.json()
+      if (!res.ok || !json.success) {
+        throw new Error(json.error || 'Failed to add problem')
+      }
+
+      setAddSuccess(`Added "${json.problem?.title || addForm.title}" to catalog!`)
+      setAddForm({ url: '', title: '', platform: 'leetcode', difficulty: 'Medium', primary_topic: 'Arrays' })
+      setTimeout(() => {
+        setIsAddModalOpen(false)
+        setAddSuccess(null)
+      }, 1200)
+
+      onFilterChange({ ...filters })
+    } catch (err) {
+      setAddError(err.message || 'Failed to add problem')
+    } finally {
+      setAddLoading(false)
+    }
   }
 
   return (
@@ -66,10 +120,123 @@ export default function QuestionBank({
             Curated LeetCode & GeeksforGeeks problems organized by algorithmic patterns and data structures.
           </p>
         </div>
-        <div className="flex items-center gap-2 text-xs font-mono text-muted bg-[#12121A] px-3 py-1.5 rounded-xl border border-hairline">
-          <span>{pagination.total || problems.length} Problems Catalogued</span>
+        <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2 text-xs font-mono text-muted bg-[#12121A] px-3 py-1.5 rounded-xl border border-hairline">
+            <span>{pagination.total || problems.length} Problems Catalogued</span>
+          </div>
+
+          {isAdmin && (
+            <button
+              onClick={() => setIsAddModalOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-accent text-black font-mono font-semibold text-xs hover:brightness-110 active:scale-95 transition-all shadow-md cursor-pointer"
+              title="Add any LeetCode or GeeksforGeeks problem to catalog"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Add Problem</span>
+            </button>
+          )}
         </div>
       </div>
+
+      {/* Add Problem Modal */}
+      {isAddModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+          <div className="relative w-full max-w-lg rounded-2xl border border-white/10 bg-[#0E0E14] text-white p-6 shadow-2xl flex flex-col gap-4">
+            <div className="flex items-center justify-between border-b border-white/10 pb-3">
+              <div className="flex items-center gap-2">
+                <Link2 className="w-4 h-4 text-accent" />
+                <h4 className="text-sm font-display font-bold text-white">Add Problem to Catalog</h4>
+              </div>
+              <button
+                onClick={() => setIsAddModalOpen(false)}
+                className="p-1 rounded text-muted hover:text-white cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {addError && (
+              <div className="p-2.5 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-mono">
+                {addError}
+              </div>
+            )}
+            {addSuccess && (
+              <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-mono">
+                {addSuccess}
+              </div>
+            )}
+
+            <form onSubmit={handleAddProblem} className="flex flex-col gap-3">
+              <div className="flex flex-col gap-1">
+                <label className="text-[11px] font-mono text-muted uppercase">LeetCode or GFG Problem URL</label>
+                <input
+                  type="url"
+                  placeholder="e.g. https://leetcode.com/problems/trapping-rain-water/"
+                  value={addForm.url}
+                  onChange={(e) => setAddForm({ ...addForm, url: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl bg-[#14141E] border border-hairline text-xs font-mono text-white placeholder:text-muted focus:outline-none focus:border-accent"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="text-[11px] font-mono text-muted uppercase">Problem Title (Optional if URL provided)</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Trapping Rain Water"
+                  value={addForm.title}
+                  onChange={(e) => setAddForm({ ...addForm, title: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl bg-[#14141E] border border-hairline text-xs font-mono text-white placeholder:text-muted focus:outline-none focus:border-accent"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col gap-1">
+                  <label className="text-[11px] font-mono text-muted uppercase">Difficulty</label>
+                  <select
+                    value={addForm.difficulty}
+                    onChange={(e) => setAddForm({ ...addForm, difficulty: e.target.value })}
+                    className="px-3 py-2 rounded-xl bg-[#14141E] border border-hairline text-xs font-mono text-white"
+                  >
+                    <option value="Easy">Easy</option>
+                    <option value="Medium">Medium</option>
+                    <option value="Hard">Hard</option>
+                  </select>
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label className="text-[11px] font-mono text-muted uppercase">Primary Topic</label>
+                  <select
+                    value={addForm.primary_topic}
+                    onChange={(e) => setAddForm({ ...addForm, primary_topic: e.target.value })}
+                    className="px-3 py-2 rounded-xl bg-[#14141E] border border-hairline text-xs font-mono text-white"
+                  >
+                    {TOPIC_LIST.filter(t => t !== 'All').map(t => (
+                      <option key={t} value={t}>{t}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-white/10 mt-1">
+                <button
+                  type="button"
+                  onClick={() => setIsAddModalOpen(false)}
+                  className="px-3 py-1.5 rounded-xl text-xs font-mono text-muted hover:text-white cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={addLoading}
+                  className="px-4 py-1.5 rounded-xl bg-accent text-black font-mono font-semibold text-xs hover:brightness-110 active:scale-95 transition-all cursor-pointer disabled:opacity-50"
+                >
+                  {addLoading ? 'Adding...' : 'Add to Catalog'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* 1. Search & Filter Bar */}
       <div className="p-4 sm:p-5 rounded-2xl border border-hairline bg-[#0E0E14] flex flex-col gap-4">

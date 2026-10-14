@@ -387,3 +387,101 @@ export async function updatePenalties(req, res) {
     return res.status(500).json({ success: false, error: err.message })
   }
 }
+
+/**
+ * POST /api/v1/dsa/problems
+ * Add any custom or free problem to the catalog by URL or Title
+ */
+export async function createProblem(req, res) {
+  try {
+    let {
+      url,
+      title,
+      platform = 'leetcode',
+      difficulty = 'Medium',
+      primary_topic = 'Arrays',
+      secondary_topics = [],
+      patterns = [],
+    } = req.body || {}
+
+    if (!url && !title) {
+      return res.status(400).json({ success: false, error: 'Problem URL or title is required' })
+    }
+
+    // If URL is provided, parse title and platform
+    let slug = ''
+    let canonicalUrl = url || ''
+
+    if (url) {
+      if (url.includes('leetcode.com')) {
+        platform = 'leetcode'
+        const match = url.match(/\/problems\/([^/?#]+)/)
+        if (match) slug = match[1]
+      } else if (url.includes('geeksforgeeks.org')) {
+        platform = 'geeksforgeeks'
+        const match = url.match(/\/problems\/([^/?#]+)/)
+        if (match) slug = match[1]
+      }
+    }
+
+    if (!slug && title) {
+      slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+    }
+
+    if (!title && slug) {
+      title = slug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+    }
+
+    if (!canonicalUrl) {
+      canonicalUrl = platform === 'leetcode' 
+        ? `https://leetcode.com/problems/${slug}/` 
+        : `https://www.geeksforgeeks.org/problems/${slug}/`
+    }
+
+    const id = `${platform === 'leetcode' ? 'lc' : 'gfg'}-${slug}`
+
+    const problemData = {
+      id,
+      platform,
+      platform_problem_id: null,
+      title,
+      slug,
+      canonical_url: canonicalUrl,
+      difficulty: ['Easy', 'Medium', 'Hard'].includes(difficulty) ? difficulty : 'Medium',
+      primary_topic: primary_topic || 'Arrays',
+      secondary_topics: JSON.stringify(Array.isArray(secondary_topics) ? secondary_topics : []),
+      patterns: JSON.stringify(Array.isArray(patterns) ? patterns : []),
+      is_free: 1,
+      access_status: 'free',
+      estimated_solve_time: difficulty === 'Hard' ? 40 : difficulty === 'Medium' ? 25 : 15,
+      acceptance_rate: null,
+      source: 'user_created',
+    }
+
+    db.prepare(`
+      INSERT INTO dsa_problems (
+        id, platform, platform_problem_id, title, slug, canonical_url,
+        difficulty, primary_topic, secondary_topics, patterns,
+        is_free, access_status, estimated_solve_time, acceptance_rate, source,
+        created_at, updated_at
+      ) VALUES (
+        @id, @platform, @platform_problem_id, @title, @slug, @canonical_url,
+        @difficulty, @primary_topic, @secondary_topics, @patterns,
+        @is_free, @access_status, @estimated_solve_time, @acceptance_rate, @source,
+        datetime('now'), datetime('now')
+      )
+      ON CONFLICT(id) DO UPDATE SET
+        title = excluded.title,
+        canonical_url = excluded.canonical_url,
+        difficulty = excluded.difficulty,
+        primary_topic = excluded.primary_topic,
+        updated_at = datetime('now')
+    `).run(problemData)
+
+    const created = getProblemById(id)
+    return res.status(201).json({ success: true, message: 'Problem added to catalog successfully', problem: created })
+  } catch (err) {
+    console.error('createProblem error:', err)
+    return res.status(500).json({ success: false, error: err.message || 'Failed to create problem' })
+  }
+}

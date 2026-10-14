@@ -3,6 +3,7 @@ import {
   getDsaOverview,
   listProblems,
   getProblem,
+  createProblem,
   createAttempt,
   getTopicMastery,
   getRevisionList,
@@ -21,6 +22,7 @@ const router = express.Router()
 // Public / Semi-public catalog routes with optional admin enrichment
 router.get('/problems', optionalAdmin, listProblems)
 router.get('/problems/:id', optionalAdmin, getProblem)
+router.post('/problems', requireAdmin, createProblem)
 router.get('/topics', optionalAdmin, getTopicMastery)
 
 // Private dashboard, history, practice, and AI coach routes (strict admin auth)
