@@ -82,14 +82,6 @@ export default function SecondBrain({ defaultMode = 'calendar' }) {
     }
   }, [apiUrl, selectedCategory, selectedStatus, searchQuery, isAdmin, authFetch, events.length])
 
-  // Re-fetch on contentVersion change
-  useEffect(() => {
-    if (contentVersion > 0) {
-      fetchEvents()
-      fetchMetadata()
-    }
-  }, [contentVersion, fetchEvents, fetchMetadata])
-
   // Fetch stats, goals, and projects
   const fetchMetadata = useCallback(async () => {
     try {
@@ -118,6 +110,7 @@ export default function SecondBrain({ defaultMode = 'calendar' }) {
     }
   }, [apiUrl])
 
+  // Initial load
   useEffect(() => {
     fetchEvents()
   }, [fetchEvents])
@@ -125,6 +118,14 @@ export default function SecondBrain({ defaultMode = 'calendar' }) {
   useEffect(() => {
     fetchMetadata()
   }, [fetchMetadata])
+
+  // Re-fetch on contentVersion change
+  useEffect(() => {
+    if (contentVersion > 0) {
+      fetchEvents()
+      fetchMetadata()
+    }
+  }, [contentVersion, fetchEvents, fetchMetadata])
 
   // Navigation handlers
   const handlePrev = () => {
