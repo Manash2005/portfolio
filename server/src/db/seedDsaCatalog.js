@@ -1086,10 +1086,11 @@ export const defaultAchievements = [
   },
 ]
 
-export function seedDsaCatalog() {
+export function seedDsaCatalog(targetDb = null) {
+  const activeDb = targetDb || db
   console.log('[DSA Seeder] Seeding DSA problem catalog and achievements...')
 
-  const insertProblem = db.prepare(`
+  const insertProblem = activeDb.prepare(`
     INSERT INTO dsa_problems (
       id, platform, platform_problem_id, title, slug, canonical_url,
       difficulty, primary_topic, secondary_topics, patterns,
@@ -1113,7 +1114,7 @@ export function seedDsaCatalog() {
       updated_at = datetime('now')
   `)
 
-  const insertAchievement = db.prepare(`
+  const insertAchievement = activeDb.prepare(`
     INSERT INTO dsa_achievements (
       id, title, description, category, badge_icon, xp_reward
     ) VALUES (
@@ -1127,14 +1128,14 @@ export function seedDsaCatalog() {
   `)
 
   // Ensure default game profile exists
-  db.prepare(`
+  activeDb.prepare(`
     INSERT INTO dsa_game_profile (id, total_xp, current_level, current_streak, longest_streak)
     VALUES ('primary_user', 0, 'Novice', 0, 0)
     ON CONFLICT(id) DO NOTHING
   `).run()
 
   // Batch insert problems inside a transaction
-  const insertManyProblems = db.transaction((problems) => {
+  const insertManyProblems = activeDb.transaction((problems) => {
     let count = 0
     for (const p of problems) {
       insertProblem.run(p)
@@ -1144,7 +1145,7 @@ export function seedDsaCatalog() {
   })
 
   // Batch insert achievements inside a transaction
-  const insertManyAchievements = db.transaction((achievements) => {
+  const insertManyAchievements = activeDb.transaction((achievements) => {
     let count = 0
     for (const a of achievements) {
       insertAchievement.run(a)

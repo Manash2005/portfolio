@@ -1,0 +1,139 @@
+{
+  "personal": {
+    "name": "Manash Swain",
+    "role": "AI Automation & Full-Stack Engineer",
+    "location": "Bangalore, India",
+    "headline": "I build web apps and AI agents you can trust.",
+    "sub": "Full-Stack & AI Automation · BITS Pilani CS · Bangalore",
+    "about": [
+      "I got into computers because I wanted to understand how things actually work — not just how to use them. That curiosity led me to build things end to end: from the database schema to the API contract to the UI that talks to both.",
+      "Lately, that curiosity has pulled me toward agentic AI. The question that keeps me up: how do you give an LLM real power without letting it make irreversible mistakes? My project Gatekeeper is my answer so far — the model proposes, a rules engine decides. Zero hallucinated executions on critical actions.",
+      "I learn project-first. Every meaningful insight I have came from shipping something and hitting a wall I had to actually climb."
+    ],
+    "now": {
+      "building": "AI agent systems that combine LLMs with deterministic control",
+      "learning": "Agentic workflows, structured outputs, and tool-use patterns",
+      "openTo": "AI Automation, Backend, or Full-Stack internships"
+    },
+    "education": [
+      {
+        "institute": "BITS Pilani",
+        "degree": "BS in Computer Science",
+        "duration": "2025 - 2028",
+        "logo": "/bitsPilaniLogo.png"
+      }
+    ]
+  },
+  "skills": {
+    "ai": {
+      "label": "AI Automation",
+      "tagline": "LLMs propose. Rules decide.",
+      "items": ["Anthropic / Claude API", "Tool Use & Function Calling", "Pydantic Structured Outputs", "Agentic Workflow Design", "Rule-Based Gating", "Prompt Engineering", "FastAPI"]
+    },
+    "web": {
+      "label": "Full-Stack Web",
+      "tagline": "From schema to UI, end to end.",
+      "items": ["React", "Node.js / Express", "MongoDB", "REST API Design", "JWT Auth", "TailwindCSS", "Next.js"]
+    },
+    "data": {
+      "label": "Data & Tools",
+      "tagline": "Numbers tell the story.",
+      "items": ["Python", "Pandas / NumPy", "SQL (joins, CTEs, windows)", "Git & GitHub", "Vercel / Render"]
+    }
+  },
+  "stats": {
+    "leetcode_fallback": 95,
+    "gfg_fallback": 174,
+    "projects": 4
+  },
+  "activity_events": [
+    {
+      "date": "2026-10-13",
+      "category": "failed",
+      "title": "Failed DSA Interview",
+      "description": "5 questions ranging from recursion to dynamic programming."
+    },
+    {
+      "date": "2026-10-14",
+      "category": "rejected",
+      "title": "Application rejected at IBM",
+      "description": "Applied for AI Intern position and got rejected."
+    }
+  ],
+  "projects": [
+    {
+      "title": "Safe NL-to-SQL",
+      "category": "AI / Automation",
+      "short_description": "Deterministic natural language to SQL assistant with AST safety validation, Human-in-the-Loop checkpoints, and sandboxed execution.",
+      "outcome": "100% blocked destructive queries & schema drops. Stateful human approval workflow with 22/22 tests passing.",
+      "problem": "Traditional Text-to-SQL tools are vulnerable black boxes where LLMs can hallucinate table names, omit WHERE clauses, or execute catastrophic DDL drops directly on live production databases.",
+      "architecture": "LangGraph state machine integrating intent taxonomy classification, ambiguity clarification, schema-grounded SQL generation (Groq Llama 3.3 70B), deterministic AST safety validation, and an isolated SQLite sandbox.",
+      "key_challenge": "Enforcing zero-tolerance deterministic safety against catastrophic operations (DROP, ALTER, unbounded UPDATE/DELETE) while preserving conversational flow and enabling human intervention.",
+      "solution": "Decoupled LLM generation from safety enforcement: sqlparse AST validator enforces fail-closed policies, while LangGraph persists thread state to SQLite checkpointers to pause execution for human review and in-browser SQL editing.",
+      "metrics": ["100% Blocked DDL Mutations", "Stateful HITL Checkpoints", "22 Automated Tests Passing"],
+      "techStack": ["LangGraph", "FastAPI", "Python", "React 19", "SQLite", "TailwindCSS"],
+      "liveLink": "https://sqlwriter.vercel.app",
+      "githubLink": "https://github.com/Manash2005/sql-writer",
+      "image": "/projects/sql-writer.png",
+      "featured": true,
+      "reflection": "LLMs should propose queries, but deterministic AST verification and human checkpoints must govern database execution."
+    },
+    {
+      "title": "Gatekeeper",
+      "category": "AI / Automation",
+      "short_description": "A secure AI agent workflow — the LLM proposes, a rules engine decides. 0% hallucinated executions.",
+      "outcome": "0% hallucinated execution rate on critical actions. 99% structured-output parse success.",
+      "problem": "Fully autonomous LLM agents hallucinate. Giving them direct access to execute critical actions (payments, DB deletes) is a security risk.",
+      "architecture": "Multi-layered agent system: LLM proposes actions via Tool Use, a deterministic rules-engine validates all parameters before execution.",
+      "key_challenge": "Ensuring the LLM outputs structured, perfectly formatted data that the rule engine could parse without crashing.",
+      "solution": "Anthropic's Claude API with strict Pydantic schemas to force structured JSON outputs, combined with a retry-loop for self-correction.",
+      "metrics": ["0% Hallucinated Executions", "99% Parse Success Rate"],
+      "techStack": ["Python", "FastAPI", "Anthropic API", "Pydantic", "Agentic Design"],
+      "liveLink": "https://revenue-recovery-jet.vercel.app/",
+      "githubLink": "https://github.com/Manash2005/revenue_recovery",
+      "image": "/projects/gatekeeper.png",
+      "featured": true,
+      "reflection": "Combining deterministic code with probabilistic AI yields the safest production systems."
+    },
+    {
+      "title": "TaskFlow",
+      "category": "Full-Stack Web",
+      "short_description": "Full-stack task manager with Kanban boards, real-time analytics, and user auth.",
+      "outcome": "Sub-100ms UI response with zero-latency feel and robust data persistence.",
+      "problem": "Teams struggle to track project progress without complex enterprise tools.",
+      "architecture": "React state synchronized with Express/MongoDB backend. JWT session management.",
+      "key_challenge": "Smooth drag-and-drop Kanban with optimistic UI updates synced flawlessly to backend.",
+      "solution": "State synchronization layer that locally updates the board instantly, falling back gracefully if the API request fails.",
+      "metrics": ["Sub-100ms UI response", "Full CRUD with auth"],
+      "techStack": ["React", "Node.js", "Express", "MongoDB", "TailwindCSS"],
+      "liveLink": "https://task-manager-phi-five-12.vercel.app/",
+      "githubLink": "https://github.com/Manash2005/taskManager",
+      "image": "/projects/taskflow.png",
+      "featured": true,
+      "reflection": "I'd implement WebSockets for true multi-player collaboration if I rebuilt this today."
+    },
+    {
+      "title": "Socially",
+      "category": "Full-Stack Web",
+      "short_description": "Private organizational social network with department-level restricted channels.",
+      "outcome": "Highly secure, performant feed. Security enforced at the database layer via RLS.",
+      "problem": "Organizations need a secure internal way to share updates without public social media.",
+      "architecture": "React frontend integrated with Supabase BaaS, utilizing Row Level Security (RLS) policies.",
+      "key_challenge": "Database schema that strictly enforced viewing permissions based on department and role.",
+      "solution": "Supabase PostgreSQL RLS policies — users can only query posts belonging to their authorized channels.",
+      "metrics": ["Secure RLS Policies", "Real-time feed updates"],
+      "techStack": ["React", "Node.js", "Supabase", "TailwindCSS"],
+      "liveLink": "https://socially.vercel.app",
+      "githubLink": "",
+      "image": "/projects/socially.png",
+      "featured": true,
+      "reflection": "Pushing security down to the database layer is more robust than handling it all in application logic."
+    }
+  ],
+  "contact": {
+    "email": "swainm099@gmail.com",
+    "github": "https://github.com/Manash2005",
+    "linkedin": "https://www.linkedin.com/in/manash-swain",
+    "resume_url": "/resume.pdf"
+  }
+}

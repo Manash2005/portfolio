@@ -3,23 +3,16 @@ import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { db } from '../db/database.js'
+import { getPortfolioDataFallback } from '../db/seedInitialData.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
-const portfolioJsonPath = path.resolve(__dirname, '../../../client/src/data/portfolio_data.json')
 
 /**
- * Load fallback data from client JSON file
+ * Load fallback data from client JSON file or server backup
  */
 function getJsonFallback() {
-  try {
-    if (fs.existsSync(portfolioJsonPath)) {
-      return JSON.parse(fs.readFileSync(portfolioJsonPath, 'utf8'))
-    }
-  } catch (err) {
-    console.error('Failed to read portfolio_data.json fallback:', err)
-  }
-  return {}
+  return getPortfolioDataFallback() || {}
 }
 
 /**

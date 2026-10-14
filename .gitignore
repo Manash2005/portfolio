@@ -34,6 +34,6 @@ npm-debug.log*
 *.db-journal
 *.db-wal
 *.sqlite
-data/
+/data/
 server/data/
 server/messages.json

@@ -29,5 +29,5 @@ dist-ssr
 *.db-journal
 *.db-wal
 *.sqlite
-data/
+/data/
 messages.json

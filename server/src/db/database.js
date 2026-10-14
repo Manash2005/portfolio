@@ -2,6 +2,8 @@ import Database from 'better-sqlite3'
 import path from 'path'
 import fs from 'fs'
 import { fileURLToPath } from 'url'
+import { seedInitialData } from './seedInitialData.js'
+import { seedDsaCatalog } from './seedDsaCatalog.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -57,31 +59,46 @@ export function getDatabase() {
     dbInstance.pragma('foreign_keys = ON')
     dbInstance.pragma('busy_timeout = 5000')
 
-    // Run upgrades first if table already exists from older version
-    ensureSchemaUpgrades(dbInstance)
+    // 1. Initialize core Second Brain & Admin schema (schema.sql)
+    const schemaPath = path.join(__dirname, 'schema.sql')
+    if (fs.existsSync(schemaPath)) {
+      const schemaSql = fs.readFileSync(schemaPath, 'utf8')
+      dbInstance.exec(schemaSql)
+    }
 
-    // Initialize DSA schema if present
+    // 2. Initialize DSA schema (dsaSchema.sql)
     const dsaSchemaPath = path.join(__dirname, 'dsaSchema.sql')
     if (fs.existsSync(dsaSchemaPath)) {
       const dsaSchemaSql = fs.readFileSync(dsaSchemaPath, 'utf8')
       dbInstance.exec(dsaSchemaSql)
-
-      // Auto-seed curated catalog if empty
-      try {
-        const problemCount = dbInstance.prepare("SELECT count(*) as c FROM dsa_problems").get().c
-        if (problemCount === 0) {
-          import('./seedDsaCatalog.js').then(m => m.seedDsaCatalog?.()).catch(err => console.error('DSA seed err:', err))
-        }
-      } catch (err) {
-        console.error('DSA count check error:', err)
-      }
     }
 
+    // 3. Run schema upgrades for projects if table exists
     ensureSchemaUpgrades(dbInstance)
+
+    // 4. Auto-seed core goals, projects, and events if projects table is empty
+    try {
+      const projectCount = dbInstance.prepare("SELECT count(*) as c FROM projects").get().c
+      if (projectCount === 0) {
+        console.log('[Database] Empty projects detected — running initial seed...')
+        seedInitialData(dbInstance)
+      }
+    } catch (err) {
+      console.error('Projects seed check error:', err)
+    }
+
+    // 5. Auto-seed curated DSA catalog if empty
+    try {
+      const problemCount = dbInstance.prepare("SELECT count(*) as c FROM dsa_problems").get().c
+      if (problemCount === 0) {
+        seedDsaCatalog(dbInstance)
+      }
+    } catch (err) {
+      console.error('DSA count check error:', err)
+    }
   }
   return dbInstance
 }
-
 
 export function closeDatabase() {
   if (dbInstance) {
@@ -91,4 +108,5 @@ export function closeDatabase() {
 }
 
 export const db = getDatabase()
+
 
