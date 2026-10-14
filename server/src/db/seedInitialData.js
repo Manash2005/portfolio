@@ -279,7 +279,7 @@ export function seedInitialData(db) {
       })
     }
 
-    // 3. Seed Events
+    // 3. Seed Events (ONLY genuine activity events from portfolio data)
     const insertEvent = db.prepare(`
       INSERT OR IGNORE INTO events (
         id, title, description, category, start_at, end_at, all_day, timezone,
@@ -292,7 +292,7 @@ export function seedInitialData(db) {
       )
     `)
 
-    // Activity events from portfolio data
+    // Activity events from portfolio data (Failed DSA Interview & Application rejected at IBM)
     if (data?.activity_events && Array.isArray(data.activity_events)) {
       data.activity_events.forEach((evt, idx) => {
         const dateStr = evt.date || '2026-10-14'
@@ -319,149 +319,9 @@ export function seedInitialData(db) {
           priority: 'high',
           goal_id: 'goal_dsa_prep',
           project_id: null,
-          private_notes: 'Reviewed mistakes: recursion stack explosion on problem 4. Re-practice DP transition table.',
+          private_notes: '',
         })
       })
-    }
-
-    // Canonical initial events
-    const canonicalEvents = [
-      {
-        id: 'evt_sql_writer_ast_validation_20261011',
-        title: 'Safe NL-to-SQL AST Safety Engine',
-        description: 'Implemented sqlparse AST validator to enforce zero-tolerance policy against DROP, ALTER, and unbounded mutations.',
-        category: 'Project Development',
-        start_at: '2026-10-11T10:00:00',
-        end_at: '2026-10-11T14:30:00',
-        all_day: 0,
-        timezone: 'Asia/Kolkata',
-        location: 'Bangalore Studio',
-        meeting_url: null,
-        external_url: 'https://github.com/Manash2005/sql-writer',
-        status: 'Completed',
-        visibility: 'Public',
-        show_on_portfolio_heatmap: 1,
-        color: '#B8FF3C',
-        tags: JSON.stringify(['AI Engineering', 'SQL', 'LangGraph', 'Security']),
-        priority: 'high',
-        goal_id: 'goal_ai_eng',
-        project_id: 'proj_safe_nl_to_sql',
-        private_notes: 'All 22/22 unit tests passing in pytest suite.',
-      },
-      {
-        id: 'evt_leetcode_weekly_418_20261012',
-        title: 'LeetCode Weekly Contest 418',
-        description: 'Solved 3/4 problems. Optimised Dijkstra with indexed priority queue for Q3.',
-        category: 'Competitive Programming',
-        start_at: '2026-10-12T08:00:00',
-        end_at: '2026-10-12T09:30:00',
-        all_day: 0,
-        timezone: 'Asia/Kolkata',
-        location: 'Online',
-        meeting_url: null,
-        external_url: 'https://leetcode.com/contest',
-        status: 'Completed',
-        visibility: 'Public',
-        show_on_portfolio_heatmap: 1,
-        color: '#FFD13B',
-        tags: JSON.stringify(['LeetCode', 'Contest', 'Graphs', 'Dijkstra']),
-        priority: 'medium',
-        goal_id: 'goal_dsa_prep',
-        project_id: null,
-        private_notes: 'Q4 was a segment tree with range gcd. Need to review segment tree lazies.',
-      },
-      {
-        id: 'evt_sys_design_rate_limiter_20261014',
-        title: 'System Design: Distributed Token Bucket',
-        description: 'Studied Redis cluster-backed sliding window counter vs token bucket rate limiters for API gateways.',
-        category: 'System Design',
-        start_at: '2026-10-14T17:00:00',
-        end_at: '2026-10-14T19:00:00',
-        all_day: 0,
-        timezone: 'Asia/Kolkata',
-        location: 'Workstation',
-        meeting_url: null,
-        external_url: null,
-        status: 'Completed',
-        visibility: 'Public',
-        show_on_portfolio_heatmap: 1,
-        color: '#60A5FA',
-        tags: JSON.stringify(['System Design', 'Redis', 'Rate Limiter', 'Scalability']),
-        priority: 'high',
-        goal_id: 'goal_ai_eng',
-        project_id: null,
-        private_notes: 'Redis Lua script prevents concurrency race conditions during atomic decrement.',
-      },
-      {
-        id: 'evt_mock_ai_interview_20261016',
-        title: 'AI Engineering Mock Technical Interview',
-        description: 'Mock round focusing on LangGraph orchestration, RAG latency optimizations, and tool routing safeguards.',
-        category: 'Interview Preparation',
-        start_at: '2026-10-16T15:00:00',
-        end_at: '2026-10-16T16:30:00',
-        all_day: 0,
-        timezone: 'Asia/Kolkata',
-        location: 'Google Meet',
-        meeting_url: null,
-        external_url: null,
-        status: 'Planned',
-        visibility: 'Public',
-        show_on_portfolio_heatmap: 0,
-        color: '#FFD13B',
-        tags: JSON.stringify(['AI Engineering', 'Mock Interview', 'LangGraph', 'RAG']),
-        priority: 'urgent',
-        goal_id: 'goal_career_internship',
-        project_id: 'proj_safe_nl_to_sql',
-        private_notes: 'Prepare walk-through of AST safety validation and SQLite checkpointer rollback mechanism.',
-      },
-      {
-        id: 'evt_hackathon_agentic_ai_20261018',
-        title: 'Autonomous Agents Hackathon 2026',
-        description: '48-hour sprint building multi-agent self-healing workflows for continuous deployment.',
-        category: 'Hackathon',
-        start_at: '2026-10-18T09:00:00',
-        end_at: '2026-10-19T21:00:00',
-        all_day: 1,
-        timezone: 'Asia/Kolkata',
-        location: 'Virtual / Discord',
-        meeting_url: null,
-        external_url: 'https://devpost.com',
-        status: 'Planned',
-        visibility: 'Public',
-        show_on_portfolio_heatmap: 0,
-        color: '#A78BFA',
-        tags: JSON.stringify(['Hackathon', 'Agents', 'Python', 'FastAPI']),
-        priority: 'high',
-        goal_id: 'goal_ai_eng',
-        project_id: null,
-        private_notes: 'Team repo is configured. Need to finalize system architecture prompt templates.',
-      },
-      {
-        id: 'evt_learned_rag_embeddings_20261009',
-        title: 'Deep Dive: Hybrid Search (BM25 + Dense Vectors)',
-        description: 'Implemented Reciprocal Rank Fusion (RRF) to blend keyword BM25 retrieval with semantic embeddings in ChromaDB.',
-        category: 'Learning',
-        start_at: '2026-10-09T14:00:00',
-        end_at: '2026-10-09T17:30:00',
-        all_day: 0,
-        timezone: 'Asia/Kolkata',
-        location: 'Library',
-        meeting_url: null,
-        external_url: null,
-        status: 'Completed',
-        visibility: 'Public',
-        show_on_portfolio_heatmap: 1,
-        color: '#B8FF3C',
-        tags: JSON.stringify(['RAG', 'Vector Search', 'Embeddings', 'AI']),
-        priority: 'medium',
-        goal_id: 'goal_ai_eng',
-        project_id: null,
-        private_notes: 'RRF with k=60 showed a 14% improvement in retrieval precision on technical documents.',
-      },
-    ]
-
-    for (const evt of canonicalEvents) {
-      insertEvent.run(evt)
     }
 
     // 4. Seed dynamic portfolio_content table if empty
@@ -482,5 +342,27 @@ export function seedInitialData(db) {
   })
 
   seedTransaction()
+
+  // Purge any legacy dummy events from events table
+  purgeDummyEvents(db)
+
   console.log('[Seed] Database successfully seeded with goals, projects, events, and portfolio content.')
+}
+
+/**
+ * Remove all events except genuine user activity events
+ */
+export function purgeDummyEvents(db) {
+  try {
+    const res = db.prepare(`
+      DELETE FROM events
+      WHERE title != 'Failed DSA Interview'
+        AND title != 'Application rejected at IBM'
+    `).run()
+    if (res.changes > 0) {
+      console.log(`[Cleanup] Purged ${res.changes} dummy calendar event(s). Only genuine events remain.`)
+    }
+  } catch (err) {
+    console.error('Error purging dummy events:', err.message)
+  }
 }

@@ -42,6 +42,18 @@ async function runTests() {
 
   const db = getDatabase()
 
+  // Setup temporary private test fixture to test privacy controls
+  db.prepare(`
+    INSERT OR REPLACE INTO events (
+      id, title, description, category, start_at, end_at, all_day, timezone,
+      status, visibility, show_on_portfolio_heatmap, color, tags, priority, private_notes
+    ) VALUES (
+      'evt_test_fixture_private', 'Confidential Financial Planning', 'Private banking review', 'Personal',
+      '2026-10-25T20:00:00', '2026-10-25T21:00:00', 0, 'Asia/Kolkata',
+      'Planned', 'Private', 0, '#9CA3AF', '["Personal","Finances"]', 'low', 'CONFIDENTIAL NOTE'
+    )
+  `).run()
+
   // Test 1: Direct DB Check
   const totalInDb = db.prepare('SELECT count(*) as c FROM events').get().c
   const privateInDb = db.prepare("SELECT count(*) as c FROM events WHERE visibility = 'Private'").get().c
@@ -63,8 +75,7 @@ async function runTests() {
     for (const evt of res.data.events) {
       assert.strictEqual(evt.visibility, undefined, 'Visibility field should not leak or be exposed')
       assert.strictEqual(evt.private_notes, undefined, 'CRITICAL: private_notes must NEVER be returned')
-      assert.notStrictEqual(evt.id, 'evt_private_financial_planning_20261015', 'Private event must not appear')
-      assert.notStrictEqual(evt.id, 'evt_private_company_intel_20261017', 'Private event must not appear')
+      assert.notStrictEqual(evt.id, 'evt_test_fixture_private', 'Private event must not appear')
     }
     console.log('✓ Test 2: Public events endpoint strictly excludes private events and private_notes')
   }
@@ -83,15 +94,15 @@ async function runTests() {
   // Test 4: Single Event Fetch by ID: Public succeeds, Private returns 404
   {
     // Public event
-    const reqPublic = { params: { id: 'evt_sql_writer_ast_validation_20261011' } }
+    const reqPublic = { params: { id: 'evt_failed_dsa_interview_20261013' } }
     const resPublic = mockResponse()
     await getEventById(reqPublic, resPublic)
     assert.strictEqual(resPublic.statusCode, 200)
-    assert.strictEqual(resPublic.data.event.id, 'evt_sql_writer_ast_validation_20261011')
+    assert.strictEqual(resPublic.data.event.id, 'evt_failed_dsa_interview_20261013')
     assert.strictEqual(resPublic.data.event.private_notes, undefined, 'Private notes must not be present')
 
     // Private event ID -> Must return 404
-    const reqPrivate = { params: { id: 'evt_private_financial_planning_20261015' } }
+    const reqPrivate = { params: { id: 'evt_test_fixture_private' } }
     const resPrivate = mockResponse()
     await getEventById(reqPrivate, resPrivate)
     assert.strictEqual(resPrivate.statusCode, 404, 'Requesting a private event by ID must return 404')
@@ -153,6 +164,9 @@ async function runTests() {
     assert(Array.isArray(resStats.data.stats.category_breakdown))
     console.log('✓ Test 8: Activity statistics calculations verified')
   }
+
+  // Cleanup temporary test fixture
+  db.prepare("DELETE FROM events WHERE id = 'evt_test_fixture_private'").run()
 
   console.log('\n--- ALL SECOND BRAIN TESTS PASSED SUCCESSFULLY! ---\n')
 }

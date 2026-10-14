@@ -15,8 +15,12 @@ export function cleanDummyData() {
   const delRevisions = db.prepare("DELETE FROM dsa_revision_schedule WHERE problem_id != 'lc-704'").run()
   console.log(`Deleted ${delRevisions.changes} dummy revision item(s).`)
 
-  // 4. Delete dummy event from tests (Two Sum)
-  const delEvents = db.prepare("DELETE FROM events WHERE title LIKE '%Two Sum%'").run()
+  // 4. Delete dummy events (keep ONLY genuine activity events: Failed DSA Interview and Application rejected at IBM)
+  const delEvents = db.prepare(`
+    DELETE FROM events 
+    WHERE title != 'Failed DSA Interview' 
+      AND title != 'Application rejected at IBM'
+  `).run()
   console.log(`Deleted ${delEvents.changes} dummy calendar event(s).`)
 
   // 5. Delete test plans & logs
