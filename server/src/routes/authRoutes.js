@@ -6,6 +6,7 @@ import {
   verifyPassword,
   createSession,
   invalidateSession,
+  validateSession,
 } from '../auth/authService.js'
 import { db } from '../db/database.js'
 import { extractToken, requireAdmin } from '../middleware/authMiddleware.js'
@@ -109,11 +110,29 @@ router.post('/logout', (req, res) => {
  * GET /api/v1/admin/session
  * Verifies if current request has a valid active admin session
  */
-router.get('/session', requireAdmin, (req, res) => {
+router.get('/session', (req, res) => {
+  const token = extractToken(req)
+  if (!token) {
+    return res.json({
+      success: true,
+      authenticated: false,
+      user: null,
+    })
+  }
+
+  const session = validateSession(token)
+  if (!session) {
+    return res.json({
+      success: true,
+      authenticated: false,
+      user: null,
+    })
+  }
+
   return res.json({
     success: true,
     authenticated: true,
-    user: req.admin,
+    user: session,
   })
 })
 

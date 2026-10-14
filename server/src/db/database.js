@@ -4,6 +4,7 @@ import fs from 'fs'
 import { fileURLToPath } from 'url'
 import { seedInitialData, purgeDummyEvents } from './seedInitialData.js'
 import { seedDsaCatalog } from './seedDsaCatalog.js'
+import { comprehensiveProblems } from './comprehensiveDsaCatalog.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -90,10 +91,11 @@ export function getDatabase() {
     // Ensure only genuine user calendar events exist (purges any legacy dummy events)
     purgeDummyEvents(dbInstance)
 
-    // 5. Auto-seed curated DSA catalog if empty
+    // 5. Auto-seed / sync curated DSA catalog if empty or smaller than comprehensive catalog
     try {
       const problemCount = dbInstance.prepare("SELECT count(*) as c FROM dsa_problems").get().c
-      if (problemCount === 0) {
+      if (problemCount < comprehensiveProblems.length) {
+        console.log(`[Database] Auto-seeding comprehensive catalog (${problemCount} -> ${comprehensiveProblems.length} problems)...`)
         seedDsaCatalog(dbInstance)
       }
     } catch (err) {

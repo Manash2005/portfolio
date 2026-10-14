@@ -47,6 +47,7 @@ export async function syncLeetCodeRecentSubmissions(username = 'Manash_22') {
         if (!problem) {
           // Insert problem record with verified metadata
           const problemId = `lc-${slug}`
+          const canonicalUrl = `https://leetcode.com/problems/${slug}/`
           db.prepare(`
             INSERT INTO dsa_problems (
               id, platform, platform_problem_id, title, slug, canonical_url,
@@ -62,6 +63,8 @@ export async function syncLeetCodeRecentSubmissions(username = 'Manash_22') {
             sub.id,
             title,
             slug,
+            canonicalUrl
+          )
           problem = { id: problemId }
           persistProblemToMongo({
             id: problemId,
@@ -69,7 +72,7 @@ export async function syncLeetCodeRecentSubmissions(username = 'Manash_22') {
             platform_problem_id: sub.id,
             title,
             slug,
-            canonical_url: `https://leetcode.com/problems/${slug}/`,
+            canonical_url: canonicalUrl,
             difficulty: 'Medium',
             primary_topic: 'Arrays',
             secondary_topics: [],

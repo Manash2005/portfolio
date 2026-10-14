@@ -25,11 +25,13 @@ router.get('/problems/:id', optionalAdmin, getProblem)
 router.post('/problems', requireAdmin, createProblem)
 router.get('/topics', optionalAdmin, getTopicMastery)
 
-// Private dashboard, history, practice, and AI coach routes (strict admin auth)
-router.get('/overview', requireAdmin, getDsaOverview)
-router.get('/revision', requireAdmin, getRevisionList)
+// Overview, revision queue, and mistakes allow optionalAdmin so public showcase is visible without 401s
+router.get('/overview', optionalAdmin, getDsaOverview)
+router.get('/revision', optionalAdmin, getRevisionList)
+router.get('/mistakes', optionalAdmin, listMistakes)
+
+// Mutation routes strictly require admin auth
 router.post('/attempts', requireAdmin, createAttempt)
-router.get('/mistakes', requireAdmin, listMistakes)
 router.post('/mistakes', requireAdmin, createMistake)
 router.post('/ai/practice-plan', requireAdmin, generateAiPracticePlan)
 router.post('/ai/analyze-weaknesses', requireAdmin, getAiWeaknessAnalysis)

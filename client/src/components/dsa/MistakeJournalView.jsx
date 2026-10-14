@@ -54,8 +54,8 @@ export default function MistakeJournalView({
         </div>
       )}
 
-      {/* 2. Category Filter Chips */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+      {/* 2. Category Filter Chips (Wrapped without horizontal scrolling) */}
+      <div className="flex flex-wrap items-center gap-2 pb-1">
         <button
           onClick={() => setSelectedCategory('all')}
           className={`px-3 py-1.5 rounded-full text-xs font-mono transition-colors cursor-pointer ${

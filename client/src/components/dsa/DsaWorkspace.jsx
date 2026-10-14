@@ -282,7 +282,7 @@ export default function DsaWorkspace({ onSwitchToCalendar }) {
       {/* 1. Arena Top Navigation & HUD Bar */}
       <div className="p-4 sm:p-5 rounded-3xl border border-hairline bg-[#0E0E14] flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
         {/* Navigation Tabs */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 no-scrollbar">
+        <div className="flex flex-wrap items-center gap-1.5">
           {[
             { id: 'overview', label: 'Dashboard & Charts', icon: BarChart3 },
             { id: 'bank', label: 'Question Bank', icon: BookOpen },
@@ -368,7 +368,7 @@ export default function DsaWorkspace({ onSwitchToCalendar }) {
                     {stats.uniqueSolved || 0}
                   </span>
                   <span className="text-xs font-mono text-muted">
-                    / {stats.totalProblems || 57} catalog
+                    / {stats.totalProblems || 807} catalog
                   </span>
                 </div>
               </div>

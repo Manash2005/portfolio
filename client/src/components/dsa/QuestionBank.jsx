@@ -267,6 +267,19 @@ export default function QuestionBank({
             <option value="other">Other Platforms</option>
           </select>
 
+          {/* Topic selector */}
+          <select
+            value={filters.topic || 'All'}
+            onChange={(e) => onFilterChange({ ...filters, topic: e.target.value, page: 1 })}
+            className="px-3 py-2.5 rounded-xl bg-[#14141E] border border-hairline text-xs font-mono text-white cursor-pointer"
+          >
+            {TOPIC_LIST.map((topic) => (
+              <option key={topic} value={topic}>
+                {topic === 'All' ? 'All Topics' : topic}
+              </option>
+            ))}
+          </select>
+
           {/* Difficulty selector */}
           <select
             value={filters.difficulty || 'all'}
@@ -305,13 +318,13 @@ export default function QuestionBank({
           </select>
         </div>
 
-        {/* 2. Topic Chips Carousel */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 pt-1 no-scrollbar border-t border-hairline">
+        {/* 2. Topic Chips (Wrapped without horizontal scrolling) */}
+        <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-hairline">
           {TOPIC_LIST.map((topic) => (
             <button
               key={topic}
               onClick={() => handleTopicClick(topic)}
-              className={`px-3 py-1 rounded-full text-[11px] font-mono whitespace-nowrap transition-colors cursor-pointer ${
+              className={`px-3 py-1 rounded-full text-[11px] font-mono transition-colors cursor-pointer ${
                 (filters.topic || 'All') === topic
                   ? 'bg-accent text-[#08080C] font-semibold'
                   : 'bg-white/[0.03] text-muted hover:text-white border border-hairline'
