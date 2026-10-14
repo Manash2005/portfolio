@@ -64,3 +64,11 @@ export async function connectMongo() {
 export function isMongoConnected() {
   return mongoose.connection && mongoose.connection.readyState === 1
 }
+
+export async function disconnectMongo() {
+  if (mongoose.connection && mongoose.connection.readyState !== 0) {
+    await mongoose.disconnect()
+    isConnected = false
+    isConnecting = false
+  }
+}

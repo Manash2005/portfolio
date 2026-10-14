@@ -262,6 +262,9 @@ export default function QuestionBank({
             <option value="all">All Platforms</option>
             <option value="leetcode">LeetCode</option>
             <option value="geeksforgeeks">GeeksforGeeks</option>
+            <option value="interviewbit">InterviewBit</option>
+            <option value="hackerrank">HackerRank</option>
+            <option value="other">Other Platforms</option>
           </select>
 
           {/* Difficulty selector */}

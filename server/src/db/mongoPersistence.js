@@ -517,6 +517,12 @@ export async function syncMongoAndSqlite() {
           updated_at: p.updated_at || new Date().toISOString(),
         })
       }
+      const mongoIdSet = new Set(mongoProblems.map(p => p.id))
+      for (const p of sqliteProblems) {
+        if (!mongoIdSet.has(p.id)) {
+          await persistProblemToMongo(p)
+        }
+      }
     } else if (sqliteProblems.length > 0) {
       for (const p of sqliteProblems) {
         await persistProblemToMongo(p)

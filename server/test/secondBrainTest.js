@@ -171,7 +171,13 @@ async function runTests() {
   console.log('\n--- ALL SECOND BRAIN TESTS PASSED SUCCESSFULLY! ---\n')
 }
 
-runTests().catch(err => {
-  console.error('Test failed:', err)
-  process.exit(1)
-})
+runTests()
+  .then(async () => {
+    const { disconnectMongo } = await import('../src/db/mongo.js')
+    await disconnectMongo()
+    process.exit(0)
+  })
+  .catch(err => {
+    console.error('Test failed:', err)
+    process.exit(1)
+  })

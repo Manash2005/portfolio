@@ -202,7 +202,9 @@ export default function PracticeArena({
             rel="noopener noreferrer"
             className="px-4 py-2.5 rounded-full text-xs font-mono font-medium bg-white/5 hover:bg-white/10 text-white border border-hairline flex items-center gap-1.5 transition-colors"
           >
-            <span>Open on {activeProblem.platform === 'leetcode' ? 'LeetCode' : 'GFG'}</span>
+            <span>
+              Open on {activeProblem.platform === 'leetcode' ? 'LeetCode' : activeProblem.platform === 'geeksforgeeks' ? 'GFG' : activeProblem.platform === 'interviewbit' ? 'InterviewBit' : activeProblem.platform === 'hackerrank' ? 'HackerRank' : 'Problem Page'}
+            </span>
             <ExternalLink className="w-3.5 h-3.5" />
           </a>
           <button

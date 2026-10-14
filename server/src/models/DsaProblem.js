@@ -4,7 +4,7 @@ const DsaProblemSchema = new mongoose.Schema(
   {
     _id: { type: String, required: true },
     id: { type: String, required: true, unique: true },
-    platform: { type: String, required: true, enum: ['leetcode', 'geeksforgeeks'], default: 'leetcode' },
+    platform: { type: String, required: true, enum: ['leetcode', 'geeksforgeeks', 'interviewbit', 'hackerrank', 'other'], default: 'leetcode' },
     platform_problem_id: { type: String, default: null },
     title: { type: String, required: true },
     slug: { type: String, required: true, unique: true },

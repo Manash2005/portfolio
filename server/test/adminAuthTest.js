@@ -257,7 +257,13 @@ async function runAdminTests() {
   console.log('\n--- ALL ADMINISTRATOR SECURITY TESTS PASSED SUCCESSFULLY! ---\n')
 }
 
-runAdminTests().catch(err => {
-  console.error('Test failed with error:', err)
-  process.exit(1)
-})
+runAdminTests()
+  .then(async () => {
+    const { disconnectMongo } = await import('../src/db/mongo.js')
+    await disconnectMongo()
+    process.exit(0)
+  })
+  .catch(err => {
+    console.error('Test failed with error:', err)
+    process.exit(1)
+  })

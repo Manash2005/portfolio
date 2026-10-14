@@ -422,6 +422,14 @@ export async function createProblem(req, res) {
         platform = 'geeksforgeeks'
         const match = url.match(/\/problems\/([^/?#]+)/)
         if (match) slug = match[1]
+      } else if (url.includes('interviewbit.com')) {
+        platform = 'interviewbit'
+        const match = url.match(/\/problems\/([^/?#]+)/)
+        if (match) slug = match[1]
+      } else if (url.includes('hackerrank.com')) {
+        platform = 'hackerrank'
+        const match = url.match(/\/challenges\/([^/?#]+)/)
+        if (match) slug = match[1]
       }
     }
 
@@ -436,10 +444,17 @@ export async function createProblem(req, res) {
     if (!canonicalUrl) {
       canonicalUrl = platform === 'leetcode' 
         ? `https://leetcode.com/problems/${slug}/` 
-        : `https://www.geeksforgeeks.org/problems/${slug}/`
+        : platform === 'geeksforgeeks'
+        ? `https://www.geeksforgeeks.org/problems/${slug}/`
+        : platform === 'interviewbit'
+        ? `https://www.interviewbit.com/problems/${slug}/`
+        : platform === 'hackerrank'
+        ? `https://www.hackerrank.com/challenges/${slug}/`
+        : `https://example.com/problems/${slug}/`
     }
 
-    const id = `${platform === 'leetcode' ? 'lc' : 'gfg'}-${slug}`
+    const prefix = platform === 'leetcode' ? 'lc' : platform === 'geeksforgeeks' ? 'gfg' : platform === 'interviewbit' ? 'ib' : platform === 'hackerrank' ? 'hr' : 'oth'
+    const id = `${prefix}-${slug}`
 
     const problemData = {
       id,
