@@ -70,54 +70,74 @@ export default function Build() {
         </Reveal>
 
         {/* Skill poles */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-0">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {POLES.map((pole, i) => (
             <motion.div
               key={pole.key}
-              initial={{ opacity: 0, y: 24 }}
+              initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.6, delay: i * 0.1, ease: [0.16, 1, 0.3, 1] }}
-              className="py-8 md:py-10"
-              style={{
-                borderTop: '1px solid var(--color-hairline)',
-                borderRight: i < 2 ? '1px solid var(--color-hairline)' : 'none',
-                paddingLeft: i === 0 ? 0 : '2rem',
-                paddingRight: i === 2 ? 0 : '2rem',
-              }}
+              className="p-6 md:p-7 rounded-3xl border border-hairline bg-[#0E0E16]/80 hover:border-accent/40 hover:bg-[#12121C] transition-all duration-300 flex flex-col justify-between shadow-xl relative group overflow-hidden"
             >
-              <p
-                className="text-label mb-3"
-                style={{ color: 'var(--color-accent)' }}
-              >
-                {pole.label}
-              </p>
-              <p
+              {/* Subtle top edge glow on hover */}
+              <div
+                className="absolute top-0 left-0 right-0 h-[2px] opacity-0 group-hover:opacity-100 transition-opacity duration-300"
                 style={{
-                  fontFamily: 'var(--font-display)',
-                  fontSize: '1.125rem',
-                  fontWeight: 600,
-                  color: 'var(--color-text)',
-                  marginBottom: '1.25rem',
+                  background: 'linear-gradient(90deg, transparent 0%, var(--color-accent) 50%, transparent 100%)',
                 }}
-              >
-                {pole.tagline}
-              </p>
-              <ul className="space-y-1.5">
-                {pole.items.map(item => (
-                  <li
-                    key={item}
+              />
+
+              <div>
+                <div className="flex items-center justify-between gap-2 mb-4">
+                  <span
+                    className="px-3 py-1 rounded-full text-[0.72rem] font-mono font-bold uppercase tracking-wider"
                     style={{
-                      fontFamily: 'var(--font-mono)',
-                      fontSize: '0.75rem',
-                      color: 'var(--color-muted)',
-                      letterSpacing: '0.02em',
+                      background: 'rgba(184, 255, 60, 0.12)',
+                      color: 'var(--color-accent)',
+                      border: '1px solid rgba(184, 255, 60, 0.3)',
                     }}
                   >
-                    {item}
-                  </li>
-                ))}
-              </ul>
+                    {pole.label}
+                  </span>
+                  <span className="text-xs font-mono text-muted/60 font-semibold">
+                    0{i + 1}
+                  </span>
+                </div>
+
+                <p
+                  className="text-white group-hover:text-accent transition-colors"
+                  style={{
+                    fontFamily: 'var(--font-display)',
+                    fontSize: '1.25rem',
+                    fontWeight: 700,
+                    lineHeight: 1.3,
+                    marginBottom: '1.25rem',
+                  }}
+                >
+                  {pole.tagline}
+                </p>
+
+                {/* Skill Pills */}
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {pole.items.map((item) => (
+                    <span
+                      key={item}
+                      className="px-2.5 py-1 rounded-lg text-xs font-mono border border-white/5 bg-white/[0.03] text-gray-300 group-hover:border-white/10 group-hover:bg-white/[0.05] transition-all hover:text-white hover:border-accent/50"
+                      style={{
+                        letterSpacing: '0.02em',
+                      }}
+                    >
+                      {item}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              <div className="pt-4 mt-4 border-t border-white/5 flex items-center justify-between text-[0.7rem] font-mono text-muted">
+                <span>Verified Core Competency</span>
+                <span className="text-accent font-semibold">Ready</span>
+              </div>
             </motion.div>
           ))}
         </div>

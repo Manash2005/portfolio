@@ -70,196 +70,207 @@ function ProjectRow({ project, index }) {
   const { isAdmin, isEditMode, openEditProject } = useAdmin()
   const imageRef = useRef(null)
   const { scrollYProgress } = useScroll({ target: imageRef, offset: ['start end', 'end start'] })
-  const imageY = useTransform(scrollYProgress, [0, 1], ['4%', '-4%'])
+  const imageY = useTransform(scrollYProgress, [0, 1], ['3%', '-3%'])
   const liveUrl = project.liveLink || project.githubLink
   const techList = Array.isArray(project.techStack) ? project.techStack : []
 
   return (
     <motion.article
-      initial={{ opacity: 0, y: 40 }}
+      initial={{ opacity: 0, y: 30 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1], delay: index * 0.08 }}
-      className="group grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-16 items-center py-16"
-      style={{ borderTop: '1px solid var(--color-hairline)', position: 'relative' }}
+      viewport={{ once: true, margin: '-60px' }}
+      transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1], delay: index * 0.08 }}
+      className="group relative rounded-3xl border border-hairline bg-[#0B0B11]/80 hover:border-white/20 transition-all duration-300 p-6 md:p-8 mb-8 backdrop-blur-sm overflow-hidden"
     >
-      {/* Lime left-border accent — slides in on row hover */}
-      <motion.div
+      {/* Subtle top lime edge highlight on hover */}
+      <div
+        className="absolute top-0 left-0 right-0 h-[2px] opacity-0 group-hover:opacity-100 transition-opacity duration-300"
         style={{
-          position: 'absolute',
-          left: 0,
-          top: 0,
-          bottom: 0,
-          width: 3,
-          background: 'var(--color-accent)',
-          borderRadius: 2,
-          scaleY: 0,
-          transformOrigin: 'top',
+          background: 'linear-gradient(90deg, transparent 0%, var(--color-accent) 50%, transparent 100%)',
         }}
-        whileHover={{ scaleY: 1 }}
-        transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
       />
 
-      {/* Text side */}
-      <div className={index % 2 === 1 ? 'md:order-2' : ''} style={{ paddingLeft: '1rem' }}>
-        {/* Large translucent number watermark */}
-        <div style={{ position: 'relative', marginBottom: '-2.5rem' }}>
-          <motion.p
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+        {/* Left Column: Structured Project Details */}
+        <div className={`lg:col-span-7 flex flex-col justify-between gap-4 ${index % 2 === 1 ? 'lg:order-2' : 'lg:order-1'}`}>
+          {/* Header Row: Index, Category & Actions */}
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <span
+                className="px-2.5 py-1 rounded-md text-[0.7rem] font-mono font-bold"
+                style={{
+                  background: 'rgba(184, 255, 60, 0.1)',
+                  color: 'var(--color-accent)',
+                  border: '1px solid rgba(184, 255, 60, 0.25)',
+                }}
+              >
+                {String(index + 1).padStart(2, '0')}
+              </span>
+              <span className="text-label" style={{ letterSpacing: '0.08em' }}>
+                {project.category}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {project.is_published === false && (
+                <span className="text-[0.65rem] px-2 py-0.5 rounded font-mono font-bold bg-red-500/20 text-red-400 border border-red-500/30">
+                  DRAFT
+                </span>
+              )}
+
+              {isAdmin && isEditMode && (
+                <button
+                  onClick={() => openEditProject(project)}
+                  className="px-2.5 py-1 rounded-lg text-xs font-mono font-medium border border-[#B8FF3C]/40 bg-[#B8FF3C]/10 text-[#B8FF3C] hover:bg-[#B8FF3C]/20 transition-all cursor-pointer"
+                  title="Edit project details"
+                >
+                  ✎ Edit
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Project Title */}
+          <h3
+            className="text-white group-hover:text-[#B8FF3C] transition-colors"
             style={{
               fontFamily: 'var(--font-display)',
-              fontSize: 'clamp(5rem, 12vw, 9rem)',
-              fontWeight: 800,
-              color: 'var(--color-accent)',
-              opacity: 0.04,
-              lineHeight: 1,
-              userSelect: 'none',
-              pointerEvents: 'none',
+              fontSize: 'clamp(1.5rem, 2.8vw, 2.1rem)',
+              fontWeight: 700,
+              lineHeight: 1.2,
             }}
           >
-            {String(index + 1).padStart(2, '0')}
-          </motion.p>
-        </div>
+            {project.title}
+          </h3>
 
-        <div className="flex items-center gap-3 mb-3" style={{ position: 'relative' }}>
-          <p className="text-label">
-            {String(index + 1).padStart(2, '0')} / {project.category}
-          </p>
-
-          {/* Draft Indicator */}
-          {project.is_published === false && (
-            <span
-              className="text-[0.65rem] px-2 py-0.5 rounded font-mono font-semibold"
-              style={{ background: 'rgba(239, 68, 68, 0.2)', color: '#F87171', border: '1px solid rgba(239, 68, 68, 0.4)' }}
-            >
-              DRAFT
-            </span>
-          )}
-
-          {/* In-place edit button for admin */}
-          {isAdmin && isEditMode && (
-            <button
-              onClick={() => openEditProject(project)}
-              className="px-2.5 py-0.5 rounded-full text-[0.68rem] font-mono border transition-all cursor-pointer hover:bg-[#B8FF3C]/20"
-              style={{
-                background: 'rgba(184, 255, 60, 0.1)',
-                borderColor: 'rgba(184, 255, 60, 0.4)',
-                color: '#B8FF3C',
-              }}
-              title="Edit project details"
-            >
-              ✎ Edit
-            </button>
-          )}
-        </div>
-
-        <h3
-          style={{
-            fontFamily: 'var(--font-display)',
-            fontSize: 'clamp(1.5rem, 3vw, 2.25rem)',
-            fontWeight: 700,
-            color: 'var(--color-text)',
-            marginBottom: '0.85rem',
-            lineHeight: 1.15,
-          }}
-        >
-          {project.title}
-        </h3>
-        <p
-          style={{
-            fontFamily: 'var(--font-body)',
-            fontSize: '1rem',
-            color: 'var(--color-muted)',
-            lineHeight: 1.7,
-            marginBottom: '1.25rem',
-            maxWidth: '42ch',
-          }}
-        >
-          {project.outcome || project.short_description || project.description}
-        </p>
-
-        {/* Tech stack pills */}
-        <div className="flex flex-wrap gap-2 mb-6">
-          {techList.map((tech, i) => (
-            <TechPill key={tech} tech={tech} delay={0.05 * i} />
-          ))}
-        </div>
-
-        {/* CTA links with draw-underline */}
-        <div className="flex items-center gap-6">
-          {project.liveLink && <DrawLink href={project.liveLink} label="Live ↗" accent />}
-          {project.githubLink && <DrawLink href={project.githubLink} label="Code ↗" accent={false} />}
-        </div>
-      </div>
-
-      {/* Image side — clickable, with hover overlay */}
-      <div className={index % 2 === 1 ? 'md:order-1' : ''} ref={imageRef}>
-        <a
-          href={liveUrl}
-          target="_blank"
-          rel="noreferrer"
-          style={{
-            display: 'block',
-            borderRadius: '1rem',
-            overflow: 'hidden',
-            position: 'relative',
-            aspectRatio: '16/9',
-            background: 'var(--color-surface)',
-            cursor: liveUrl ? 'pointer' : 'default',
-          }}
-          onClick={!liveUrl ? e => e.preventDefault() : undefined}
-        >
-          {project.image ? (
-            <motion.img
-              src={project.image}
-              alt={`${project.title} screenshot`}
-              width={800}
-              height={450}
-              loading="lazy"
-              style={{ y: imageY }}
-              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.04]"
-            />
-          ) : (
+          {/* Outcome / Description badge card */}
+          {project.outcome && (
             <div
-              className="w-full h-full flex items-center justify-center"
-              style={{ color: 'var(--color-muted)' }}
+              className="p-3.5 rounded-xl border border-white/5 bg-white/[0.02]"
+              style={{ borderLeft: '3px solid var(--color-accent)' }}
             >
-              <span className="text-label">{project.title}</span>
+              <span className="text-[0.68rem] font-mono text-accent uppercase font-bold tracking-wider block mb-1">
+                Impact & Outcome
+              </span>
+              <p
+                style={{
+                  fontFamily: 'var(--font-body)',
+                  fontSize: '0.875rem',
+                  color: 'var(--color-text)',
+                  lineHeight: 1.6,
+                }}
+              >
+                {project.outcome}
+              </p>
             </div>
           )}
 
-          {/* Hover overlay */}
-          {liveUrl && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              whileHover={{ opacity: 1 }}
-              transition={{ duration: 0.25 }}
-              style={{
-                position: 'absolute',
-                inset: 0,
-                background: 'rgba(8,8,12,0.72)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <span
+          {/* Short description / problem */}
+          <p
+            style={{
+              fontFamily: 'var(--font-body)',
+              fontSize: '0.9375rem',
+              color: 'var(--color-muted)',
+              lineHeight: 1.65,
+            }}
+          >
+            {project.short_description || project.problem || project.description}
+          </p>
+
+          {/* Tech Stack Chips */}
+          {techList.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 pt-1">
+              {techList.map((tech, i) => (
+                <TechPill key={tech} tech={tech} delay={0.03 * i} />
+              ))}
+            </div>
+          )}
+
+          {/* Action CTAs */}
+          <div className="flex items-center gap-5 pt-3 border-t border-white/5">
+            {project.liveLink && (
+              <a
+                href={project.liveLink}
+                target="_blank"
+                rel="noreferrer"
+                className="btn-primary"
                 style={{
-                  fontFamily: 'var(--font-display)',
-                  fontSize: '1.1rem',
-                  fontWeight: 600,
-                  color: 'var(--color-accent)',
-                  letterSpacing: '0.02em',
+                  padding: '0.6rem 1.35rem',
+                  fontSize: '0.75rem',
+                  textDecoration: 'none',
                 }}
               >
-                ↗ View live
-              </span>
-            </motion.div>
-          )}
-        </a>
+                <span>Live Demo</span>
+                <span>↗</span>
+              </a>
+            )}
+            {project.githubLink && (
+              <a
+                href={project.githubLink}
+                target="_blank"
+                rel="noreferrer"
+                className="btn-ghost"
+                style={{
+                  padding: '0.6rem 1.25rem',
+                  fontSize: '0.75rem',
+                  textDecoration: 'none',
+                }}
+              >
+                <span>View Source</span>
+                <span>↗</span>
+              </a>
+            )}
+          </div>
+        </div>
+
+        {/* Right Column: Screenshot / Preview Graphic */}
+        <div className={`lg:col-span-5 ${index % 2 === 1 ? 'lg:order-1' : 'lg:order-2'}`} ref={imageRef}>
+          <a
+            href={liveUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="block rounded-2xl overflow-hidden relative border border-white/10 group/img bg-[#12121A] transition-all hover:border-accent/40"
+            style={{
+              aspectRatio: '16/10',
+              cursor: liveUrl ? 'pointer' : 'default',
+            }}
+            onClick={!liveUrl ? (e) => e.preventDefault() : undefined}
+          >
+            {project.image ? (
+              <motion.img
+                src={project.image}
+                alt={`${project.title} screenshot`}
+                width={800}
+                height={500}
+                loading="lazy"
+                style={{ y: imageY }}
+                className="w-full h-full object-cover transition-transform duration-700 group-hover/img:scale-105"
+              />
+            ) : (
+              <div className="w-full h-full flex flex-col items-center justify-center gap-2 p-6 text-center bg-gradient-to-br from-[#12121A] to-[#0A0A10]">
+                <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-accent font-mono text-sm font-bold">
+                  {String(index + 1).padStart(2, '0')}
+                </div>
+                <span className="text-white font-display font-semibold text-base mt-2">
+                  {project.title}
+                </span>
+                <span className="text-xs font-mono text-muted">
+                  Interactive Live Architecture
+                </span>
+              </div>
+            )}
+
+            {/* Hover overlay button */}
+            {liveUrl && (
+              <div className="absolute inset-0 bg-[#08080C]/75 backdrop-blur-[2px] opacity-0 group-hover/img:opacity-100 transition-opacity duration-250 flex items-center justify-center">
+                <span className="px-4 py-2 rounded-full bg-accent text-[#08080C] font-mono text-xs font-bold uppercase tracking-wider shadow-lg flex items-center gap-1.5 transform translate-y-2 group-hover/img:translate-y-0 transition-transform duration-250">
+                  <span>Explore Project</span>
+                  <span>↗</span>
+                </span>
+              </div>
+            )}
+          </a>
+        </div>
       </div>
     </motion.article>
   )

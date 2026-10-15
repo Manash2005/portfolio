@@ -43,16 +43,18 @@ export default function Activity() {
   const sectionRef = useRef(null)
   const [isNearViewport, setIsNearViewport] = useState(false)
 
-  // Mount 3D skyline canvas only when near viewport
+  // Mount 3D skyline canvas when approaching viewport and keep active
   useEffect(() => {
     const el = sectionRef.current
     if (!el) return
 
     const observer = new IntersectionObserver(
       ([entry]) => {
-        setIsNearViewport(entry.isIntersecting)
+        if (entry.isIntersecting) {
+          setIsNearViewport(true)
+        }
       },
-      { rootMargin: '300px 0px' }
+      { rootMargin: '400px 0px' }
     )
 
     observer.observe(el)

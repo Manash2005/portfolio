@@ -134,14 +134,15 @@ export default function Hero() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6, delay: 0.2 }}
-          className="flex flex-wrap items-center gap-6"
+          className="flex flex-wrap items-center gap-5"
         >
           <a
             href="#projects"
-            className="btn-primary"
+            className="btn-primary group"
             style={{ textDecoration: 'none' }}
           >
-            See my work ↓
+            <span>See my work</span>
+            <span className="inline-block transition-transform duration-300 group-hover:translate-y-0.5">↓</span>
           </a>
           <a
             href="#contact"
