@@ -29,8 +29,10 @@ export default function FlatGrid({
   const eventsMap = useMemo(() => {
     const map = {}
     events.forEach((evt) => {
-      if (evt && evt.date) {
-        map[evt.date] = evt
+      const rawDate = evt?.date || evt?.start_at || ''
+      const dateStr = rawDate.slice(0, 10).trim()
+      if (dateStr) {
+        map[dateStr] = evt
       }
     })
     return map

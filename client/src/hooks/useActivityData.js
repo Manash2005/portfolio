@@ -4,7 +4,7 @@ import portfolioData from '../data/portfolio_data.json'
 import activitySnapshot from '../data/activitySnapshot.json'
 import { API_BASE_URL } from '../utils/apiConfig'
 
-const STORAGE_KEY = 'portfolio_activity_cache_v7'
+const STORAGE_KEY = 'portfolio_activity_cache_v8'
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000 // 6 hours
 const SLOW_THRESHOLD_MS = 4000
 
@@ -212,7 +212,7 @@ export function useActivityData() {
           })
           if (res.ok) {
             const json = await res.json()
-            if (Array.isArray(json.events) && json.events.length > 0) {
+            if (Array.isArray(json.events)) {
               return json.events
             }
           }
@@ -242,7 +242,7 @@ export function useActivityData() {
       const gfgMap = (gfgRes.status === 'fulfilled' && gfgRes.value) ? gfgRes.value : initial.gfgMap
       const calendarMap = (calRes.status === 'fulfilled' && calRes.value) ? calRes.value : initial.calendarMap
 
-      if (evtRes.status === 'fulfilled' && evtRes.value) {
+      if (evtRes.status === 'fulfilled' && Array.isArray(evtRes.value)) {
         setActivityEvents(evtRes.value)
       }
 
@@ -271,7 +271,7 @@ export function useActivityData() {
           leetcodeMap,
           gfgMap,
           calendarMap,
-          activityEvents: (evtRes.status === 'fulfilled' && evtRes.value) || activityEvents,
+          activityEvents: (evtRes.status === 'fulfilled' && Array.isArray(evtRes.value)) ? evtRes.value : activityEvents,
         }))
       } catch (stErr) {
         console.warn('localStorage save failed:', stErr)
@@ -291,16 +291,23 @@ export function useActivityData() {
 
   useEffect(() => {
     let isCancelled = false
-    if (!initial.isFresh) {
-      Promise.resolve().then(() => {
-        if (!isCancelled) fetchData()
-      })
+    // Always revalidate in background on mount (SWR) so new events appear immediately
+    Promise.resolve().then(() => {
+      if (!isCancelled) fetchData()
+    })
+
+    // Revalidate whenever an event or project is updated in the admin panel
+    const handleInvalidate = () => {
+      if (!isCancelled) fetchData()
     }
+    window.addEventListener('portfolio-activity-invalidate', handleInvalidate)
+
     return () => {
       isCancelled = true
+      window.removeEventListener('portfolio-activity-invalidate', handleInvalidate)
       if (slowTimerRef.current) clearTimeout(slowTimerRef.current)
     }
-  }, [fetchData, initial.isFresh])
+  }, [fetchData])
 
   return {
     days,

@@ -457,13 +457,20 @@ function SkylineScene({
     if (onDoubleReset) onDoubleReset()
   }
 
+  // Invalidate canvas whenever events prop updates so badges and lines draw immediately
+  useEffect(() => {
+    invalidate()
+  }, [events, invalidate])
+
   const eventItems = useMemo(() => {
     if (!events || events.length === 0 || !days || days.length === 0) return []
     return events
       .map((evt, idx) => {
-        const dayIdx = days.findIndex((d) => d.date === evt.date)
+        const rawDate = evt?.date || evt?.start_at || ''
+        const dateStr = rawDate.slice(0, 10).trim()
+        const dayIdx = days.findIndex((d) => d.date === dateStr)
         if (dayIdx === -1) return null
-        return { event: evt, dayIndex: dayIdx, key: `${evt.date}-${idx}`, eventIdx: idx }
+        return { event: evt, dayIndex: dayIdx, key: `${dateStr}-${idx}`, eventIdx: idx }
       })
       .filter(Boolean)
   }, [events, days])
@@ -541,8 +548,10 @@ export default function SkylineCanvas({
   const eventsMap = useMemo(() => {
     const map = {}
     events.forEach((evt) => {
-      if (evt && evt.date) {
-        map[evt.date] = evt
+      const rawDate = evt?.date || evt?.start_at || ''
+      const dateStr = rawDate.slice(0, 10).trim()
+      if (dateStr) {
+        map[dateStr] = evt
       }
     })
     return map

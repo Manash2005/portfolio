@@ -25,6 +25,13 @@ export function AdminProvider({ children }) {
 
   const triggerRefresh = useCallback(() => {
     setContentVersion(v => v + 1)
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.removeItem('portfolio_activity_cache_v8')
+        localStorage.removeItem('portfolio_activity_cache_v7')
+        window.dispatchEvent(new CustomEvent('portfolio-activity-invalidate'))
+      } catch {}
+    }
   }, [])
 
   // Helper authenticated fetch wrapper

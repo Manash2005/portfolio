@@ -419,14 +419,18 @@ export const getHeatmapActivity = async (req, res) => {
       if (startDateStr === endDateStr) {
         dateCounts[startDateStr] = (dateCounts[startDateStr] || 0) + 1
       } else {
-        // Multi-day counting: count 1 per day up to 7 days
-        const start = new Date(startDateStr)
-        const end = new Date(endDateStr)
-        const curr = new Date(start)
+        // Multi-day counting: count 1 per day up to 7 days (timezone-safe)
+        const [sy, sm, sd] = startDateStr.split('-').map(Number)
+        const [ey, em, ed] = endDateStr.split('-').map(Number)
+        const curr = new Date(sy, sm - 1, sd)
+        const end = new Date(ey, em - 1, ed)
         let dayCount = 0
 
         while (curr <= end && dayCount < 7) {
-          const dStr = curr.toISOString().slice(0, 10)
+          const y = curr.getFullYear()
+          const m = String(curr.getMonth() + 1).padStart(2, '0')
+          const d = String(curr.getDate()).padStart(2, '0')
+          const dStr = `${y}-${m}-${d}`
           dateCounts[dStr] = (dateCounts[dStr] || 0) + 1
           curr.setDate(curr.getDate() + 1)
           dayCount++
@@ -464,6 +468,8 @@ export const getActivityEvents = async (req, res) => {
     const rows = db.prepare(`
       SELECT 
         SUBSTR(start_at, 1, 10) AS date,
+        start_at,
+        end_at,
         title,
         description,
         category,
