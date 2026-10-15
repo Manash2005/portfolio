@@ -184,14 +184,41 @@ export function updatePortfolioContent(req, res) {
    ========================================================================== */
 
 function formatProjectRow(row) {
+  let parsedTech = []
+  if (Array.isArray(row.tech_stack)) {
+    parsedTech = row.tech_stack
+  } else if (typeof row.tech_stack === 'string') {
+    try {
+      const p = JSON.parse(row.tech_stack)
+      parsedTech = Array.isArray(p) ? p : [row.tech_stack]
+    } catch {
+      parsedTech = row.tech_stack.split(',').map((s) => s.trim()).filter(Boolean)
+    }
+  }
+
+  let parsedMetrics = []
+  if (Array.isArray(row.metrics)) {
+    parsedMetrics = row.metrics
+  } else if (typeof row.metrics === 'string') {
+    try {
+      const m = JSON.parse(row.metrics)
+      parsedMetrics = Array.isArray(m) ? m : []
+    } catch {
+      parsedMetrics = []
+    }
+  }
+
   return {
     ...row,
-    techStack: row.tech_stack ? JSON.parse(row.tech_stack) : [],
-    metrics: row.metrics ? JSON.parse(row.metrics) : [],
+    tech_stack: parsedTech,
+    techStack: parsedTech,
+    metrics: parsedMetrics,
     featured: Boolean(row.featured),
     is_published: Boolean(row.is_published),
-    liveLink: row.live_link,
-    githubLink: row.github_link,
+    live_link: row.live_link || row.liveLink || '',
+    liveLink: row.live_link || row.liveLink || '',
+    github_link: row.github_link || row.githubLink || '',
+    githubLink: row.github_link || row.githubLink || '',
   }
 }
 

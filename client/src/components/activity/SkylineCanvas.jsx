@@ -573,6 +573,11 @@ export default function SkylineCanvas({
         dpr={[1, 1.5]}
         camera={{ position: [0, 4.5, 5.8], fov: 42 }}
         gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
+        onCreated={({ gl }) => {
+          gl.domElement?.addEventListener?.('webglcontextlost', (e) => {
+            e.preventDefault()
+          }, false)
+        }}
         style={{ pointerEvents: 'auto', background: 'transparent' }}
       >
         <SkylineScene

@@ -4,6 +4,15 @@ import { BrowserRouter } from 'react-router-dom'
 import './index.css'
 import App from './App.jsx'
 
+// Suppress upstream Three.js deprecation warning from internal R3F ticker
+const origWarn = console.warn
+console.warn = (...args) => {
+  if (typeof args[0] === 'string' && args[0].includes('THREE.Clock: This module has been deprecated')) {
+    return
+  }
+  origWarn(...args)
+}
+
 // Auto-recover if a new production deployment changes chunk hashes
 window.addEventListener('vite:preloadError', (event) => {
   console.warn('[Vite] Preload error detected. Reloading page for latest assets...', event)

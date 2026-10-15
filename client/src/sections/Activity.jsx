@@ -41,25 +41,6 @@ export default function Activity() {
   const [isReplaying, setIsReplaying] = useState(false)
 
   const sectionRef = useRef(null)
-  const [isNearViewport, setIsNearViewport] = useState(false)
-
-  // Mount 3D skyline canvas when approaching viewport and keep active
-  useEffect(() => {
-    const el = sectionRef.current
-    if (!el) return
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsNearViewport(true)
-        }
-      },
-      { rootMargin: '400px 0px' }
-    )
-
-    observer.observe(el)
-    return () => observer.disconnect()
-  }, [])
 
   // Keyboard escape listener to reset month focus
   useEffect(() => {
@@ -193,8 +174,8 @@ export default function Activity() {
           />
         </div>
 
-        {/* Loading / Error States */}
-        {status === 'loading' && (
+        {/* Loading / Error States (only shown if no days data is available yet) */}
+        {status === 'loading' && days.length === 0 && (
           <div className="w-full py-20 px-8 rounded-2xl border border-hairline bg-[#0E0E14]/40 flex flex-col items-center justify-center gap-4">
             <div className="w-8 h-8 rounded-full border-2 border-accent border-t-transparent animate-spin" />
             <p className="text-xs font-mono text-muted">
@@ -203,7 +184,7 @@ export default function Activity() {
           </div>
         )}
 
-        {status === 'error' && (
+        {status === 'error' && days.length === 0 && (
           <div className="w-full py-16 px-8 rounded-2xl border border-hairline bg-[#160E0E]/40 flex flex-col items-center justify-center gap-4 text-center">
             <p className="text-sm font-mono text-red-400">
               {errorMessage || 'Service temporarily unreachable.'}
@@ -218,11 +199,11 @@ export default function Activity() {
         )}
 
         {/* Ready State Canvas or Flat Grid */}
-        {status === 'ready' && (
+        {days.length > 0 && (
           <div className="flex flex-col gap-6">
             {/* Active view */}
             <div className="relative">
-              {viewMode === 'skyline' && isNearViewport ? (
+              {viewMode === 'skyline' ? (
                 <SkylineCanvas
                   days={days}
                   sourceKey={activeSource}

@@ -44,6 +44,11 @@ export default function Scene() {
           alpha: true,
           powerPreference: 'high-performance',
         }}
+        onCreated={({ gl }) => {
+          gl.domElement?.addEventListener?.('webglcontextlost', (e) => {
+            e.preventDefault()
+          }, false)
+        }}
         style={{ background: 'transparent' }}
       >
         <Lights />
