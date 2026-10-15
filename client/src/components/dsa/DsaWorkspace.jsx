@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import {
   Trophy,
@@ -34,7 +34,8 @@ import { API_BASE_URL } from '../../utils/apiConfig'
 
 export default function DsaWorkspace({ onSwitchToCalendar }) {
   const { isAdmin, authFetch } = useAdmin()
-  const [activeTab, setActiveTab] = useState('overview') // 'overview' | 'bank' | 'arena' | 'topics' | 'coach' | 'mistakes' | 'achievements'
+  const [activeTab, setActiveTab] = useState('overview') // 'overview' | 'topics' | 'arena' | 'coach' | 'mistakes' | 'achievements'
+  const [selectedTopic, setSelectedTopic] = useState(null)
   const [loading, setLoading] = useState(true)
 
   // State
@@ -273,6 +274,73 @@ export default function DsaWorkspace({ onSwitchToCalendar }) {
     }
   }
 
+  const handleSelectTopic = (topicName) => {
+    setSelectedTopic(topicName)
+    const effectiveTopic = topicName || 'All'
+    const newFilters = { ...filters, topic: effectiveTopic, page: 1 }
+    setFilters(newFilters)
+    fetchProblems(newFilters)
+    setActiveTab('topics')
+  }
+
+  // Recommended Topics for Today
+  const recommendedTopics = useMemo(() => {
+    const list = []
+
+    // 1. Check overdue spaced revisions
+    if (revisionQueue?.overdue && revisionQueue.overdue.length > 0) {
+      const topicCounts = {}
+      revisionQueue.overdue.forEach((item) => {
+        topicCounts[item.primary_topic] = (topicCounts[item.primary_topic] || 0) + 1
+      })
+      const topDueTopic = Object.keys(topicCounts).sort((a, b) => topicCounts[b] - topicCounts[a])[0]
+      if (topDueTopic) {
+        list.push({
+          topic: topDueTopic,
+          badge: 'Memory Decay Alert',
+          badgeColor: 'text-amber-400 bg-amber-500/10 border-amber-500/30',
+          reason: `${topicCounts[topDueTopic]} spaced revision${topicCounts[topDueTopic] > 1 ? 's' : ''} overdue`,
+          priority: '#1 High Priority',
+          xpBonus: '+35 XP',
+        })
+      }
+    }
+
+    // 2. Check weak topics
+    if (weakTopics && weakTopics.length > 0) {
+      const topWeak = weakTopics[0]
+      if (topWeak && !list.some((r) => r.topic === topWeak.topic)) {
+        list.push({
+          topic: topWeak.topic,
+          badge: 'Mastery Booster',
+          badgeColor: 'text-rose-400 bg-rose-500/10 border-rose-500/30',
+          reason: `Current mastery at ${topWeak.masteryScore}% (${topWeak.solved}/${topWeak.total} solved)`,
+          priority: '#2 Focus Area',
+          xpBonus: '+40 XP',
+        })
+      }
+    }
+
+    // 3. Fallback / Core topics if fewer than 3
+    const corePriorityTopics = ['Dynamic Programming', 'Binary Search', 'Trees', 'Graph Traversal', 'Two Pointers', 'Arrays']
+    for (const core of corePriorityTopics) {
+      if (list.length >= 3) break
+      if (!list.some((r) => r.topic === core)) {
+        const topicMeta = topics.find((t) => t.topic === core)
+        list.push({
+          topic: core,
+          badge: 'High Frequency Interview',
+          badgeColor: 'text-accent bg-accent/10 border-accent/30',
+          reason: topicMeta ? `${topicMeta.solved} of ${topicMeta.total} solved · Essential for FAANG rounds` : 'Core interview foundation',
+          priority: `#${list.length + 1} Recommended`,
+          xpBonus: '+30 XP',
+        })
+      }
+    }
+
+    return list.slice(0, 3)
+  }, [revisionQueue, weakTopics, topics])
+
   const profile = overview?.profile || {}
   const stats = overview?.stats || {}
   const activePlan = overview?.activePlan || null
@@ -285,9 +353,8 @@ export default function DsaWorkspace({ onSwitchToCalendar }) {
         <div className="flex flex-wrap items-center gap-1.5">
           {[
             { id: 'overview', label: 'Dashboard & Charts', icon: BarChart3 },
-            { id: 'bank', label: 'Question Bank', icon: BookOpen },
+            { id: 'topics', label: 'Topics & Questions', icon: Target },
             { id: 'arena', label: 'Practice Arena', icon: Play },
-            { id: 'topics', label: 'Topic Mastery', icon: Target },
             { id: 'coach', label: 'AI Coach', icon: Sparkles },
             { id: 'mistakes', label: 'Mistake Journal', icon: AlertTriangle },
             { id: 'achievements', label: 'Achievements', icon: Trophy },
@@ -298,7 +365,12 @@ export default function DsaWorkspace({ onSwitchToCalendar }) {
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => {
+                  if (tab.id === 'topics' && activeTab === 'topics') {
+                    setSelectedTopic(null)
+                  }
+                  setActiveTab(tab.id)
+                }}
                 className={`px-3.5 py-2 rounded-xl text-xs font-mono font-medium flex items-center gap-2 whitespace-nowrap transition-colors cursor-pointer ${
                   isActive
                     ? 'bg-accent text-[#08080C] font-bold shadow-lg shadow-accent/10'
@@ -355,66 +427,72 @@ export default function DsaWorkspace({ onSwitchToCalendar }) {
             transition={{ duration: 0.15 }}
             className="flex flex-col gap-6"
           >
-            {/* Quick Stats Grid */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 w-full">
-              {/* Unique Solved */}
-              <div className="p-4 sm:p-5 rounded-2xl border border-hairline bg-[#0E0E14] text-left flex flex-col justify-between">
-                <div className="flex items-center justify-between text-muted mb-2">
-                  <span className="text-xs font-mono">Problems Solved</span>
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                </div>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-2xl sm:text-3xl font-display font-bold text-white">
-                    {stats.uniqueSolved || 0}
+            {/* Recommended Topics for Today */}
+            <div className="p-6 rounded-3xl border border-hairline bg-[#0E0E14] text-left flex flex-col gap-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div className="flex items-center gap-2.5">
+                  <span className="p-2 rounded-xl bg-accent/15 text-accent">
+                    <Sparkles className="w-5 h-5" />
                   </span>
-                  <span className="text-xs font-mono text-muted">
-                    / {stats.totalProblems || 807} catalog
-                  </span>
+                  <div>
+                    <h3 className="text-base font-display font-bold text-white">
+                      Recommended Topics for Today
+                    </h3>
+                    <p className="text-xs font-mono text-muted">
+                      Adaptive algorithm targets prioritized by memory decay and interview weight.
+                    </p>
+                  </div>
                 </div>
+                <button
+                  onClick={() => handleSelectTopic(null)}
+                  className="text-xs font-mono text-accent hover:underline flex items-center gap-1 self-start sm:self-auto cursor-pointer"
+                >
+                  <span>Explore All Topics</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
               </div>
 
-              {/* Independent Solves */}
-              <div className="p-4 sm:p-5 rounded-2xl border border-hairline bg-[#0E0E14] text-left flex flex-col justify-between">
-                <div className="flex items-center justify-between text-muted mb-2">
-                  <span className="text-xs font-mono">Independent Solves</span>
-                  <Zap className="w-4 h-4 text-accent" />
-                </div>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-2xl sm:text-3xl font-display font-bold text-accent">
-                    {stats.independentSolves || 0}
-                  </span>
-                  <span className="text-xs font-mono text-muted">zero hints</span>
-                </div>
-              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 mt-1">
+                {recommendedTopics.map((rec) => (
+                  <div
+                    key={rec.topic}
+                    onClick={() => handleSelectTopic(rec.topic)}
+                    className="p-4 rounded-2xl border border-hairline bg-[#12121A] hover:border-accent/50 hover:bg-[#161622] transition-all flex flex-col justify-between gap-3 cursor-pointer group shadow-md"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between gap-2 mb-2">
+                        <span className={`text-[10px] font-mono px-2 py-0.5 rounded border font-semibold ${rec.badgeColor}`}>
+                          {rec.badge}
+                        </span>
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-accent/20 text-accent font-bold">
+                          {rec.xpBonus}
+                        </span>
+                      </div>
 
-              {/* Current Streak */}
-              <div className="p-4 sm:p-5 rounded-2xl border border-hairline bg-[#0E0E14] text-left flex flex-col justify-between">
-                <div className="flex items-center justify-between text-muted mb-2">
-                  <span className="text-xs font-mono">Practice Streak</span>
-                  <Flame className="w-4 h-4 text-amber-400 fill-amber-400" />
-                </div>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-2xl sm:text-3xl font-display font-bold text-white">
-                    {profile.current_streak || 0}
-                  </span>
-                  <span className="text-xs font-mono text-muted">days continuous</span>
-                </div>
-              </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-mono text-muted font-bold">{rec.priority}</span>
+                      </div>
+                      <h4 className="text-base font-display font-bold text-white group-hover:text-accent transition-colors mt-0.5">
+                        {rec.topic}
+                      </h4>
+                      <p className="text-xs font-mono text-muted mt-1 leading-relaxed">
+                        {rec.reason}
+                      </p>
+                    </div>
 
-              {/* XP Rank */}
-              <div className="p-4 sm:p-5 rounded-2xl border border-hairline bg-[#0E0E14] text-left flex flex-col justify-between">
-                <div className="flex items-center justify-between text-muted mb-2">
-                  <span className="text-xs font-mono">Arena Rank</span>
-                  <Trophy className="w-4 h-4 text-purple-400" />
-                </div>
-                <div className="truncate">
-                  <span className="text-lg sm:text-xl font-display font-bold text-white truncate block">
-                    {profile.current_level || 'Novice'}
-                  </span>
-                  <span className="text-xs font-mono text-accent">
-                    {profile.total_xp || 0} Total XP
-                  </span>
-                </div>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleSelectTopic(rec.topic)
+                      }}
+                      className="w-full py-2 rounded-xl text-xs font-mono font-medium bg-white/5 group-hover:bg-accent group-hover:text-[#08080C] text-white flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                    >
+                      <span>Practice Topic</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
               </div>
             </div>
 
@@ -602,10 +680,7 @@ export default function DsaWorkspace({ onSwitchToCalendar }) {
                           </span>
                         </div>
                         <button
-                          onClick={() => {
-                            setFilters({ ...filters, topic: wt.topic, page: 1 })
-                            setActiveTab('bank')
-                          }}
+                          onClick={() => handleSelectTopic(wt.topic)}
                           className="px-3 py-1 rounded-lg text-xs font-mono bg-white/5 text-white hover:bg-white/10 cursor-pointer"
                         >
                           Explore
@@ -620,35 +695,14 @@ export default function DsaWorkspace({ onSwitchToCalendar }) {
                 )}
 
                 <button
-                  onClick={() => setActiveTab('topics')}
-                  className="text-xs font-mono text-accent hover:underline flex items-center gap-1"
+                  onClick={() => handleSelectTopic(null)}
+                  className="text-xs font-mono text-accent hover:underline flex items-center gap-1 cursor-pointer"
                 >
                   <span>Explore Topic Mastery</span>
                   <ArrowRight className="w-3 h-3" />
                 </button>
               </div>
             </div>
-          </motion.div>
-        )}
-
-        {/* QUESTION BANK TAB */}
-        {activeTab === 'bank' && (
-          <motion.div
-            key="bank"
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.15 }}
-          >
-            <QuestionBank
-              problems={problems}
-              pagination={pagination}
-              filters={filters}
-              onFilterChange={handleFilterChange}
-              onPageChange={handlePageChange}
-              onSelectProblemForPractice={handleLaunchPractice}
-              loading={loading}
-            />
           </motion.div>
         )}
 
@@ -664,12 +718,15 @@ export default function DsaWorkspace({ onSwitchToCalendar }) {
             <PracticeArena
               activeProblem={arenaProblem}
               onCompleteAttempt={handleCompleteAttempt}
-              onSelectAnotherProblem={() => setActiveTab('bank')}
+              onSelectAnotherProblem={() => {
+                setSelectedTopic(null)
+                setActiveTab('topics')
+              }}
             />
           </motion.div>
         )}
 
-        {/* TOPIC MASTERY TAB */}
+        {/* TOPICS & QUESTIONS UNIFIED TAB */}
         {activeTab === 'topics' && (
           <motion.div
             key="topics"
@@ -678,12 +735,26 @@ export default function DsaWorkspace({ onSwitchToCalendar }) {
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.15 }}
           >
-            <TopicMasteryView
-              topics={topics}
-              weakTopics={weakTopics}
-              revisionQueue={revisionQueue}
-              onSelectProblemForPractice={handleLaunchPractice}
-            />
+            {selectedTopic === null ? (
+              <TopicMasteryView
+                topics={topics}
+                weakTopics={weakTopics}
+                revisionQueue={revisionQueue}
+                onSelectProblemForPractice={handleLaunchPractice}
+                onSelectTopic={handleSelectTopic}
+              />
+            ) : (
+              <QuestionBank
+                problems={problems}
+                pagination={pagination}
+                filters={filters}
+                onFilterChange={handleFilterChange}
+                onPageChange={handlePageChange}
+                onSelectProblemForPractice={handleLaunchPractice}
+                onBackToTopics={() => setSelectedTopic(null)}
+                loading={loading}
+              />
+            )}
           </motion.div>
         )}
 

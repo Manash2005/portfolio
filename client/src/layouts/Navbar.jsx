@@ -1,4 +1,4 @@
-import { motion, AnimatePresence } from 'motion/react'
+import { motion } from 'motion/react'
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 
@@ -17,13 +17,30 @@ export default function Navbar() {
   const navigate = useNavigate()
   const isHome = location.pathname === '/'
 
-  // Auto-hide on scroll down, show on scroll up
+  // Auto-hide on scroll down, show on scroll up with hysteresis
   useEffect(() => {
     let lastY = window.scrollY
     const onScroll = () => {
       const y = window.scrollY
-      if (Math.abs(y - lastY) < 8) return
-      setVisible(y < 50 || y < lastY)
+      const delta = y - lastY
+
+      // Always show near top
+      if (y < 60) {
+        setVisible(true)
+        lastY = y
+        return
+      }
+
+      // Ignore small jitter / inertia bounces near deceleration end
+      if (Math.abs(delta) < 16) return
+
+      if (delta > 0) {
+        // Scrolling down past threshold
+        setVisible(false)
+      } else {
+        // Scrolling up past threshold
+        setVisible(true)
+      }
       lastY = y
     }
     window.addEventListener('scroll', onScroll, { passive: true })
@@ -57,17 +74,18 @@ export default function Navbar() {
   }
 
   return (
-    <AnimatePresence>
-      {visible && (
-        <motion.header
-          key="navbar"
-          initial={{ y: -80, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          exit={{ y: -80, opacity: 0 }}
-          transition={{ duration: 0.35, ease: 'easeInOut' }}
-          className="content-layer fixed top-4 left-1/2 -translate-x-1/2 z-50"
-          role="banner"
-        >
+    <motion.header
+      key="navbar"
+      initial={false}
+      animate={{
+        y: visible ? 0 : -90,
+        opacity: visible ? 1 : 0,
+        pointerEvents: visible ? 'auto' : 'none',
+      }}
+      transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+      className="fixed top-4 left-1/2 -translate-x-1/2 z-50"
+      role="banner"
+    >
           <nav
             className="flex items-center gap-1 px-3 py-2 rounded-full backdrop-blur-xl border border-hairline"
             style={{
@@ -167,7 +185,5 @@ export default function Navbar() {
             </a>
           </nav>
         </motion.header>
-      )}
-    </AnimatePresence>
   )
 }

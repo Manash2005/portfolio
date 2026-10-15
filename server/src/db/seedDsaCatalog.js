@@ -997,6 +997,7 @@ export const curatedProblems = [
 ]
 
 export const defaultAchievements = [
+  // SOLVING MILESTONES
   {
     id: 'first_solve',
     title: 'First Blood',
@@ -1022,6 +1023,48 @@ export const defaultAchievements = [
     xp_reward: 250,
   },
   {
+    id: 'hundred_solves',
+    title: 'Centurion',
+    description: 'Conquer 100 DSA problems in the arena',
+    category: 'solving',
+    badge_icon: 'ShieldCheck',
+    xp_reward: 500,
+  },
+  {
+    id: 'two_hundred_solves',
+    title: 'Grandmaster Solver',
+    description: 'Solve 200 catalog problems with algorithmic mastery',
+    category: 'solving',
+    badge_icon: 'Crown',
+    xp_reward: 1000,
+  },
+  {
+    id: 'hard_slayer',
+    title: 'Titan Slayer',
+    description: 'Solve 5 Hard difficulty problems independently',
+    category: 'solving',
+    badge_icon: 'Swords',
+    xp_reward: 350,
+  },
+  {
+    id: 'speed_demon',
+    title: 'Speed Demon',
+    description: 'Solve an independent problem in under 15 minutes',
+    category: 'solving',
+    badge_icon: 'FastForward',
+    xp_reward: 75,
+  },
+  {
+    id: 'pure_independence',
+    title: 'Lone Wolf',
+    description: 'Complete 25 independent solves without consulting hints',
+    category: 'solving',
+    badge_icon: 'Flame',
+    xp_reward: 300,
+  },
+
+  // STREAK & CONSISTENCY
+  {
     id: 'streak_3',
     title: 'Consistency Spark',
     description: 'Maintain a 3-day active practice streak',
@@ -1046,6 +1089,80 @@ export const defaultAchievements = [
     xp_reward: 300,
   },
   {
+    id: 'streak_30',
+    title: 'Iron Will',
+    description: 'Maintain an unbroken 30-day practice streak',
+    category: 'streak',
+    badge_icon: 'Sparkles',
+    xp_reward: 600,
+  },
+
+  // TOPIC MASTERY
+  {
+    id: 'binary_navigator',
+    title: 'Binary Navigator',
+    description: 'Solve 5 Binary Search problems',
+    category: 'mastery',
+    badge_icon: 'Compass',
+    xp_reward: 120,
+  },
+  {
+    id: 'tree_architect',
+    title: 'Arboreal Wizard',
+    description: 'Master 5 Binary Tree / BST problems',
+    category: 'mastery',
+    badge_icon: 'GitCommit',
+    xp_reward: 150,
+  },
+  {
+    id: 'string_artisan',
+    title: 'String Architect',
+    description: 'Solve 5 String or Palindrome problems',
+    category: 'mastery',
+    badge_icon: 'FileCode',
+    xp_reward: 120,
+  },
+  {
+    id: 'two_pointer_adept',
+    title: 'Dual Stride',
+    description: 'Solve 5 Two Pointers or Sliding Window problems',
+    category: 'mastery',
+    badge_icon: 'MoveHorizontal',
+    xp_reward: 120,
+  },
+  {
+    id: 'bit_manipulator',
+    title: 'Bit Wizard',
+    description: 'Solve 3 Bit Manipulation problems',
+    category: 'mastery',
+    badge_icon: 'Binary',
+    xp_reward: 150,
+  },
+  {
+    id: 'heap_harvester',
+    title: 'Priority King',
+    description: 'Solve 3 Heap / Priority Queue problems',
+    category: 'mastery',
+    badge_icon: 'Layers',
+    xp_reward: 140,
+  },
+  {
+    id: 'trie_navigator',
+    title: 'Prefix Commander',
+    description: 'Solve 3 Trie problems',
+    category: 'mastery',
+    badge_icon: 'Network',
+    xp_reward: 160,
+  },
+  {
+    id: 'backtracking_scout',
+    title: 'Pathfinder',
+    description: 'Solve 3 Backtracking or Recursion problems',
+    category: 'mastery',
+    badge_icon: 'Route',
+    xp_reward: 150,
+  },
+  {
     id: 'graph_explorer',
     title: 'Graph Navigator',
     description: 'Solve 3 graph traversal or topological sort problems',
@@ -1062,6 +1179,16 @@ export const defaultAchievements = [
     xp_reward: 150,
   },
   {
+    id: 'polyglot_solver',
+    title: 'Polyglot Solver',
+    description: 'Solve problems across 6 different algorithmic topics',
+    category: 'mastery',
+    badge_icon: 'Boxes',
+    xp_reward: 200,
+  },
+
+  // SPACED REVISION & REFLECTION
+  {
     id: 'revision_champion',
     title: 'Spaced Memory',
     description: 'Complete 3 scheduled spaced-repetition revisions',
@@ -1070,19 +1197,19 @@ export const defaultAchievements = [
     xp_reward: 100,
   },
   {
+    id: 'revision_master',
+    title: 'Iron Retention',
+    description: 'Complete 10 scheduled spaced-repetition revisions',
+    category: 'revision',
+    badge_icon: 'CheckCircle2',
+    xp_reward: 250,
+  },
+  {
     id: 'mistake_reflector',
     title: 'Honest Learner',
     description: 'Record 3 reflections in your Mistake Journal',
     category: 'special',
     badge_icon: 'BookOpen',
-    xp_reward: 75,
-  },
-  {
-    id: 'speed_demon',
-    title: 'Speed Demon',
-    description: 'Solve an independent problem in under 15 minutes',
-    category: 'solving',
-    badge_icon: 'FastForward',
     xp_reward: 75,
   },
 ]

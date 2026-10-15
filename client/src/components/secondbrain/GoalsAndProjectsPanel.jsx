@@ -14,13 +14,11 @@ export default function GoalsAndProjectsPanel({ goals = [], projects = [] }) {
   } = useAdmin()
 
   const [deletingGoalId, setDeletingGoalId] = useState(null)
+  const [confirmDeleteGoalId, setConfirmDeleteGoalId] = useState(null)
   const [goalActionError, setGoalActionError] = useState(null)
 
-  const handleDeleteGoal = async (e, goal) => {
+  const executeDeleteGoal = async (e, goal) => {
     e.stopPropagation()
-    const confirmed = window.confirm(`Are you sure you want to delete strategic goal "${goal.title}"? Any linked projects and events will be unlinked.`)
-    if (!confirmed) return
-
     setDeletingGoalId(goal.id)
     setGoalActionError(null)
 
@@ -32,6 +30,7 @@ export default function GoalsAndProjectsPanel({ goals = [], projects = [] }) {
       if (!res.ok || !json.success) {
         throw new Error(json.error || 'Failed to delete goal')
       }
+      setConfirmDeleteGoalId(null)
       triggerRefresh()
     } catch (err) {
       setGoalActionError(err.message || 'Failed to delete goal')
@@ -124,21 +123,47 @@ export default function GoalsAndProjectsPanel({ goals = [], projects = [] }) {
                     {/* Admin Action Controls */}
                     {isAdmin && (
                       <div className="flex items-center gap-1 opacity-90 group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={() => openEditGoal(goal)}
-                          className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-muted hover:text-white transition-colors cursor-pointer"
-                          title="Edit Goal"
-                        >
-                          <Edit2 className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={(e) => handleDeleteGoal(e, goal)}
-                          disabled={deletingGoalId === goal.id}
-                          className="p-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 transition-colors cursor-pointer disabled:opacity-50"
-                          title="Delete Goal"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        {confirmDeleteGoalId === goal.id ? (
+                          <div className="flex items-center gap-1.5 bg-red-500/10 border border-red-500/30 px-2 py-0.5 rounded-lg">
+                            <span className="text-[10px] font-mono text-red-400">Delete?</span>
+                            <button
+                              onClick={(e) => executeDeleteGoal(e, goal)}
+                              disabled={deletingGoalId === goal.id}
+                              className="px-2 py-0.5 rounded bg-red-600 hover:bg-red-700 text-white text-[10px] font-mono font-bold cursor-pointer disabled:opacity-50"
+                            >
+                              Yes
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setConfirmDeleteGoalId(null)
+                              }}
+                              className="px-1.5 py-0.5 rounded text-muted hover:text-white text-[10px] font-mono cursor-pointer"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => openEditGoal(goal)}
+                              className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-muted hover:text-white transition-colors cursor-pointer"
+                              title="Edit Goal"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setConfirmDeleteGoalId(goal.id)
+                              }}
+                              className="p-1.5 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 hover:text-red-300 transition-colors cursor-pointer"
+                              title="Delete Goal"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </>
+                        )}
                       </div>
                     )}
                   </div>

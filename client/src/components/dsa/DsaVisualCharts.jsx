@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { motion } from 'motion/react'
+import { motion, AnimatePresence } from 'motion/react'
 import {
   PieChart,
   BarChart3,
@@ -10,10 +10,15 @@ import {
   Clock,
   Sparkles,
   Layers,
+  HelpCircle,
+  Activity,
+  Flame,
+  X,
 } from 'lucide-react'
 
 export default function DsaVisualCharts({ charts = {}, stats = {} }) {
   const [activeTooltip, setActiveTooltip] = useState(null)
+  const [activeInfoModal, setActiveInfoModal] = useState(null) // 'trajectory' | 'difficulty' | 'activity' | 'independence'
 
   const diff = charts.difficulty || {
     Easy: { solved: 0, total: 18 },
@@ -43,6 +48,24 @@ export default function DsaVisualCharts({ charts = {}, stats = {} }) {
   // Max solves in week for scaling bars
   const maxSolvesInWeek = Math.max(1, ...weekly.map((w) => w.solves || 0))
 
+  // Line Chart calculation for Weekly Trajectory
+  const linePoints = weekly.map((day, idx) => {
+    const x = 30 + idx * 75 // 7 points over 450 width
+    const maxY = 130
+    const minY = 30
+    const normalizedY = maxY - ((day.solves || 0) / Math.max(1, maxSolvesInWeek)) * (maxY - minY)
+    return { ...day, x, y: normalizedY }
+  })
+
+  const pathD = linePoints.length > 0
+    ? `M ${linePoints[0].x} ${linePoints[0].y} ` +
+      linePoints.slice(1).map((p) => `L ${p.x} ${p.y}`).join(' ')
+    : ''
+
+  const areaD = linePoints.length > 0
+    ? `${pathD} L ${linePoints[linePoints.length - 1].x} 150 L ${linePoints[0].x} 150 Z`
+    : ''
+
   return (
     <div className="w-full flex flex-col gap-6 text-left">
       {/* Visual Charts Header */}
@@ -50,29 +73,146 @@ export default function DsaVisualCharts({ charts = {}, stats = {} }) {
         <div>
           <h3 className="text-lg font-display font-bold text-white flex items-center gap-2">
             <BarChart3 className="w-5 h-5 text-accent" />
-            <span>Practice Analytics & Visual Insights</span>
+            <span>Interactive Visual Arena & Trajectory</span>
           </h3>
           <p className="text-xs font-mono text-muted mt-0.5">
-            Real-time visual breakdown of your problem solving consistency, difficulty distribution, and topic mastery.
+            Real-time visual velocity curves, difficulty ratios, and mastery progression.
           </p>
         </div>
         <div className="flex items-center gap-2 text-[11px] font-mono text-muted bg-[#12121A] px-3 py-1.5 rounded-xl border border-hairline">
           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span>Real SQLite Analytics</span>
+          <span>Real-time SQLite Analytics</span>
         </div>
       </div>
 
-      {/* Grid: 2 Primary Visual Charts */}
+      {/* TOP ROW: LINE CHART (XP & Solve Velocity Trajectory) + DIFFICULTY RADIAL ARENA */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* CHART 1: Difficulty Distribution Radial Donut */}
+        {/* CHART 1: Velocity & XP Curve (Line Chart) */}
         <div className="p-6 rounded-3xl border border-hairline bg-[#0D0D14] flex flex-col justify-between gap-5 relative overflow-hidden">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-mono uppercase tracking-wider text-muted flex items-center gap-1.5">
+            <span className="text-xs font-mono uppercase tracking-wider text-muted flex items-center gap-2">
+              <Activity className="w-3.5 h-3.5 text-accent" />
+              <span>Velocity & XP Trajectory</span>
+              <button
+                onClick={() => setActiveInfoModal('trajectory')}
+                className="p-1 rounded-full text-muted hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
+                title="View metric details"
+              >
+                <HelpCircle className="w-3.5 h-3.5" />
+              </button>
+            </span>
+            <span className="text-xs font-mono text-accent font-medium">
+              +{weekly.reduce((acc, curr) => acc + (curr.xp || 0), 0)} XP This Week
+            </span>
+          </div>
+
+          {/* SVG Line Chart */}
+          <div className="relative w-full h-44 flex items-center justify-center">
+            <svg viewBox="0 0 510 160" className="w-full h-full overflow-visible">
+              <defs>
+                <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#B8FF3C" stopOpacity="0.3" />
+                  <stop offset="100%" stopColor="#B8FF3C" stopOpacity="0.0" />
+                </linearGradient>
+                <linearGradient id="lineGradient" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stopColor="#10B981" />
+                  <stop offset="50%" stopColor="#B8FF3C" />
+                  <stop offset="100%" stopColor="#38BDF8" />
+                </linearGradient>
+              </defs>
+
+              {/* Grid Lines */}
+              <line x1="20" y1="30" x2="490" y2="30" stroke="rgba(255,255,255,0.05)" strokeDasharray="4 4" />
+              <line x1="20" y1="80" x2="490" y2="80" stroke="rgba(255,255,255,0.05)" strokeDasharray="4 4" />
+              <line x1="20" y1="130" x2="490" y2="130" stroke="rgba(255,255,255,0.05)" strokeDasharray="4 4" />
+              <line x1="20" y1="150" x2="490" y2="150" stroke="rgba(255,255,255,0.1)" />
+
+              {/* Area fill under curve */}
+              {areaD && (
+                <path d={areaD} fill="url(#areaGradient)" className="transition-all duration-700" />
+              )}
+
+              {/* Curve Line */}
+              {pathD && (
+                <path
+                  d={pathD}
+                  fill="none"
+                  stroke="url(#lineGradient)"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              )}
+
+              {/* Interactive Data Points */}
+              {linePoints.map((pt, idx) => (
+                <g key={idx} className="cursor-pointer" onMouseEnter={() => setActiveTooltip(pt)} onMouseLeave={() => setActiveTooltip(null)}>
+                  {/* Outer pulse circle for today */}
+                  {pt.isToday && (
+                    <circle cx={pt.x} cy={pt.y} r="9" fill="none" stroke="#B8FF3C" strokeWidth="1.5" opacity="0.6">
+                      <animate attributeName="r" values="6;11;6" dur="2s" repeatCount="indefinite" />
+                    </circle>
+                  )}
+                  {/* Point circle */}
+                  <circle
+                    cx={pt.x}
+                    cy={pt.y}
+                    r={pt.isToday ? 5 : 4}
+                    fill={pt.isToday ? '#B8FF3C' : '#0E0E14'}
+                    stroke={pt.isToday ? '#08080C' : '#B8FF3C'}
+                    strokeWidth="2"
+                    className="transition-transform duration-200 hover:scale-125"
+                  />
+                  {/* X Axis Labels */}
+                  <text
+                    x={pt.x}
+                    y="158"
+                    textAnchor="middle"
+                    fill={pt.isToday ? '#B8FF3C' : '#71717A'}
+                    fontSize="9"
+                    fontFamily="var(--font-mono)"
+                  >
+                    {pt.day}
+                  </text>
+                </g>
+              ))}
+            </svg>
+          </div>
+
+          {/* Dynamic Tooltip / Footer */}
+          <div className="flex items-center justify-between text-xs font-mono text-muted pt-1 border-t border-hairline/60">
+            {activeTooltip ? (
+              <span className="text-white flex items-center gap-2">
+                <span className="text-accent font-bold">{activeTooltip.day} ({activeTooltip.date}):</span>
+                <span>{activeTooltip.solves} solved</span> ·
+                <span className="text-accent font-medium">+{activeTooltip.xp} XP</span>
+              </span>
+            ) : (
+              <span>Hover over trajectory points to view session velocity</span>
+            )}
+            <span className="text-[11px] text-accent font-mono flex items-center gap-1">
+              <Sparkles className="w-3 h-3" />
+              <span>Momentum Active</span>
+            </span>
+          </div>
+        </div>
+
+        {/* CHART 2: Difficulty Distribution Radial Arena */}
+        <div className="p-6 rounded-3xl border border-hairline bg-[#0D0D14] flex flex-col justify-between gap-5 relative overflow-hidden">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-mono uppercase tracking-wider text-muted flex items-center gap-2">
               <PieChart className="w-3.5 h-3.5 text-accent" />
-              <span>Difficulty Distribution</span>
+              <span>Difficulty Arena Ratio</span>
+              <button
+                onClick={() => setActiveInfoModal('difficulty')}
+                className="p-1 rounded-full text-muted hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
+                title="View difficulty weights"
+              >
+                <HelpCircle className="w-3.5 h-3.5" />
+              </button>
             </span>
             <span className="text-xs font-mono text-white font-medium">
-              {stats.uniqueSolved || 0} Solved
+              {stats.uniqueSolved || 0} Solved Overall
             </span>
           </div>
 
@@ -239,21 +379,31 @@ export default function DsaVisualCharts({ charts = {}, stats = {} }) {
             </div>
           </div>
         </div>
+      </div>
 
-        {/* CHART 2: Weekly Practice Momentum Bar Chart */}
+      {/* BOTTOM ROW: 7-DAY MOMENTUM BARS + SOLVE INTEGRITY & TOPICS */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* CHART 3: 7-Day Activity Rhythm Bar Chart */}
         <div className="p-6 rounded-3xl border border-hairline bg-[#0D0D14] flex flex-col justify-between gap-5 relative overflow-hidden">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-mono uppercase tracking-wider text-muted flex items-center gap-1.5">
+            <span className="text-xs font-mono uppercase tracking-wider text-muted flex items-center gap-2">
               <TrendingUp className="w-3.5 h-3.5 text-accent" />
-              <span>7-Day Activity & Momentum</span>
+              <span>7-Day Rhythm</span>
+              <button
+                onClick={() => setActiveInfoModal('activity')}
+                className="p-1 rounded-full text-muted hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
+                title="View activity rules"
+              >
+                <HelpCircle className="w-3.5 h-3.5" />
+              </button>
             </span>
             <span className="text-xs font-mono text-muted">
-              {weekly.reduce((acc, curr) => acc + curr.solves, 0)} solved this week
+              {weekly.reduce((acc, curr) => acc + curr.solves, 0)} solved
             </span>
           </div>
 
           {/* Bar Chart Visualization */}
-          <div className="flex items-end justify-between gap-2 h-36 pt-6 pb-2 px-2 border-b border-hairline/60">
+          <div className="flex items-end justify-between gap-2 h-28 pt-4 pb-2 px-1 border-b border-hairline/60">
             {weekly.map((day, idx) => {
               const heightPercent =
                 day.solves > 0 ? Math.max(22, Math.round((day.solves / maxSolvesInWeek) * 100)) : 8
@@ -267,13 +417,12 @@ export default function DsaVisualCharts({ charts = {}, stats = {} }) {
                   onMouseLeave={() => setActiveTooltip(null)}
                   className="flex-1 flex flex-col items-center justify-end h-full group cursor-pointer relative"
                 >
-                  {/* Glowing Bar */}
-                  <div className="w-full max-w-[28px] h-full flex items-end">
+                  <div className="w-full max-w-[24px] h-full flex items-end">
                     <motion.div
                       initial={{ height: 0 }}
                       animate={{ height: `${heightPercent}%` }}
-                      transition={{ duration: 0.5, delay: idx * 0.05 }}
-                      className={`w-full rounded-t-lg transition-all duration-200 ${
+                      transition={{ duration: 0.4, delay: idx * 0.04 }}
+                      className={`w-full rounded-t-md transition-all duration-200 ${
                         day.isToday
                           ? 'bg-accent shadow-lg shadow-accent/20 ring-1 ring-accent'
                           : isActive
@@ -283,14 +432,9 @@ export default function DsaVisualCharts({ charts = {}, stats = {} }) {
                     />
                   </div>
 
-                  {/* Day Label */}
                   <span
-                    className={`text-[10px] font-mono mt-2 transition-colors ${
-                      day.isToday
-                        ? 'text-accent font-bold'
-                        : isActive
-                        ? 'text-white'
-                        : 'text-muted'
+                    className={`text-[9px] font-mono mt-1.5 transition-colors ${
+                      day.isToday ? 'text-accent font-bold' : isActive ? 'text-white' : 'text-muted'
                     }`}
                   >
                     {day.day}
@@ -300,71 +444,69 @@ export default function DsaVisualCharts({ charts = {}, stats = {} }) {
             })}
           </div>
 
-          {/* Dynamic Tooltip / Footer */}
-          <div className="flex items-center justify-between text-xs font-mono text-muted pt-1">
-            {activeTooltip ? (
-              <span className="text-white flex items-center gap-2">
-                <span className="text-accent font-bold">{activeTooltip.day} ({activeTooltip.date}):</span>
-                <span>{activeTooltip.solves} solved</span> ·
-                <span>{activeTooltip.minutes}m practiced</span> ·
-                <span className="text-accent font-medium">+{activeTooltip.xp} XP</span>
-              </span>
-            ) : (
-              <span>Hover over any day to see solving duration & XP earned</span>
-            )}
-            <span className="text-[11px] text-accent font-mono flex items-center gap-1">
-              <Sparkles className="w-3 h-3" />
-              <span>Consistent practice builds retention</span>
+          <div className="flex items-center justify-between text-[11px] font-mono text-muted">
+            <span>Streak: {stats.streak || 0} days</span>
+            <span className="text-accent flex items-center gap-1">
+              <Flame className="w-3 h-3 fill-current" />
+              <span>Grit Verified</span>
             </span>
           </div>
         </div>
-      </div>
 
-      {/* Grid: 2 Secondary Visual Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Metric 1: Solve Integrity & Independence */}
-        <div className="p-5 rounded-2xl border border-hairline bg-[#0D0D14] flex flex-col justify-between gap-3 text-left">
+        <div className="p-6 rounded-3xl border border-hairline bg-[#0D0D14] flex flex-col justify-between gap-4 text-left">
           <div className="flex items-center justify-between text-muted">
-            <span className="text-xs font-mono">Solve Independence</span>
-            <Zap className="w-4 h-4 text-accent" />
+            <span className="text-xs font-mono uppercase tracking-wider flex items-center gap-2">
+              <Zap className="w-3.5 h-3.5 text-accent" />
+              <span>Solve Integrity</span>
+              <button
+                onClick={() => setActiveInfoModal('independence')}
+                className="p-1 rounded-full text-muted hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
+                title="View integrity rules"
+              >
+                <HelpCircle className="w-3.5 h-3.5" />
+              </button>
+            </span>
           </div>
           <div className="flex items-baseline gap-2">
             <span className="text-3xl font-display font-bold text-accent">
               {solveTypes.independentPercentage}%
             </span>
             <span className="text-xs font-mono text-muted">
-              ({solveTypes.independent} of {stats.uniqueSolved || 0} independent)
+              ({solveTypes.independent} independent)
             </span>
           </div>
-          <div className="w-full h-1.5 rounded-full bg-white/5 overflow-hidden">
+          <div className="w-full h-2 rounded-full bg-white/5 overflow-hidden">
             <div
               className="h-full bg-accent rounded-full transition-all duration-500"
               style={{ width: `${Math.max(5, solveTypes.independentPercentage)}%` }}
             />
           </div>
           <span className="text-[11px] font-mono text-muted">
-            Solves completed without consulting hints or editorial
+            Zero-hint solves strictly verify your independent algorithmic problem solving.
           </span>
         </div>
 
-        {/* Metric 2: Topic Mastery Coverage */}
-        <div className="md:col-span-2 p-5 rounded-2xl border border-hairline bg-[#0D0D14] flex flex-col justify-between gap-3 text-left">
+        {/* Metric 2: Topic Coverage Progress */}
+        <div className="p-6 rounded-3xl border border-hairline bg-[#0D0D14] flex flex-col justify-between gap-4 text-left">
           <div className="flex items-center justify-between text-muted">
-            <span className="text-xs font-mono flex items-center gap-1.5">
+            <span className="text-xs font-mono uppercase tracking-wider flex items-center gap-1.5">
               <Layers className="w-3.5 h-3.5 text-accent" />
-              <span>Topic Coverage Progress</span>
+              <span>Core Topic Mastery</span>
             </span>
-            <span className="text-xs font-mono">Top Topics</span>
+            <span className="text-xs font-mono text-accent">
+              {topicCharts.length} Core
+            </span>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 py-1">
+          <div className="grid grid-cols-2 gap-2.5 py-1">
             {topicCharts.slice(0, 4).map((tc) => (
               <div
                 key={tc.topic}
-                className="p-3 rounded-xl bg-white/[0.02] border border-white/5 flex flex-col gap-1.5"
+                className="p-2.5 rounded-xl bg-white/[0.02] border border-white/5 flex flex-col gap-1"
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-mono font-medium text-white truncate">
+                  <span className="text-[11px] font-mono font-medium text-white truncate">
                     {tc.topic}
                   </span>
                   <span className="text-[10px] font-mono text-accent font-bold">
@@ -377,7 +519,7 @@ export default function DsaVisualCharts({ charts = {}, stats = {} }) {
                     style={{ width: `${Math.max(5, tc.score)}%` }}
                   />
                 </div>
-                <span className="text-[10px] font-mono text-muted">
+                <span className="text-[9px] font-mono text-muted">
                   {tc.solved} / {tc.total} solved
                 </span>
               </div>
@@ -385,6 +527,77 @@ export default function DsaVisualCharts({ charts = {}, stats = {} }) {
           </div>
         </div>
       </div>
+
+      {/* Extra Info Help Modal */}
+      <AnimatePresence>
+        {activeInfoModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setActiveInfoModal(null)}
+              className="fixed inset-0 bg-black/80 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 16 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 16 }}
+              className="relative z-10 w-full max-w-md rounded-3xl border border-hairline bg-[#0E0E14] p-6 flex flex-col gap-4 text-left shadow-2xl"
+            >
+              <div className="flex items-center justify-between border-b border-hairline pb-3">
+                <div className="flex items-center gap-2">
+                  <HelpCircle className="w-5 h-5 text-accent" />
+                  <h4 className="text-sm font-display font-bold text-white">
+                    {activeInfoModal === 'trajectory' && 'Velocity & XP Trajectory'}
+                    {activeInfoModal === 'difficulty' && 'Difficulty Arena Weights'}
+                    {activeInfoModal === 'activity' && '7-Day Rhythm & Streaks'}
+                    {activeInfoModal === 'independence' && 'Solve Integrity Metric'}
+                  </h4>
+                </div>
+                <button
+                  onClick={() => setActiveInfoModal(null)}
+                  className="p-1.5 rounded-lg text-muted hover:text-white cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="text-xs font-mono text-muted leading-relaxed flex flex-col gap-2">
+                {activeInfoModal === 'trajectory' && (
+                  <p>
+                    Tracks your daily problem solves and cumulative XP points. Points are awarded based on difficulty (Easy: +15, Medium: +25, Hard: +40) plus bonuses for first-try solves and timely spaced revisions.
+                  </p>
+                )}
+                {activeInfoModal === 'difficulty' && (
+                  <p>
+                    Calculates your problem solving distribution. Technical interview readiness typically requires at least 60% Mediums and 15% Hards across core algorithmic patterns.
+                  </p>
+                )}
+                {activeInfoModal === 'activity' && (
+                  <p>
+                    Highlights active practice consistency across the week. Practicing at least one problem daily maintains your streak. When fair penalties are active, missing a day uses a streak freeze.
+                  </p>
+                )}
+                {activeInfoModal === 'independence' && (
+                  <p>
+                    Measures problems solved completely independently without consulting editorial solutions, AI hints, or external walkthroughs. Higher integrity accelerates topic mastery scores.
+                  </p>
+                )}
+              </div>
+
+              <div className="flex justify-end pt-2">
+                <button
+                  onClick={() => setActiveInfoModal(null)}
+                  className="px-4 py-1.5 rounded-full text-xs font-mono font-bold bg-accent text-[#08080C] hover:opacity-90 cursor-pointer"
+                >
+                  Close
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

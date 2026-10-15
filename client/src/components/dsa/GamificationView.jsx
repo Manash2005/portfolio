@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import {
   Trophy,
   Flame,
@@ -8,12 +9,61 @@ import {
   Lock,
   Sparkles,
   Sliders,
+  Target,
+  Crown,
+  Swords,
+  ShieldCheck,
+  FastForward,
+  ShieldAlert,
+  Compass,
+  GitCommit,
+  FileCode,
+  MoveHorizontal,
+  Binary,
+  Layers,
+  Network,
+  Route,
+  GitBranch,
+  Cpu,
+  Boxes,
+  Clock,
+  BookOpen,
 } from 'lucide-react'
+
+const BADGE_ICONS = {
+  Target,
+  Award,
+  Trophy,
+  Crown,
+  Swords,
+  ShieldCheck,
+  FastForward,
+  Flame,
+  Zap,
+  ShieldAlert,
+  Sparkles,
+  Compass,
+  GitCommit,
+  FileCode,
+  MoveHorizontal,
+  Binary,
+  Layers,
+  Network,
+  Route,
+  GitBranch,
+  Cpu,
+  Boxes,
+  Clock,
+  CheckCircle2,
+  BookOpen,
+}
 
 export default function GamificationView({
   profile = {},
   onTogglePenalties,
 }) {
+  const [activeCategory, setActiveCategory] = useState('all')
+
   const levelInfo = profile.levelInfo || {
     level: 'Novice',
     currentXp: 0,
@@ -23,6 +73,19 @@ export default function GamificationView({
   }
 
   const achievements = profile.achievements || []
+
+  const categories = [
+    { id: 'all', label: 'All Badges' },
+    { id: 'solving', label: 'Problem Solving' },
+    { id: 'mastery', label: 'Topic Mastery' },
+    { id: 'streak', label: 'Streaks & Grit' },
+    { id: 'revision', label: 'Spaced Revision' },
+    { id: 'special', label: 'Special' },
+  ]
+
+  const filteredAchievements = achievements.filter((ach) =>
+    activeCategory === 'all' ? true : ach.category === activeCategory
+  )
 
   return (
     <div className="w-full flex flex-col gap-8 text-left">
@@ -95,27 +158,45 @@ export default function GamificationView({
       </div>
 
       {/* 3. Achievements Catalog */}
-      <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between px-1">
+      <div className="flex flex-col gap-5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-1">
           <div>
             <h3 className="text-lg font-display font-bold text-white">Verified Achievements</h3>
             <span className="text-xs font-mono text-muted">
-              {profile.unlockedAchievementsCount || 0} of {achievements.length} unlocked
+              {profile.unlockedAchievementsCount || 0} of {achievements.length} unlocked · Evaluated from live code records
             </span>
+          </div>
+
+          {/* Category Filter Pills */}
+          <div className="flex flex-wrap items-center gap-1.5">
+            {categories.map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => setActiveCategory(cat.id)}
+                className={`px-3 py-1 rounded-xl text-xs font-mono transition-colors cursor-pointer ${
+                  activeCategory === cat.id
+                    ? 'bg-accent text-[#08080C] font-bold shadow-md shadow-accent/10'
+                    : 'bg-white/5 text-muted hover:text-white border border-hairline'
+                }`}
+              >
+                {cat.label}
+              </button>
+            ))}
           </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {achievements.map((ach) => {
+          {filteredAchievements.map((ach) => {
             const isUnlocked = ach.is_unlocked === 1
+            const IconComponent = BADGE_ICONS[ach.badge_icon] || Award
 
             return (
               <div
                 key={ach.id}
-                className={`p-5 rounded-2xl border transition-colors flex flex-col justify-between gap-4 ${
+                className={`p-5 rounded-2xl border transition-all flex flex-col justify-between gap-4 ${
                   isUnlocked
-                    ? 'border-accent/40 bg-accent/[0.03]'
-                    : 'border-hairline bg-[#0E0E14] opacity-60'
+                    ? 'border-accent/40 bg-accent/[0.03] shadow-md shadow-accent/5'
+                    : 'border-hairline bg-[#0E0E14] opacity-70 hover:opacity-90'
                 }`}
               >
                 <div className="flex items-start justify-between gap-3">
@@ -127,7 +208,7 @@ export default function GamificationView({
                           : 'bg-white/5 text-muted border border-hairline'
                       }`}
                     >
-                      {isUnlocked ? <Award className="w-5 h-5" /> : <Lock className="w-4 h-4" />}
+                      {isUnlocked ? <IconComponent className="w-5 h-5" /> : <Lock className="w-4 h-4" />}
                     </div>
                     <div>
                       <h4 className="text-sm font-display font-bold text-white">

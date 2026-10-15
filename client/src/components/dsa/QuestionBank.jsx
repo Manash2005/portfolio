@@ -14,6 +14,7 @@ import {
   Plus,
   X,
   Link2,
+  ArrowLeft,
 } from 'lucide-react'
 import { useAdmin } from '../../context/AdminContext'
 
@@ -49,6 +50,7 @@ export default function QuestionBank({
   onFilterChange,
   onPageChange,
   onSelectProblemForPractice,
+  onBackToTopics,
   loading = false,
 }) {
   const { isAdmin, authFetch } = useAdmin()
@@ -109,15 +111,60 @@ export default function QuestionBank({
 
   return (
     <div className="w-full flex flex-col gap-6 text-left">
+      {/* Back to Topics Navigation Bar */}
+      {onBackToTopics && (
+        <div className="p-3 sm:p-4 rounded-2xl border border-hairline bg-[#0E0E14] flex flex-wrap items-center justify-between gap-3 shadow-md">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={onBackToTopics}
+              className="px-3.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-mono text-white flex items-center gap-1.5 border border-hairline cursor-pointer transition-colors shadow-sm"
+            >
+              <ArrowLeft className="w-3.5 h-3.5 text-accent" />
+              <span>← All Topics Overview</span>
+            </button>
+
+            <div className="h-4 w-px bg-hairline hidden sm:block" />
+
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-mono text-muted">Active Topic:</span>
+              <span className="text-sm font-display font-bold text-accent">
+                {filters.topic || 'All Topics'}
+              </span>
+              <span className="text-xs font-mono text-muted">
+                ({pagination.total || problems.length} problems)
+              </span>
+            </div>
+          </div>
+
+          {/* Quick topic switcher dropdown */}
+          <div className="flex items-center gap-2">
+            <label className="text-[11px] font-mono text-muted hidden md:inline">Quick Switch:</label>
+            <select
+              value={filters.topic || 'All'}
+              onChange={(e) => handleTopicClick(e.target.value)}
+              className="px-3 py-1.5 rounded-xl text-xs font-mono bg-[#161622] text-white border border-hairline focus:border-accent outline-none cursor-pointer"
+            >
+              {TOPIC_LIST.map((top) => (
+                <option key={top} value={top} className="bg-[#0E0E14] text-white">
+                  {top === 'All' ? 'All Topics (807+)' : top}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      )}
+
       {/* Question Bank Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 px-1">
         <div>
           <h3 className="text-xl font-display font-bold text-white flex items-center gap-2">
             <BookOpen className="w-5 h-5 text-accent" />
-            <span>Master Question Bank</span>
+            <span>{filters.topic && filters.topic !== 'All' ? `${filters.topic} Questions` : 'Master Question Bank'}</span>
           </h3>
           <p className="text-xs font-mono text-muted mt-0.5">
-            Curated LeetCode & GeeksforGeeks problems organized by algorithmic patterns and data structures.
+            {filters.topic && filters.topic !== 'All'
+              ? `Curated algorithmic challenges covering core patterns for ${filters.topic}.`
+              : 'Curated LeetCode & GeeksforGeeks problems organized by algorithmic patterns and data structures.'}
           </p>
         </div>
         <div className="flex items-center gap-2.5">

@@ -7,6 +7,8 @@ import {
   ArrowRight,
   TrendingUp,
   Award,
+  BookOpen,
+  Sparkles,
 } from 'lucide-react'
 
 export default function TopicMasteryView({
@@ -14,6 +16,7 @@ export default function TopicMasteryView({
   weakTopics = [],
   revisionQueue = {},
   onSelectProblemForPractice,
+  onSelectTopic,
 }) {
   const overdueItems = revisionQueue.overdue || []
   const dueTodayItems = revisionQueue.dueToday || []
@@ -99,23 +102,31 @@ export default function TopicMasteryView({
 
       {/* 2. Topic Mastery Grid */}
       <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between px-1">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-1">
           <div>
-            <h3 className="text-lg font-display font-bold text-white">Topic Mastery Breakdown</h3>
+            <h3 className="text-lg font-display font-bold text-white">Topics & Question Mastery</h3>
             <span className="text-xs font-mono text-muted">
-              Deterministic progress based on independent solves and revision consistency.
+              Select any topic card below to dive directly into that topic's cataloged questions.
             </span>
           </div>
-          <span className="text-xs font-mono text-muted">
-            {topics.length} topics tracked
-          </span>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => onSelectTopic && onSelectTopic('All')}
+              className="px-4 py-2 rounded-xl border border-hairline bg-white/[0.04] hover:bg-white/[0.08] text-xs font-mono text-white flex items-center gap-2 cursor-pointer transition-colors shadow-sm"
+            >
+              <BookOpen className="w-3.5 h-3.5 text-accent" />
+              <span>Browse All Questions ({topics.reduce((acc, t) => acc + (t.total || 0), 0) || 807}+)</span>
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {topics.map((t) => (
             <div
               key={t.topic}
-              className="p-5 rounded-2xl border border-hairline bg-[#0E0E14] flex flex-col justify-between gap-4"
+              onClick={() => onSelectTopic && onSelectTopic(t.topic)}
+              className="p-5 rounded-2xl border border-hairline bg-[#0E0E14] hover:border-accent/40 hover:bg-[#12121A] transition-all flex flex-col justify-between gap-4 cursor-pointer group"
             >
               <div>
                 <div className="flex items-center justify-between mb-2">
@@ -130,12 +141,12 @@ export default function TopicMasteryView({
                   >
                     {t.status}
                   </span>
-                  <span className="text-xs font-mono font-bold text-white">
+                  <span className="text-xs font-mono font-bold text-white group-hover:text-accent transition-colors">
                     {t.masteryScore}%
                   </span>
                 </div>
 
-                <h4 className="text-base font-display font-bold text-white mb-2">
+                <h4 className="text-base font-display font-bold text-white mb-2 group-hover:text-accent transition-colors">
                   {t.topic}
                 </h4>
 
@@ -178,6 +189,21 @@ export default function TopicMasteryView({
                     </span>
                   </div>
                 </div>
+              </div>
+
+              {/* Action Button */}
+              <div className="pt-2 border-t border-hairline/50">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onSelectTopic && onSelectTopic(t.topic)
+                  }}
+                  className="w-full py-2 rounded-xl text-xs font-mono font-medium bg-white/[0.03] group-hover:bg-accent group-hover:text-[#08080C] text-white flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                >
+                  <span>Explore Questions ({t.total})</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
               </div>
             </div>
           ))}

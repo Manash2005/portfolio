@@ -164,27 +164,51 @@ export function checkAchievements({ totalXp, streak, durationSeconds = 0 }) {
     .get()
   const indSolves = indSolvesRow ? indSolvesRow.count : 0
 
-  // Count graph solves
-  const graphSolvesRow = db
+  // Count hard solves
+  const hardSolvesRow = db
     .prepare(
       `SELECT COUNT(DISTINCT a.problem_id) as count 
        FROM dsa_attempts a 
        JOIN dsa_problems p ON a.problem_id = p.id
-       WHERE a.result = 'solved' AND (p.primary_topic LIKE '%Graph%' OR p.primary_topic LIKE '%Topological%' OR p.primary_topic LIKE '%Shortest%')`
+       WHERE a.result = 'solved' AND p.difficulty = 'Hard' AND a.is_independent = 1`
     )
     .get()
-  const graphSolves = graphSolvesRow ? graphSolvesRow.count : 0
+  const hardSolves = hardSolvesRow ? hardSolvesRow.count : 0
 
-  // Count DP solves
-  const dpSolvesRow = db
+  // Count distinct topics solved (polyglot)
+  const topicsRow = db
     .prepare(
-      `SELECT COUNT(DISTINCT a.problem_id) as count 
+      `SELECT COUNT(DISTINCT p.primary_topic) as count
        FROM dsa_attempts a 
        JOIN dsa_problems p ON a.problem_id = p.id
-       WHERE a.result = 'solved' AND p.primary_topic LIKE '%Dynamic Programming%'`
+       WHERE a.result = 'solved'`
     )
     .get()
-  const dpSolves = dpSolvesRow ? dpSolvesRow.count : 0
+  const solvedTopicsCount = topicsRow ? topicsRow.count : 0
+
+  // Topic-specific counts
+  const getTopicSolves = (pattern) => {
+    const row = db
+      .prepare(
+        `SELECT COUNT(DISTINCT a.problem_id) as count 
+         FROM dsa_attempts a 
+         JOIN dsa_problems p ON a.problem_id = p.id
+         WHERE a.result = 'solved' AND p.primary_topic LIKE ?`
+      )
+      .get(pattern)
+    return row ? row.count : 0
+  }
+
+  const bsSolves = getTopicSolves('%Binary Search%')
+  const treeSolves = getTopicSolves('%Tree%')
+  const stringSolves = getTopicSolves('%String%')
+  const twoPointerSolves = getTopicSolves('%Two Pointer%') + getTopicSolves('%Sliding Window%')
+  const bitSolves = getTopicSolves('%Bit%')
+  const heapSolves = getTopicSolves('%Heap%')
+  const trieSolves = getTopicSolves('%Trie%')
+  const btSolves = getTopicSolves('%Backtrack%')
+  const graphSolves = getTopicSolves('%Graph%') + getTopicSolves('%Topological%') + getTopicSolves('%Shortest%')
+  const dpSolves = getTopicSolves('%Dynamic Programming%')
 
   // Count revisions
   const revisionsRow = db
@@ -218,19 +242,41 @@ export function checkAchievements({ totalXp, streak, durationSeconds = 0 }) {
     }
   }
 
+  // Evaluate Milestones
   if (indSolves >= 1) unlockAchievement('first_solve')
   if (totalSolves >= 10) unlockAchievement('ten_solves')
   if (totalSolves >= 50) unlockAchievement('fifty_solves')
-  if (streak >= 3) unlockAchievement('streak_3')
-  if (streak >= 7) unlockAchievement('streak_7')
-  if (streak >= 14) unlockAchievement('streak_14')
-  if (graphSolves >= 3) unlockAchievement('graph_explorer')
-  if (dpSolves >= 3) unlockAchievement('dp_milestone')
-  if (completedRevisions >= 3) unlockAchievement('revision_champion')
-  if (mistakeReflections >= 3) unlockAchievement('mistake_reflector')
+  if (totalSolves >= 100) unlockAchievement('hundred_solves')
+  if (totalSolves >= 200) unlockAchievement('two_hundred_solves')
+  if (hardSolves >= 5) unlockAchievement('hard_slayer')
+  if (indSolves >= 25) unlockAchievement('pure_independence')
   if (durationSeconds > 0 && durationSeconds < 900 && indSolves >= 1) {
     unlockAchievement('speed_demon')
   }
+
+  // Streaks
+  if (streak >= 3) unlockAchievement('streak_3')
+  if (streak >= 7) unlockAchievement('streak_7')
+  if (streak >= 14) unlockAchievement('streak_14')
+  if (streak >= 30) unlockAchievement('streak_30')
+
+  // Topic Mastery
+  if (bsSolves >= 5) unlockAchievement('binary_navigator')
+  if (treeSolves >= 5) unlockAchievement('tree_architect')
+  if (stringSolves >= 5) unlockAchievement('string_artisan')
+  if (twoPointerSolves >= 5) unlockAchievement('two_pointer_adept')
+  if (bitSolves >= 3) unlockAchievement('bit_manipulator')
+  if (heapSolves >= 3) unlockAchievement('heap_harvester')
+  if (trieSolves >= 3) unlockAchievement('trie_navigator')
+  if (btSolves >= 3) unlockAchievement('backtracking_scout')
+  if (graphSolves >= 3) unlockAchievement('graph_explorer')
+  if (dpSolves >= 3) unlockAchievement('dp_milestone')
+  if (solvedTopicsCount >= 6) unlockAchievement('polyglot_solver')
+
+  // Revisions & Reflections
+  if (completedRevisions >= 3) unlockAchievement('revision_champion')
+  if (completedRevisions >= 10) unlockAchievement('revision_master')
+  if (mistakeReflections >= 3) unlockAchievement('mistake_reflector')
 
   return unlocked
 }
