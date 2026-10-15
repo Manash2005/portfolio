@@ -327,8 +327,8 @@ export default function EventAdminModal() {
               />
               <div>
                 <span className="font-semibold text-white">Show on Portfolio Activity Heatmap</span>
-                <p className="text-[0.68rem] text-muted">
-                  When completed and marked public, this event generates an interactive activity dot & building on the skyline heatmap.
+                <p className="text-[0.68rem] text-muted leading-relaxed">
+                  When marked Public, this creates a floating rectangle callout badge with an elbowed connector arrow pointing to the building on the homepage 3D Skyline, and increments that day&apos;s heatmap activity.
                 </p>
               </div>
             </label>

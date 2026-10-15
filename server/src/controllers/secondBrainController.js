@@ -405,7 +405,7 @@ export const getHeatmapActivity = async (req, res) => {
       SELECT id, start_at, end_at, all_day
       FROM events
       WHERE visibility = 'Public'
-        AND status = 'Completed'
+        AND status != 'Cancelled'
         AND show_on_portfolio_heatmap = 1
       ORDER BY start_at ASC
     `).all()
