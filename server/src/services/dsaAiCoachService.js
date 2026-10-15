@@ -2,6 +2,7 @@ import { db } from '../db/database.js'
 import crypto from 'node:crypto'
 import { getDeterministicPracticePlan, getTopicMasteryStats, getRevisionQueue } from './dsaMasteryService.js'
 import { getMistakeAnalytics } from './dsaMistakeService.js'
+import { persistDailyPlanToMongo } from '../db/mongoPersistence.js'
 
 // In-memory key state tracker for cooldowns
 const keyCoolDowns = new Map() // keyHash -> cooldownUntilTimestamp
@@ -370,12 +371,21 @@ Recommend 2-3 problems that fit the ${durationBudgetMinutes}-minute budget. Prio
           success: true,
         })
 
-        // Persist daily plan in SQLite
+        // Persist daily plan in SQLite & MongoDB Atlas
         const planId = crypto.randomUUID()
         db.prepare(`
           INSERT INTO dsa_daily_plans (id, plan_date, duration_budget_minutes, summary, items_json, generated_by)
           VALUES (?, ?, ?, ?, ?, ?)
         `).run(planId, plan.plan_date, plan.duration_budget_minutes, plan.summary, JSON.stringify(plan.items), plan.generated_by)
+
+        persistDailyPlanToMongo({
+          id: planId,
+          plan_date: plan.plan_date,
+          duration_budget_minutes: plan.duration_budget_minutes,
+          summary: plan.summary,
+          items_json: JSON.stringify(plan.items),
+          generated_by: plan.generated_by,
+        }).catch(() => {})
 
         return { ...plan, id: planId }
       }
@@ -400,6 +410,15 @@ Recommend 2-3 problems that fit the ${durationBudgetMinutes}-minute budget. Prio
       INSERT INTO dsa_daily_plans (id, plan_date, duration_budget_minutes, summary, items_json, generated_by)
       VALUES (?, ?, ?, ?, ?, ?)
     `).run(planId, fallbackPlan.plan_date, fallbackPlan.duration_budget_minutes, fallbackPlan.summary, JSON.stringify(fallbackPlan.items), 'deterministic')
+
+    persistDailyPlanToMongo({
+      id: planId,
+      plan_date: fallbackPlan.plan_date,
+      duration_budget_minutes: fallbackPlan.duration_budget_minutes,
+      summary: fallbackPlan.summary,
+      items_json: JSON.stringify(fallbackPlan.items),
+      generated_by: 'deterministic',
+    }).catch(() => {})
 
     return {
       ...fallbackPlan,

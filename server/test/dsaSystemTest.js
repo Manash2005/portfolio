@@ -57,6 +57,18 @@ async function runDsaTests() {
       failed++
     }
   }
+  // Clean up any previous test artifacts
+  const testProbIds = ['lc-1', 'lc-242', 'lc-49']
+  for (const pid of testProbIds) {
+    db.prepare('DELETE FROM dsa_attempts WHERE problem_id = ?').run(pid)
+    db.prepare('DELETE FROM dsa_revision_schedule WHERE problem_id = ?').run(pid)
+    db.prepare('DELETE FROM dsa_mistake_journal WHERE problem_id = ?').run(pid)
+  }
+  db.prepare(`
+    UPDATE dsa_game_profile 
+    SET total_xp = 0, current_level = 'Novice', current_streak = 0, longest_streak = 0, last_active_date = NULL 
+    WHERE id = 'primary_user'
+  `).run()
 
   // TEST SUITE 1: Question Bank Catalog
   test('Catalog has seeded problems with canonical URLs and topics', () => {
@@ -246,8 +258,8 @@ async function runDsaTests() {
   })
 
   // Clean any test artifacts generated during test suite
-  const { cleanDummyData } = await import('../src/db/cleanDummyData.js')
-  cleanDummyData()
+  db.prepare("DELETE FROM dsa_attempts WHERE notes = 'Test solve'").run()
+  db.prepare("DELETE FROM dsa_mistake_journal WHERE mistake_description = 'Test off-by-one error'").run()
 
   console.log(`\n========================================`)
   console.log(`Results: ${passed} Passed, ${failed} Failed`)
@@ -256,6 +268,7 @@ async function runDsaTests() {
   if (failed > 0) {
     process.exit(1)
   }
+  process.exit(0)
 }
 
 runDsaTests().catch((err) => {

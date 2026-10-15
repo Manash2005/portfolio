@@ -144,38 +144,65 @@ export default function DsaVisualCharts({ charts = {}, stats = {} }) {
                 />
               )}
 
-              {/* Interactive Data Points */}
-              {linePoints.map((pt, idx) => (
-                <g key={idx} className="cursor-pointer" onMouseEnter={() => setActiveTooltip(pt)} onMouseLeave={() => setActiveTooltip(null)}>
-                  {/* Outer pulse circle for today */}
-                  {pt.isToday && (
-                    <circle cx={pt.x} cy={pt.y} r="9" fill="none" stroke="#B8FF3C" strokeWidth="1.5" opacity="0.6">
-                      <animate attributeName="r" values="6;11;6" dur="2s" repeatCount="indefinite" />
-                    </circle>
-                  )}
-                  {/* Point circle */}
-                  <circle
-                    cx={pt.x}
-                    cy={pt.y}
-                    r={pt.isToday ? 5 : 4}
-                    fill={pt.isToday ? '#B8FF3C' : '#0E0E14'}
-                    stroke={pt.isToday ? '#08080C' : '#B8FF3C'}
-                    strokeWidth="2"
-                    className="transition-transform duration-200 hover:scale-125"
-                  />
-                  {/* X Axis Labels */}
-                  <text
-                    x={pt.x}
-                    y="158"
-                    textAnchor="middle"
-                    fill={pt.isToday ? '#B8FF3C' : '#71717A'}
-                    fontSize="9"
-                    fontFamily="var(--font-mono)"
+              {/* Interactive Data Points (Rock-solid hitbox, no jitter) */}
+              {linePoints.map((pt, idx) => {
+                const isHovered = activeTooltip?.day === pt.day
+                return (
+                  <g
+                    key={idx}
+                    className="cursor-pointer"
+                    onMouseEnter={() => setActiveTooltip(pt)}
+                    onMouseLeave={() => setActiveTooltip(null)}
                   >
-                    {pt.day}
-                  </text>
-                </g>
-              ))}
+                    {/* Generous static invisible hit area to prevent mouse flicker */}
+                    <circle cx={pt.x} cy={pt.y} r="18" fill="transparent" pointerEvents="all" />
+
+                    {/* Outer pulse circle for today or when hovered */}
+                    {(pt.isToday || isHovered) && (
+                      <circle
+                        cx={pt.x}
+                        cy={pt.y}
+                        r={isHovered ? 12 : 9}
+                        fill="none"
+                        stroke="#B8FF3C"
+                        strokeWidth="1.5"
+                        opacity={isHovered ? 0.8 : 0.6}
+                        className="transition-all duration-200"
+                        pointerEvents="none"
+                      >
+                        {pt.isToday && !isHovered && (
+                          <animate attributeName="r" values="6;11;6" dur="2s" repeatCount="indefinite" />
+                        )}
+                      </circle>
+                    )}
+
+                    {/* Point circle - anchored smoothly to true SVG center without transform jitter */}
+                    <circle
+                      cx={pt.x}
+                      cy={pt.y}
+                      r={isHovered ? 6.5 : (pt.isToday ? 5 : 4)}
+                      fill={isHovered || pt.isToday ? '#B8FF3C' : '#0E0E14'}
+                      stroke={isHovered || pt.isToday ? '#08080C' : '#B8FF3C'}
+                      strokeWidth={isHovered ? 2.5 : 2}
+                      className="transition-all duration-200"
+                      pointerEvents="none"
+                    />
+
+                    {/* X Axis Labels */}
+                    <text
+                      x={pt.x}
+                      y="158"
+                      textAnchor="middle"
+                      fill={isHovered || pt.isToday ? '#B8FF3C' : '#71717A'}
+                      fontSize="9"
+                      fontFamily="var(--font-mono)"
+                      pointerEvents="none"
+                    >
+                      {pt.day}
+                    </text>
+                  </g>
+                )
+              })}
             </svg>
           </div>
 

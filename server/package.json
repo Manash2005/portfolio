@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "node test/secondBrainTest.js && node test/adminAuthTest.js",
+    "test": "node test/secondBrainTest.js && node test/adminAuthTest.js && node test/dsaSystemTest.js",
+    "test:dsa": "node test/dsaSystemTest.js",
     "test:admin": "node test/adminAuthTest.js",
     "test:second-brain": "node test/secondBrainTest.js",
     "migrate": "node src/db/migrate.js",

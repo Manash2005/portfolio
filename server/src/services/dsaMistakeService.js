@@ -1,5 +1,6 @@
 import { db } from '../db/database.js'
 import crypto from 'node:crypto'
+import { persistMistakeToMongo } from '../db/mongoPersistence.js'
 
 export const MISTAKE_CATEGORIES = [
   { id: 'conceptual_gap', label: 'Conceptual Gap', color: '#EF4444' },
@@ -23,12 +24,18 @@ export function logMistake({ problem_id, attempt_id = null, category, mistake_de
     VALUES (?, ?, ?, ?, ?, ?)
   `).run(id, problem_id, attempt_id, category, mistake_description.trim(), lesson_learned ? lesson_learned.trim() : null)
 
-  return db.prepare(`
+  const created = db.prepare(`
     SELECT m.*, p.title as problem_title, p.difficulty, p.primary_topic, p.canonical_url
     FROM dsa_mistake_journal m
     JOIN dsa_problems p ON m.problem_id = p.id
     WHERE m.id = ?
   `).get(id)
+
+  if (created) {
+    persistMistakeToMongo(created).catch(() => {})
+  }
+
+  return created
 }
 
 export function getMistakes({ limit = 50, category = 'all' } = {}) {

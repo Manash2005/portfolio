@@ -3,6 +3,12 @@ import crypto from 'node:crypto'
 import { recordActivityReward } from './dsaGamificationService.js'
 import { updateRevisionSchedule } from './dsaMasteryService.js'
 import { logMistake } from './dsaMistakeService.js'
+import {
+  persistAttemptToMongo,
+  persistRevisionToMongo,
+  persistGameProfileToMongo,
+  persistEventToMongo,
+} from '../db/mongoPersistence.js'
 
 export function recordAttempt({
   problem_id,
@@ -164,6 +170,23 @@ export function recordAttempt({
   const txResult = executeAttempt()
 
   const savedAttempt = db.prepare('SELECT * FROM dsa_attempts WHERE id = ?').get(attemptId)
+
+  // Persist permanently to MongoDB Atlas so Render rebuilds never wipe progress
+  if (savedAttempt) {
+    persistAttemptToMongo(savedAttempt).catch(() => {})
+  }
+  if (calendarEventId) {
+    const calEvent = db.prepare('SELECT * FROM events WHERE id = ?').get(calendarEventId)
+    if (calEvent) persistEventToMongo(calEvent).catch(() => {})
+  }
+  const revScheduleRow = db.prepare('SELECT * FROM dsa_revision_schedule WHERE problem_id = ?').get(problem_id)
+  if (revScheduleRow) {
+    persistRevisionToMongo(revScheduleRow).catch(() => {})
+  }
+  const gameProfileRow = db.prepare('SELECT * FROM dsa_game_profile WHERE id = ?').get('primary_user')
+  if (gameProfileRow) {
+    persistGameProfileToMongo(gameProfileRow).catch(() => {})
+  }
 
   return {
     success: true,

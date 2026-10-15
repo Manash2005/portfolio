@@ -5,3 +5,11 @@ export { PortfolioContentModel } from './PortfolioContent.js'
 export { AdminUserModel } from './AdminUser.js'
 export { SessionModel, LoginAttemptModel } from './AdminSession.js'
 export { DsaProblemModel } from './DsaProblem.js'
+export {
+  DsaAttemptModel,
+  DsaRevisionScheduleModel,
+  DsaMistakeJournalModel,
+  DsaGameProfileModel,
+  DsaAchievementUnlockModel,
+  DsaDailyPlanModel,
+} from './DsaUserData.js'

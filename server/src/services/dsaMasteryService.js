@@ -1,4 +1,5 @@
 import { db } from '../db/database.js'
+import { persistRevisionToMongo } from '../db/mongoPersistence.js'
 
 /**
  * Update or initialize spaced repetition schedule for a problem
@@ -62,6 +63,11 @@ export function updateRevisionSchedule(problemId, { isSolved, isIndependent, con
       status = excluded.status,
       updated_at = datetime('now')
   `).run(problemId, todayStr, nextDueDateStr, intervalDays, repetitionCount, easeFactor, status)
+
+  const updatedRow = db.prepare('SELECT * FROM dsa_revision_schedule WHERE problem_id = ?').get(problemId)
+  if (updatedRow) {
+    persistRevisionToMongo(updatedRow).catch(() => {})
+  }
 
   return {
     problem_id: problemId,

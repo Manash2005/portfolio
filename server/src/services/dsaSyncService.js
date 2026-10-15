@@ -1,6 +1,6 @@
 import { db } from '../db/database.js'
 import crypto from 'node:crypto'
-import { persistProblemToMongo } from '../db/mongoPersistence.js'
+import { persistProblemToMongo, persistAttemptToMongo } from '../db/mongoPersistence.js'
 
 /**
  * Sync recently solved problems from LeetCode GraphQL without fabricating durations
@@ -110,6 +110,26 @@ export async function syncLeetCodeRecentSubmissions(username = 'Manash_22') {
             3, 'Imported from LeetCode recent solved submissions (duration unknown).', 'leetcode_sync', 30, ?
           )
         `).run(attemptId, problem.id, solvedAt, solvedAt, solvedAt)
+
+        persistAttemptToMongo({
+          id: attemptId,
+          problem_id: problem.id,
+          attempt_number: 1,
+          started_at: solvedAt,
+          ended_at: solvedAt,
+          duration_seconds: null,
+          result: 'solved',
+          is_independent: 1,
+          hints_used: 0,
+          solution_viewed: 0,
+          language: 'Unknown',
+          confidence_rating: 3,
+          notes: 'Imported from LeetCode recent solved submissions (duration unknown).',
+          source: 'leetcode_sync',
+          xp_awarded: 30,
+          calendar_event_id: null,
+          created_at: solvedAt,
+        }).catch(() => {})
 
         importedCount++
       }

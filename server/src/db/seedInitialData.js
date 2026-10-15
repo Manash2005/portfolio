@@ -343,26 +343,13 @@ export function seedInitialData(db) {
 
   seedTransaction()
 
-  // Purge any legacy dummy events from events table
-  purgeDummyEvents(db)
-
   console.log('[Seed] Database successfully seeded with goals, projects, events, and portfolio content.')
 }
 
 /**
- * Remove all events except genuine user activity events
+ * Legacy cleanup stub (no-op to prevent wiping user calendar events)
  */
 export function purgeDummyEvents(db) {
-  try {
-    const res = db.prepare(`
-      DELETE FROM events
-      WHERE title != 'Failed DSA Interview'
-        AND title != 'Application rejected at IBM'
-    `).run()
-    if (res.changes > 0) {
-      console.log(`[Cleanup] Purged ${res.changes} dummy calendar event(s). Only genuine events remain.`)
-    }
-  } catch (err) {
-    console.error('Error purging dummy events:', err.message)
-  }
+  // Safe no-op: never delete genuine user events!
 }
+

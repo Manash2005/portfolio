@@ -2,7 +2,7 @@ import Database from 'better-sqlite3'
 import path from 'path'
 import fs from 'fs'
 import { fileURLToPath } from 'url'
-import { seedInitialData, purgeDummyEvents } from './seedInitialData.js'
+import { seedInitialData } from './seedInitialData.js'
 import { seedDsaCatalog } from './seedDsaCatalog.js'
 import { comprehensiveProblems } from './comprehensiveDsaCatalog.js'
 
@@ -88,8 +88,6 @@ export function getDatabase() {
       console.error('Projects seed check error:', err)
     }
 
-    // Ensure only genuine user calendar events exist (purges any legacy dummy events)
-    purgeDummyEvents(dbInstance)
 
     // 5. Auto-seed / sync curated DSA catalog if empty or smaller than comprehensive catalog
     try {

@@ -29,6 +29,9 @@ function getJsonFallback() {
  */
 export function ensureProjectsPopulated() {
   try {
+    const projectCount = db.prepare('SELECT count(*) as count FROM projects').get().count
+    if (projectCount > 0) return
+
     const fallback = getJsonFallback()
     if (!fallback.projects || !Array.isArray(fallback.projects)) return
 

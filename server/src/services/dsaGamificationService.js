@@ -1,4 +1,8 @@
 import { db } from '../db/database.js'
+import {
+  persistGameProfileToMongo,
+  persistAchievementUnlockToMongo,
+} from '../db/mongoPersistence.js'
 
 export const LEVELS = [
   { name: 'Novice', minXp: 0, maxXp: 199, icon: 'Shield' },
@@ -120,6 +124,12 @@ export function recordActivityReward({ xpEarned, durationSeconds = 0, isRevision
     WHERE id = 'primary_user'
   `).run(newTotalXp, newLevelInfo.level, newStreak, newLongestStreak, today, newFreezes)
 
+  // Persist game profile to MongoDB Atlas
+  const updatedProfile = db.prepare('SELECT * FROM dsa_game_profile WHERE id = ?').get('primary_user')
+  if (updatedProfile) {
+    persistGameProfileToMongo(updatedProfile).catch(() => {})
+  }
+
   // Check achievements
   const unlockedNow = checkAchievements({
     totalXp: newTotalXp,
@@ -225,11 +235,12 @@ export function checkAchievements({ totalXp, streak, durationSeconds = 0 }) {
   const unlockAchievement = (id) => {
     const ach = db.prepare('SELECT * FROM dsa_achievements WHERE id = ?').get(id)
     if (ach && ach.is_unlocked === 0) {
+      const nowStr = new Date().toISOString()
       db.prepare(`
         UPDATE dsa_achievements 
-        SET is_unlocked = 1, unlocked_at = datetime('now') 
+        SET is_unlocked = 1, unlocked_at = ? 
         WHERE id = ?
-      `).run(id)
+      `).run(nowStr, id)
 
       // Award achievement XP bonus
       db.prepare(`
@@ -238,7 +249,14 @@ export function checkAchievements({ totalXp, streak, durationSeconds = 0 }) {
         WHERE id = 'primary_user'
       `).run(ach.xp_reward)
 
-      unlocked.push({ ...ach, is_unlocked: 1 })
+      // Persist unlock and updated profile to MongoDB Atlas
+      persistAchievementUnlockToMongo(id, nowStr).catch(() => {})
+      const updatedProfile = db.prepare('SELECT * FROM dsa_game_profile WHERE id = ?').get('primary_user')
+      if (updatedProfile) {
+        persistGameProfileToMongo(updatedProfile).catch(() => {})
+      }
+
+      unlocked.push({ ...ach, is_unlocked: 1, unlocked_at: nowStr })
     }
   }
 
@@ -287,5 +305,9 @@ export function checkAchievements({ totalXp, streak, durationSeconds = 0 }) {
 export function togglePenalties(enabled) {
   const val = enabled ? 1 : 0
   db.prepare(`UPDATE dsa_game_profile SET penalties_enabled = ?, updated_at = datetime('now') WHERE id = 'primary_user'`).run(val)
+  const updatedProfile = db.prepare('SELECT * FROM dsa_game_profile WHERE id = ?').get('primary_user')
+  if (updatedProfile) {
+    persistGameProfileToMongo(updatedProfile).catch(() => {})
+  }
   return { penalties_enabled: val }
 }
