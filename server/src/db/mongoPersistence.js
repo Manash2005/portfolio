@@ -806,11 +806,12 @@ export async function syncMongoAndSqlite() {
         })
       }
 
-      // Also persist any local SQLite attempts that are not yet in Mongo
+      // Reconcile: Purge any attempts from SQLite that were deleted in MongoDB so deletions stay deleted
       const mongoAttemptIdSet = new Set(mongoAttempts.map((a) => a.id))
+      const deleteSqliteAttempt = sqliteDb.prepare('DELETE FROM dsa_attempts WHERE id = ?')
       for (const a of sqliteAttempts) {
         if (!mongoAttemptIdSet.has(a.id)) {
-          await persistAttemptToMongo(a)
+          deleteSqliteAttempt.run(a.id)
         }
       }
     } else if (sqliteAttempts.length > 0) {
@@ -853,10 +854,12 @@ export async function syncMongoAndSqlite() {
         })
       }
 
+      // Reconcile: Purge any revision schedules from SQLite that were deleted in MongoDB
       const mongoRevProblemSet = new Set(mongoRevisions.map((r) => r.problem_id))
+      const deleteSqliteRev = sqliteDb.prepare('DELETE FROM dsa_revision_schedule WHERE problem_id = ?')
       for (const r of sqliteRevisions) {
         if (!mongoRevProblemSet.has(r.problem_id)) {
-          await persistRevisionToMongo(r)
+          deleteSqliteRev.run(r.problem_id)
         }
       }
     } else if (sqliteRevisions.length > 0) {

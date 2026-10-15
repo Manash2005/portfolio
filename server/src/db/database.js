@@ -10,7 +10,11 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 // Database path: support custom path via environment or default to server/data/second_brain.db
-const defaultDbPath = path.resolve(__dirname, '../../data/second_brain.db')
+// In test mode, strictly use an isolated second_brain.test.db to prevent touching user data!
+const isTestMode = process.env.NODE_ENV === 'test'
+const defaultDbPath = isTestMode
+  ? path.resolve(__dirname, '../../data/second_brain.test.db')
+  : path.resolve(__dirname, '../../data/second_brain.db')
 const dbPath = process.env.SQLITE_DB_PATH || defaultDbPath
 
 // Ensure directory exists

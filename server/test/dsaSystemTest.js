@@ -1,3 +1,4 @@
+import './setup.js'
 import { db } from '../src/db/database.js'
 import {
   getProblems,
@@ -264,6 +265,18 @@ async function runDsaTests() {
   console.log(`\n========================================`)
   console.log(`Results: ${passed} Passed, ${failed} Failed`)
   console.log(`========================================\n`)
+
+  try {
+    const { closeDatabase } = await import('../src/db/database.js')
+    closeDatabase()
+    const fs = await import('fs')
+    const testDbPath = process.env.SQLITE_DB_PATH
+    if (testDbPath && testDbPath.includes('.test.db')) {
+      fs.rmSync(testDbPath, { force: true })
+      fs.rmSync(testDbPath + '-wal', { force: true })
+      fs.rmSync(testDbPath + '-shm', { force: true })
+    }
+  } catch {}
 
   if (failed > 0) {
     process.exit(1)

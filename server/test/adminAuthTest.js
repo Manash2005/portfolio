@@ -1,3 +1,4 @@
+import './setup.js'
 import assert from 'node:assert/strict'
 import {
   hashPassword,
@@ -259,6 +260,15 @@ async function runAdminTests() {
 
 runAdminTests()
   .then(async () => {
+    const { closeDatabase } = await import('../src/db/database.js')
+    closeDatabase()
+    const fs = await import('fs')
+    const testDbPath = process.env.SQLITE_DB_PATH
+    if (testDbPath && testDbPath.includes('.test.db')) {
+      fs.rmSync(testDbPath, { force: true })
+      fs.rmSync(testDbPath + '-wal', { force: true })
+      fs.rmSync(testDbPath + '-shm', { force: true })
+    }
     const { disconnectMongo } = await import('../src/db/mongo.js')
     await disconnectMongo()
     process.exit(0)

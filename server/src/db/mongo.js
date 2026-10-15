@@ -12,6 +12,11 @@ let isConnecting = false
 let isConnected = false
 
 export async function connectMongo() {
+  if (process.env.NODE_ENV === 'test') {
+    // Strictly isolate tests from production cloud database to guarantee zero data contamination
+    return null
+  }
+
   if (isConnected && mongoose.connection.readyState === 1) {
     return mongoose.connection
   }
