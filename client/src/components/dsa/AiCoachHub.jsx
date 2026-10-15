@@ -11,6 +11,7 @@ import {
   ShieldCheck,
   RefreshCw,
 } from 'lucide-react'
+import { useAdmin } from '../../context/AdminContext'
 
 export default function AiCoachHub({
   activePlan,
@@ -18,6 +19,7 @@ export default function AiCoachHub({
   onAnalyzeWeaknesses,
   onSelectProblemForPractice,
 }) {
+  const { isAdmin } = useAdmin()
   const [durationBudget, setDurationBudget] = useState(45)
   const [loading, setLoading] = useState(false)
   const [loadingType, setLoadingType] = useState('') // 'plan' | 'analysis'
@@ -26,6 +28,10 @@ export default function AiCoachHub({
   const [errorMessage, setErrorMessage] = useState(null)
 
   const handleGenerate = async () => {
+    if (!isAdmin) {
+      setErrorMessage('Portfolio Showcase Mode: Administrator access is required to generate live AI practice plans.')
+      return
+    }
     setLoading(true)
     setLoadingType('plan')
     setErrorMessage(null)
@@ -46,6 +52,10 @@ export default function AiCoachHub({
   }
 
   const handleAnalyze = async () => {
+    if (!isAdmin) {
+      setErrorMessage('Portfolio Showcase Mode: Administrator access is required to run weakness diagnostics.')
+      return
+    }
     setLoading(true)
     setLoadingType('analysis')
     setErrorMessage(null)

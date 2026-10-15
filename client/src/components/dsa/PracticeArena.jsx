@@ -18,12 +18,14 @@ import {
   Clock,
   ArrowRight,
 } from 'lucide-react'
+import { useAdmin } from '../../context/AdminContext'
 
 export default function PracticeArena({
   activeProblem,
   onCompleteAttempt,
   onSelectAnotherProblem,
 }) {
+  const { isAdmin } = useAdmin()
   const [seconds, setSeconds] = useState(0)
   const [timerRunning, setTimerRunning] = useState(false)
   const [startTime, setStartTime] = useState(null)
@@ -89,6 +91,7 @@ export default function PracticeArena({
   const handleSubmitAttempt = async (e) => {
     e.preventDefault()
     if (!activeProblem) return
+    if (!isAdmin) return
     setIsSubmitting(true)
 
     const isIndependent = !solutionViewed && hintsUsed === 0
@@ -154,6 +157,17 @@ export default function PracticeArena({
 
   return (
     <div className="w-full flex flex-col gap-6">
+      {/* Showcase Mode Banner for non-admins */}
+      {!isAdmin && (
+        <div className="p-3.5 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-xs font-mono text-blue-300 flex items-center justify-between gap-3 text-left">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
+            <span>Portfolio Showcase Mode: You are previewing the interactive Practice Arena. Attempt recording is read-only for visitors.</span>
+          </div>
+          <span className="text-[10px] text-muted shrink-0">Showcase Only</span>
+        </div>
+      )}
+
       {/* 1. Problem Header Bar */}
       <div className="p-5 sm:p-6 rounded-2xl border border-hairline bg-[#0E0E14] flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex flex-col gap-1.5 text-left">
@@ -575,13 +589,32 @@ export default function PracticeArena({
                     </label>
                   </div>
 
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="w-full py-3 rounded-full text-xs font-mono font-bold bg-accent text-[#08080C] hover:opacity-90 disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2"
-                  >
-                    {isSubmitting ? 'Recording...' : 'Submit Attempt & Claim XP'}
-                  </button>
+                  {!isAdmin ? (
+                    <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/10 text-xs font-mono text-muted flex flex-col gap-2">
+                      <span className="text-white font-bold flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-amber-400" />
+                        Portfolio Showcase Mode
+                      </span>
+                      <p className="text-[11px] text-muted">
+                        This interactive arena demonstration is read-only. Log in as administrator from the portfolio footer to record genuine attempts, award XP, and schedule revisions.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setIsFinishing(false)}
+                        className="self-end px-4 py-1.5 rounded-lg text-xs font-mono bg-white/10 hover:bg-white/20 text-white cursor-pointer transition-colors"
+                      >
+                        Close Preview
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="w-full py-3 rounded-full text-xs font-mono font-bold bg-accent text-[#08080C] hover:opacity-90 disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2"
+                    >
+                      {isSubmitting ? 'Recording...' : 'Submit Attempt & Claim XP'}
+                    </button>
+                  )}
                 </form>
               )}
             </motion.div>

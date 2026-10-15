@@ -121,10 +121,12 @@ export function getRevisionQueue() {
   return {
     overdue,
     dueToday,
-    upcoming: upcoming.slice(0, 10),
+    upcoming: upcoming.slice(0, 30),
     totalDueCount: overdue.length + dueToday.length,
+    totalScheduledCount: items.length,
   }
 }
+
 
 /**
  * Calculate topic mastery statistics across all topics

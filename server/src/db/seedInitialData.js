@@ -78,20 +78,7 @@ export function getPortfolioDataFallback() {
       gfg_fallback: 174,
       projects: 4
     },
-    activity_events: [
-      {
-        date: "2026-10-13",
-        category: "failed",
-        title: "Failed DSA Interview",
-        description: "5 questions ranging from recursion to dynamic programming."
-      },
-      {
-        date: "2026-10-14",
-        category: "rejected",
-        title: "Application rejected at IBM",
-        description: "Applied for AI Intern position and got rejected."
-      }
-    ],
+    activity_events: [],
     projects: [
       {
         title: "Safe NL-to-SQL",
@@ -279,50 +266,8 @@ export function seedInitialData(db) {
       })
     }
 
-    // 3. Seed Events (ONLY genuine activity events from portfolio data)
-    const insertEvent = db.prepare(`
-      INSERT OR IGNORE INTO events (
-        id, title, description, category, start_at, end_at, all_day, timezone,
-        location, meeting_url, external_url, status, visibility,
-        show_on_portfolio_heatmap, color, tags, priority, goal_id, project_id, private_notes
-      ) VALUES (
-        @id, @title, @description, @category, @start_at, @end_at, @all_day, @timezone,
-        @location, @meeting_url, @external_url, @status, @visibility,
-        @show_on_portfolio_heatmap, @color, @tags, @priority, @goal_id, @project_id, @private_notes
-      )
-    `)
-
-    // Activity events from portfolio data (Failed DSA Interview & Application rejected at IBM)
-    if (data?.activity_events && Array.isArray(data.activity_events)) {
-      data.activity_events.forEach((evt, idx) => {
-        const dateStr = evt.date || '2026-10-14'
-        const id = 'evt_' + (evt.title || `event_${idx}`).toLowerCase().replace(/[^a-z0-9]/g, '_').slice(0, 32) + '_' + dateStr.replace(/-/g, '')
-        const isFailed = (evt.category === 'failed' || evt.category === 'rejected' || (evt.title || '').toLowerCase().includes('fail'))
-
-        insertEvent.run({
-          id,
-          title: evt.title,
-          description: evt.description || '',
-          category: evt.title.includes('Interview') ? 'Interview Preparation' : 'Career',
-          start_at: `${dateStr}T14:00:00`,
-          end_at: `${dateStr}T15:30:00`,
-          all_day: 1,
-          timezone: 'Asia/Kolkata',
-          location: 'Remote',
-          meeting_url: null,
-          external_url: null,
-          status: 'Completed',
-          visibility: 'Public',
-          show_on_portfolio_heatmap: 1,
-          color: isFailed ? '#FF4D4D' : '#B8FF3C',
-          tags: JSON.stringify(['Interview', 'DSA', 'Feedback']),
-          priority: 'high',
-          goal_id: 'goal_dsa_prep',
-          project_id: null,
-          private_notes: '',
-        })
-      })
-    }
+    // 3. Events start clean (0 dummy data - only genuine user activity)
+    // No dummy events seeded. Genuine activity will populate here as user practices or creates events.
 
     // 4. Seed dynamic portfolio_content table if empty
     const insertContent = db.prepare(`

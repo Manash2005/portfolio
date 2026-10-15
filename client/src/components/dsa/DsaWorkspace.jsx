@@ -29,13 +29,44 @@ import TopicMasteryView from './TopicMasteryView'
 import MistakeJournalView from './MistakeJournalView'
 import GamificationView from './GamificationView'
 import DsaVisualCharts from './DsaVisualCharts'
+import ProblemStatsModal from './ProblemStatsModal'
 import { useAdmin } from '../../context/AdminContext'
 import { API_BASE_URL } from '../../utils/apiConfig'
+
+function getRevisionCountdown(dueString) {
+  if (!dueString) return null
+  const today = new Date().toISOString().split('T')[0]
+  if (dueString < today) {
+    const diffDays = Math.round((new Date(today) - new Date(dueString)) / (1000 * 60 * 60 * 24))
+    return { text: `Overdue by ${diffDays}d`, urgency: 'overdue' }
+  } else if (dueString === today) {
+    return { text: 'Due today', urgency: 'today' }
+  } else {
+    const diffDays = Math.round((new Date(dueString) - new Date(today)) / (1000 * 60 * 60 * 24))
+    return {
+      text: diffDays === 1 ? 'Due tomorrow' : `Due in ${diffDays} days`,
+      urgency: 'upcoming',
+    }
+  }
+}
+
+function formatRelativeTime(dateString) {
+  if (!dateString) return ''
+  const date = new Date(dateString)
+  const now = new Date()
+  const diffSec = Math.floor((now - date) / 1000)
+  if (diffSec < 60) return 'Just now'
+  if (diffSec < 3600) return `${Math.floor(diffSec / 60)}m ago`
+  if (diffSec < 86400) return `${Math.floor(diffSec / 3600)}h ago`
+  if (diffSec < 604800) return `${Math.floor(diffSec / 86400)}d ago`
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
 
 export default function DsaWorkspace({ onSwitchToCalendar }) {
   const { isAdmin, authFetch } = useAdmin()
   const [activeTab, setActiveTab] = useState('overview') // 'overview' | 'topics' | 'arena' | 'coach' | 'mistakes' | 'achievements'
   const [selectedTopic, setSelectedTopic] = useState(null)
+  const [selectedStatsProblemId, setSelectedStatsProblemId] = useState(null)
   const [loading, setLoading] = useState(true)
 
   // State
@@ -192,6 +223,9 @@ export default function DsaWorkspace({ onSwitchToCalendar }) {
   }
 
   const handleCompleteAttempt = async (attemptData) => {
+    if (!isAdmin) {
+      return { success: false, error: 'Admin access required to log attempts.' }
+    }
     try {
       const res = await authFetch(`${apiUrl}/api/v1/dsa/attempts`, {
         method: 'POST',
@@ -497,7 +531,12 @@ export default function DsaWorkspace({ onSwitchToCalendar }) {
             </div>
 
             {/* Visual Analytics & Interactive Charts */}
-            <DsaVisualCharts charts={overview?.charts} stats={stats} />
+            <DsaVisualCharts
+              charts={overview?.charts}
+              stats={stats}
+              recentAttempts={overview?.recentAttempts || []}
+              onViewStats={(id) => setSelectedStatsProblemId(id)}
+            />
 
             {/* Active Daily Plan or Launcher Hero */}
             {activePlan ? (
@@ -595,6 +634,173 @@ export default function DsaWorkspace({ onSwitchToCalendar }) {
               </div>
             )}
 
+            {/* Recently Solved Questions Section */}
+            <div className="p-6 sm:p-7 rounded-3xl border border-hairline bg-[#0E0E14] flex flex-col gap-5 text-left shadow-lg">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-hairline pb-4">
+                <div className="flex items-center gap-2.5">
+                  <span className="p-2 rounded-xl bg-accent/10 text-accent">
+                    <CheckCircle2 className="w-5 h-5" />
+                  </span>
+                  <div>
+                    <h3 className="text-base font-display font-bold text-white flex items-center gap-2">
+                      <span>Recently Solved Questions</span>
+                      <span className="text-xs font-mono text-accent font-semibold px-2.5 py-0.5 rounded-full bg-accent/10 border border-accent/20">
+                        {overview?.recentAttempts?.length || 0} Solved
+                      </span>
+                    </h3>
+                    <p className="text-xs font-mono text-muted">
+                      Your live practice log with solve duration, accuracy, XP, and spaced revision milestones.
+                    </p>
+                  </div>
+                </div>
+
+                {overview?.recentAttempts && overview.recentAttempts.length > 0 && (
+                  <button
+                    onClick={() => setActiveTab('charts')}
+                    className="text-xs font-mono text-accent hover:underline flex items-center gap-1 cursor-pointer"
+                  >
+                    <span>View Velocity Charts</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
+              {overview?.recentAttempts && overview.recentAttempts.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                  {overview.recentAttempts.map((item) => {
+                    const mins = Math.floor((item.duration_seconds || 0) / 60)
+                    const secs = (item.duration_seconds || 0) % 60
+                    const formattedDuration = `${mins}m ${secs > 0 ? `${secs}s` : ''}`
+                    const isIndependent = item.is_independent === 1
+                    const countdown = item.next_revision_due ? getRevisionCountdown(item.next_revision_due) : null
+
+                    return (
+                      <div
+                        key={item.id}
+                        className="p-4 rounded-2xl border border-white/5 bg-[#12121A] hover:border-accent/30 transition-all flex flex-col justify-between gap-3.5"
+                      >
+                        <div>
+                          <div className="flex items-center justify-between gap-2 mb-1.5">
+                            <div className="flex items-center gap-1.5">
+                              <span
+                                className={`text-[10px] font-mono px-2 py-0.5 rounded font-bold uppercase ${
+                                  item.difficulty === 'Easy'
+                                    ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                                    : item.difficulty === 'Medium'
+                                    ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
+                                    : 'bg-rose-500/15 text-rose-400 border border-rose-500/30'
+                                }`}
+                              >
+                                {item.difficulty}
+                              </span>
+                              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-white/5 text-muted border border-hairline uppercase">
+                                {item.platform || 'leetcode'}
+                              </span>
+                              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-white/[0.03] text-muted border border-white/5">
+                                {item.primary_topic}
+                              </span>
+                            </div>
+
+                            <span className="text-[10px] font-mono text-muted">
+                              {formatRelativeTime(item.created_at)}
+                            </span>
+                          </div>
+
+                          <div className="flex items-start justify-between gap-2">
+                            <h4 className="text-sm font-display font-bold text-white truncate">
+                              {item.problem_title}
+                            </h4>
+                            {item.canonical_url && (
+                              <a
+                                href={item.canonical_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-muted hover:text-white p-0.5 shrink-0"
+                                title="Open on LeetCode/GFG"
+                              >
+                                <ExternalLink className="w-3.5 h-3.5" />
+                              </a>
+                            )}
+                          </div>
+
+                          {countdown && (
+                            <div className="mt-2 flex items-center gap-1.5 text-[11px] font-mono text-emerald-400">
+                              <RotateCcw className="w-3 h-3 text-emerald-400" />
+                              <span>Scheduled Revision: {item.next_revision_due} ({countdown.text})</span>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex flex-wrap items-center justify-between pt-2.5 border-t border-white/5 text-xs font-mono gap-2">
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={`text-[10px] px-2 py-0.5 rounded font-medium ${
+                                isIndependent
+                                  ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                                  : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
+                              }`}
+                            >
+                              {isIndependent ? 'Independent' : 'Assisted'}
+                            </span>
+                            <span className="text-muted text-[11px] flex items-center gap-1">
+                              <Clock className="w-3 h-3 text-accent" />
+                              <span>{formattedDuration}</span>
+                            </span>
+                            {item.xp_awarded > 0 && (
+                              <span className="text-accent text-[11px] font-bold">
+                                +{item.xp_awarded} XP
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="flex items-center gap-1.5 ml-auto">
+                            <button
+                              onClick={() => setSelectedStatsProblemId(item.problem_id)}
+                              className="px-2.5 py-1 rounded-lg text-xs font-mono font-medium bg-white/5 hover:bg-white/10 text-white flex items-center gap-1 border border-hairline cursor-pointer transition-colors"
+                            >
+                              <BarChart3 className="w-3 h-3 text-accent" />
+                              <span>View Stats</span>
+                            </button>
+                            <button
+                              onClick={() =>
+                                handleLaunchPractice({
+                                  id: item.problem_id,
+                                  title: item.problem_title,
+                                  canonical_url: item.canonical_url,
+                                  difficulty: item.difficulty,
+                                  primary_topic: item.primary_topic,
+                                  platform: item.platform,
+                                })
+                              }
+                              className="px-2.5 py-1 rounded-lg text-xs font-mono font-medium bg-accent/20 hover:bg-accent/30 text-accent flex items-center gap-1 cursor-pointer transition-colors"
+                            >
+                              <Play className="w-3 h-3 fill-current" />
+                              <span>Practice</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : (
+                <div className="p-8 rounded-2xl border border-hairline bg-[#12121A] text-center flex flex-col items-center justify-center gap-2">
+                  <CheckCircle2 className="w-8 h-8 text-muted/60" />
+                  <h4 className="text-sm font-display font-bold text-white">No Solved Questions Yet</h4>
+                  <p className="text-xs font-mono text-muted max-w-md">
+                    This is a fresh application with 0 dummy records. Pick any problem from the Topics tab or launch the Practice Arena to record your first solve and begin building your streak!
+                  </p>
+                  <button
+                    onClick={() => setActiveTab('topics')}
+                    className="mt-2 px-4 py-2 rounded-xl text-xs font-mono font-bold bg-accent text-[#08080C] hover:opacity-90 flex items-center gap-1.5 cursor-pointer shadow-md"
+                  >
+                    <BookOpen className="w-3.5 h-3.5" />
+                    <span>Browse Question Catalog</span>
+                  </button>
+                </div>
+              )}
+            </div>
+
             {/* Quick Two-Column: Overdue Revisions & Weak Topics */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
               {/* Due for Revision Card */}
@@ -607,45 +813,121 @@ export default function DsaWorkspace({ onSwitchToCalendar }) {
                     </h3>
                   </div>
                   <span className="text-xs font-mono text-amber-400 font-medium">
-                    {stats.dueRevisionsCount || 0} scheduled
+                    {(revisionQueue.overdue?.length || 0) + (revisionQueue.dueToday?.length || 0)} Due Now · {revisionQueue.upcoming?.length || 0} Scheduled
                   </span>
                 </div>
 
-                {revisionQueue.overdue && revisionQueue.overdue.length > 0 ? (
+                {(revisionQueue.overdue && revisionQueue.overdue.length > 0) || (revisionQueue.dueToday && revisionQueue.dueToday.length > 0) ? (
                   <div className="flex flex-col gap-2">
-                    {revisionQueue.overdue.slice(0, 3).map((item) => (
+                    {revisionQueue.overdue?.slice(0, 3).map((item) => (
                       <div
                         key={item.problem_id}
-                        className="p-3 rounded-xl bg-white/[0.02] border border-white/5 flex items-center justify-between"
+                        className="p-3 rounded-xl bg-rose-500/[0.04] border border-rose-500/20 flex items-center justify-between"
                       >
                         <div>
-                          <span className="text-xs font-mono font-medium text-white block">
+                          <span className="text-xs font-mono font-medium text-white block truncate max-w-[190px]">
                             {item.title}
                           </span>
-                          <span className="text-[10px] font-mono text-muted">
-                            {item.primary_topic} · Due: {item.next_revision_due}
+                          <span className="text-[10px] font-mono text-rose-300">
+                            {item.primary_topic} · Overdue: {item.next_revision_due}
                           </span>
                         </div>
-                        <button
-                          onClick={() => handleLaunchPractice(item)}
-                          className="px-3 py-1 rounded-lg text-xs font-mono bg-amber-400/20 text-amber-300 hover:bg-amber-400/30 cursor-pointer"
-                        >
-                          Revise
-                        </button>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            onClick={() => setSelectedStatsProblemId(item.problem_id)}
+                            className="px-2 py-1 rounded-lg text-[10px] font-mono bg-white/5 text-muted hover:text-white cursor-pointer"
+                          >
+                            Stats
+                          </button>
+                          <button
+                            onClick={() => handleLaunchPractice(item)}
+                            className="px-3 py-1 rounded-lg text-xs font-mono bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 cursor-pointer"
+                          >
+                            Revise
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                    {revisionQueue.dueToday?.slice(0, 2).map((item) => (
+                      <div
+                        key={item.problem_id}
+                        className="p-3 rounded-xl bg-amber-500/[0.04] border border-amber-500/20 flex items-center justify-between"
+                      >
+                        <div>
+                          <span className="text-xs font-mono font-medium text-white block truncate max-w-[190px]">
+                            {item.title}
+                          </span>
+                          <span className="text-[10px] font-mono text-amber-300">
+                            {item.primary_topic} · Due Today
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            onClick={() => setSelectedStatsProblemId(item.problem_id)}
+                            className="px-2 py-1 rounded-lg text-[10px] font-mono bg-white/5 text-muted hover:text-white cursor-pointer"
+                          >
+                            Stats
+                          </button>
+                          <button
+                            onClick={() => handleLaunchPractice(item)}
+                            className="px-3 py-1 rounded-lg text-xs font-mono bg-amber-400/20 text-amber-300 hover:bg-amber-400/30 cursor-pointer"
+                          >
+                            Revise
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
+                ) : revisionQueue.upcoming && revisionQueue.upcoming.length > 0 ? (
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center justify-between text-[11px] font-mono text-muted mb-0.5">
+                      <span>Upcoming Scheduled Revisions</span>
+                      <span className="text-emerald-400">On Track</span>
+                    </div>
+                    {revisionQueue.upcoming.slice(0, 3).map((item) => {
+                      const countdown = getRevisionCountdown(item.next_revision_due)
+                      return (
+                        <div
+                          key={item.problem_id}
+                          className="p-3 rounded-xl bg-white/[0.02] border border-white/5 flex items-center justify-between"
+                        >
+                          <div>
+                            <span className="text-xs font-mono font-medium text-white block truncate max-w-[190px]">
+                              {item.title}
+                            </span>
+                            <span className="text-[10px] font-mono text-emerald-400">
+                              Scheduled: {item.next_revision_due} ({countdown?.text})
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              onClick={() => setSelectedStatsProblemId(item.problem_id)}
+                              className="px-2 py-1 rounded-lg text-[10px] font-mono bg-white/5 text-muted hover:text-white cursor-pointer"
+                            >
+                              Stats
+                            </button>
+                            <button
+                              onClick={() => handleLaunchPractice(item)}
+                              className="px-2.5 py-1 rounded-lg text-[10px] font-mono bg-white/5 text-muted hover:text-white hover:bg-white/10 cursor-pointer"
+                            >
+                              Practice
+                            </button>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
                 ) : (
                   <p className="text-xs font-mono text-muted py-4">
-                    All completed problems are up-to-date with your spaced repetition schedule.
+                    No revisions scheduled yet. Solved problems will automatically be scheduled here according to spaced repetition intervals.
                   </p>
                 )}
 
                 <button
                   onClick={() => setActiveTab('topics')}
-                  className="text-xs font-mono text-accent hover:underline flex items-center gap-1"
+                  className="text-xs font-mono text-accent hover:underline flex items-center gap-1 cursor-pointer"
                 >
-                  <span>View Revision Queue</span>
+                  <span>View Full Revision Schedule</span>
                   <ArrowRight className="w-3 h-3" />
                 </button>
               </div>
@@ -742,6 +1024,7 @@ export default function DsaWorkspace({ onSwitchToCalendar }) {
                 revisionQueue={revisionQueue}
                 onSelectProblemForPractice={handleLaunchPractice}
                 onSelectTopic={handleSelectTopic}
+                onViewStats={(id) => setSelectedStatsProblemId(id)}
               />
             ) : (
               <QuestionBank
@@ -752,6 +1035,7 @@ export default function DsaWorkspace({ onSwitchToCalendar }) {
                 onPageChange={handlePageChange}
                 onSelectProblemForPractice={handleLaunchPractice}
                 onBackToTopics={() => setSelectedTopic(null)}
+                onViewStats={(id) => setSelectedStatsProblemId(id)}
                 loading={loading}
               />
             )}
@@ -807,6 +1091,17 @@ export default function DsaWorkspace({ onSwitchToCalendar }) {
               onTogglePenalties={handleTogglePenalties}
             />
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Problem Stats & Solve History Modal */}
+      <AnimatePresence>
+        {selectedStatsProblemId && (
+          <ProblemStatsModal
+            problemId={selectedStatsProblemId}
+            onClose={() => setSelectedStatsProblemId(null)}
+            onLaunchPractice={handleLaunchPractice}
+          />
         )}
       </AnimatePresence>
     </div>

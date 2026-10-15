@@ -15,6 +15,7 @@ import {
   X,
   Link2,
   ArrowLeft,
+  BarChart3,
 } from 'lucide-react'
 import { useAdmin } from '../../context/AdminContext'
 
@@ -51,6 +52,7 @@ export default function QuestionBank({
   onPageChange,
   onSelectProblemForPractice,
   onBackToTopics,
+  onViewStats,
   loading = false,
 }) {
   const { isAdmin, authFetch } = useAdmin()
@@ -503,13 +505,25 @@ export default function QuestionBank({
                     )}
                   </div>
 
-                  <button
-                    onClick={() => onSelectProblemForPractice(prob)}
-                    className="px-3.5 py-1.5 rounded-full text-xs font-mono font-medium bg-accent text-[#08080C] hover:opacity-90 flex items-center gap-1.5 cursor-pointer transition-transform active:scale-95"
-                  >
-                    <Play className="w-3 h-3 fill-current" />
-                    <span>Practice</span>
-                  </button>
+                  <div className="flex items-center gap-2">
+                    {onViewStats && (
+                      <button
+                        onClick={() => onViewStats(prob.id)}
+                        className="px-3 py-1.5 rounded-full text-xs font-mono font-medium bg-white/5 hover:bg-white/10 text-white flex items-center gap-1 cursor-pointer border border-hairline transition-colors"
+                        title="View question solve stats & history"
+                      >
+                        <BarChart3 className="w-3 h-3 text-accent" />
+                        <span>Stats</span>
+                      </button>
+                    )}
+                    <button
+                      onClick={() => onSelectProblemForPractice(prob)}
+                      className="px-3.5 py-1.5 rounded-full text-xs font-mono font-medium bg-accent text-[#08080C] hover:opacity-90 flex items-center gap-1.5 cursor-pointer transition-transform active:scale-95"
+                    >
+                      <Play className="w-3 h-3 fill-current" />
+                      <span>Practice</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             )

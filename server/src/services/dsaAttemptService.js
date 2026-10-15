@@ -210,11 +210,22 @@ export function recordAttempt({
 export function getRecentAttempts({ limit = 20 } = {}) {
   return db
     .prepare(`
-      SELECT a.*, p.title as problem_title, p.platform, p.difficulty, p.primary_topic, p.canonical_url
+      SELECT 
+        a.*, 
+        p.title as problem_title, 
+        p.platform, 
+        p.difficulty, 
+        p.primary_topic, 
+        p.canonical_url,
+        r.next_revision_due,
+        r.interval_days as revision_interval_days,
+        r.repetition_count as revision_repetition_count
       FROM dsa_attempts a
       JOIN dsa_problems p ON a.problem_id = p.id
+      LEFT JOIN dsa_revision_schedule r ON a.problem_id = r.problem_id
       ORDER BY a.created_at DESC
       LIMIT ?
     `)
     .all(limit)
 }
+

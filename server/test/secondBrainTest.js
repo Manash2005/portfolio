@@ -42,7 +42,7 @@ async function runTests() {
 
   const db = getDatabase()
 
-  // Setup temporary private test fixture to test privacy controls
+  // Setup temporary test fixtures to test privacy controls and public querying
   db.prepare(`
     INSERT OR REPLACE INTO events (
       id, title, description, category, start_at, end_at, all_day, timezone,
@@ -51,6 +51,17 @@ async function runTests() {
       'evt_test_fixture_private', 'Confidential Financial Planning', 'Private banking review', 'Personal',
       '2026-10-25T20:00:00', '2026-10-25T21:00:00', 0, 'Asia/Kolkata',
       'Planned', 'Private', 0, '#9CA3AF', '["Personal","Finances"]', 'low', 'CONFIDENTIAL NOTE'
+    )
+  `).run()
+
+  db.prepare(`
+    INSERT OR REPLACE INTO events (
+      id, title, description, category, start_at, end_at, all_day, timezone,
+      status, visibility, show_on_portfolio_heatmap, color, tags, priority, private_notes
+    ) VALUES (
+      'evt_test_fixture_public', 'System Architecture Design', 'Public tech session', 'Engineering',
+      '2026-10-26T14:00:00', '2026-10-26T15:00:00', 0, 'Asia/Kolkata',
+      'Completed', 'Public', 1, '#10B981', '["Engineering","Architecture"]', 'high', ''
     )
   `).run()
 
@@ -94,11 +105,11 @@ async function runTests() {
   // Test 4: Single Event Fetch by ID: Public succeeds, Private returns 404
   {
     // Public event
-    const reqPublic = { params: { id: 'evt_failed_dsa_interview_20261013' } }
+    const reqPublic = { params: { id: 'evt_test_fixture_public' } }
     const resPublic = mockResponse()
     await getEventById(reqPublic, resPublic)
     assert.strictEqual(resPublic.statusCode, 200)
-    assert.strictEqual(resPublic.data.event.id, 'evt_failed_dsa_interview_20261013')
+    assert.strictEqual(resPublic.data.event.id, 'evt_test_fixture_public')
     assert.strictEqual(resPublic.data.event.private_notes, undefined, 'Private notes must not be present')
 
     // Private event ID -> Must return 404
@@ -165,8 +176,8 @@ async function runTests() {
     console.log('✓ Test 8: Activity statistics calculations verified')
   }
 
-  // Cleanup temporary test fixture
-  db.prepare("DELETE FROM events WHERE id = 'evt_test_fixture_private'").run()
+  // Cleanup temporary test fixtures
+  db.prepare("DELETE FROM events WHERE id IN ('evt_test_fixture_private', 'evt_test_fixture_public')").run()
 
   console.log('\n--- ALL SECOND BRAIN TESTS PASSED SUCCESSFULLY! ---\n')
 }

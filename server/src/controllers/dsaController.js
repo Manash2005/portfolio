@@ -40,7 +40,7 @@ export async function getDsaOverview(req, res) {
     const revisionData = getRevisionQueue()
     const catalogStats = getCatalogStats()
     const topicStats = getTopicMasteryStats()
-    const recentAttempts = getRecentAttempts({ limit: 5 })
+    const recentAttempts = getRecentAttempts({ limit: 15 })
 
     // Active daily plan for today
     const today = new Date().toISOString().split('T')[0]
@@ -151,6 +151,9 @@ export async function getDsaOverview(req, res) {
         assistedSolves: asstSolved,
         totalAttempts: totalAttemptsRow ? totalAttemptsRow.count : 0,
         dueRevisionsCount: revisionData.totalDueCount,
+        totalScheduledRevisions:
+          revisionData.totalScheduledCount ||
+          (revisionData.overdue.length + revisionData.dueToday.length + revisionData.upcoming.length),
       },
       charts: {
         difficulty: diffStats,

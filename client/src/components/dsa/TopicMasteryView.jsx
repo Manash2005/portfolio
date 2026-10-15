@@ -9,7 +9,26 @@ import {
   Award,
   BookOpen,
   Sparkles,
+  BarChart3,
+  Calendar,
 } from 'lucide-react'
+
+function getRevisionCountdown(dueString) {
+  if (!dueString) return null
+  const today = new Date().toISOString().split('T')[0]
+  if (dueString < today) {
+    const diffDays = Math.round((new Date(today) - new Date(dueString)) / (1000 * 60 * 60 * 24))
+    return { text: `Overdue by ${diffDays}d`, urgency: 'overdue' }
+  } else if (dueString === today) {
+    return { text: 'Due today', urgency: 'today' }
+  } else {
+    const diffDays = Math.round((new Date(dueString) - new Date(today)) / (1000 * 60 * 60 * 24))
+    return {
+      text: diffDays === 1 ? 'Due tomorrow' : `Due in ${diffDays} days`,
+      urgency: 'upcoming',
+    }
+  }
+}
 
 export default function TopicMasteryView({
   topics = [],
@@ -17,86 +36,193 @@ export default function TopicMasteryView({
   revisionQueue = {},
   onSelectProblemForPractice,
   onSelectTopic,
+  onViewStats,
 }) {
   const overdueItems = revisionQueue.overdue || []
   const dueTodayItems = revisionQueue.dueToday || []
   const upcomingItems = revisionQueue.upcoming || []
+  const dueNowCount = overdueItems.length + dueTodayItems.length
+  const totalCount = dueNowCount + upcomingItems.length
 
   return (
     <div className="w-full flex flex-col gap-8 text-left">
-      {/* 1. Spaced Repetition Due Queue Banner */}
-      {(overdueItems.length > 0 || dueTodayItems.length > 0) && (
-        <div className="p-6 rounded-3xl border border-amber-500/30 bg-[#161208] flex flex-col gap-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
+      {/* 1. Spaced Repetition Queue Banner (Shows both Due Now and Upcoming Scheduled) */}
+      {totalCount > 0 && (
+        <div className="p-6 rounded-3xl border border-amber-500/30 bg-[#161208] flex flex-col gap-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
               <span className="p-2 rounded-xl bg-amber-500/20 text-amber-400">
                 <RotateCcw className="w-5 h-5" />
               </span>
               <div>
-                <h3 className="text-base font-display font-bold text-white">
-                  Spaced Repetition: Revisions Due
+                <h3 className="text-base font-display font-bold text-white flex items-center gap-2">
+                  <span>Spaced Repetition: Revision Schedule</span>
                 </h3>
                 <span className="text-xs font-mono text-muted">
-                  Revisiting problems before memory decays solidifies algorithmic patterns.
+                  Deterministic Leitner schedule tracking retention intervals and scheduled review dates.
                 </span>
               </div>
             </div>
-            <span className="px-3 py-1 rounded-full text-xs font-mono font-bold bg-amber-400 text-[#08080C]">
-              {overdueItems.length + dueTodayItems.length} Due
-            </span>
+            <div className="flex items-center gap-2">
+              {dueNowCount > 0 && (
+                <span className="px-3 py-1 rounded-full text-xs font-mono font-bold bg-amber-400 text-[#08080C]">
+                  {dueNowCount} Due Now
+                </span>
+              )}
+              {upcomingItems.length > 0 && (
+                <span className="px-3 py-1 rounded-full text-xs font-mono font-medium bg-white/10 text-emerald-300 border border-emerald-500/30">
+                  {upcomingItems.length} Scheduled
+                </span>
+              )}
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mt-1">
-            {overdueItems.concat(dueTodayItems).map((prob) => (
-              <div
-                key={prob.problem_id}
-                className="p-4 rounded-2xl border border-amber-500/20 bg-[#0E0E14] flex flex-col justify-between gap-3"
-              >
-                <div>
-                  <div className="flex items-center justify-between gap-1.5 mb-1.5">
-                    <span
-                      className={`text-[10px] font-mono px-1.5 py-0.5 rounded ${
-                        prob.difficulty === 'Easy'
-                          ? 'text-emerald-400 bg-emerald-500/10'
-                          : prob.difficulty === 'Medium'
-                          ? 'text-amber-400 bg-amber-500/10'
-                          : 'text-rose-400 bg-rose-500/10'
-                      }`}
-                    >
-                      {prob.difficulty}
-                    </span>
-                    <span className="text-[10px] font-mono text-amber-400">
-                      Due: {prob.next_revision_due}
-                    </span>
+          {/* Due Now Items */}
+          {dueNowCount > 0 && (
+            <div className="flex flex-col gap-2.5">
+              <span className="text-[11px] font-mono uppercase tracking-wider text-amber-400 font-bold">
+                Ready for Revision Now
+              </span>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {overdueItems.concat(dueTodayItems).map((prob) => (
+                  <div
+                    key={prob.problem_id}
+                    className="p-4 rounded-2xl border border-amber-500/20 bg-[#0E0E14] flex flex-col justify-between gap-3"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between gap-1.5 mb-1.5">
+                        <span
+                          className={`text-[10px] font-mono px-1.5 py-0.5 rounded font-bold uppercase ${
+                            prob.difficulty === 'Easy'
+                              ? 'text-emerald-400 bg-emerald-500/10'
+                              : prob.difficulty === 'Medium'
+                              ? 'text-amber-400 bg-amber-500/10'
+                              : 'text-rose-400 bg-rose-500/10'
+                          }`}
+                        >
+                          {prob.difficulty}
+                        </span>
+                        <span className="text-[10px] font-mono text-amber-400 font-medium">
+                          Due: {prob.next_revision_due}
+                        </span>
+                      </div>
+                      <h4 className="text-sm font-display font-bold text-white truncate">
+                        {prob.title}
+                      </h4>
+                      <span className="text-[11px] font-mono text-muted">
+                        {prob.primary_topic} · Stage #{prob.repetition_count || 1}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2 pt-2 border-t border-white/5">
+                      {onViewStats && (
+                        <button
+                          onClick={() => onViewStats(prob.problem_id)}
+                          className="px-2.5 py-1.5 rounded-xl text-xs font-mono bg-white/5 hover:bg-white/10 text-white flex items-center gap-1 cursor-pointer transition-colors"
+                        >
+                          <BarChart3 className="w-3 h-3 text-accent" />
+                          <span>Stats</span>
+                        </button>
+                      )}
+                      <button
+                        onClick={() =>
+                          onSelectProblemForPractice({
+                            id: prob.problem_id,
+                            title: prob.title,
+                            canonical_url: prob.canonical_url,
+                            difficulty: prob.difficulty,
+                            primary_topic: prob.primary_topic,
+                            platform: prob.platform,
+                            estimated_solve_time: 20,
+                          })
+                        }
+                        className="flex-1 py-1.5 rounded-xl text-xs font-mono font-medium bg-amber-400 text-[#08080C] hover:bg-amber-300 flex items-center justify-center gap-1.5 cursor-pointer"
+                      >
+                        <Play className="w-3 h-3 fill-current" />
+                        <span>Revise Now (+25 XP)</span>
+                      </button>
+                    </div>
                   </div>
-                  <h4 className="text-sm font-display font-bold text-white truncate">
-                    {prob.title}
-                  </h4>
-                  <span className="text-[11px] font-mono text-muted">
-                    {prob.primary_topic}
-                  </span>
-                </div>
-
-                <button
-                  onClick={() =>
-                    onSelectProblemForPractice({
-                      id: prob.problem_id,
-                      title: prob.title,
-                      canonical_url: prob.canonical_url,
-                      difficulty: prob.difficulty,
-                      primary_topic: prob.primary_topic,
-                      platform: prob.platform,
-                      estimated_solve_time: 20,
-                    })
-                  }
-                  className="w-full py-1.5 rounded-xl text-xs font-mono font-medium bg-amber-400 text-[#08080C] hover:bg-amber-300 flex items-center justify-center gap-1.5 cursor-pointer"
-                >
-                  <Play className="w-3 h-3 fill-current" />
-                  <span>Revise Now (+25 XP)</span>
-                </button>
+                ))}
               </div>
-            ))}
-          </div>
+            </div>
+          )}
+
+          {/* Upcoming Scheduled Items */}
+          {upcomingItems.length > 0 && (
+            <div className="flex flex-col gap-2.5 pt-2 border-t border-white/5">
+              <span className="text-[11px] font-mono uppercase tracking-wider text-emerald-400 font-bold">
+                Upcoming Scheduled Revisions
+              </span>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {upcomingItems.map((prob) => {
+                  const countdown = getRevisionCountdown(prob.next_revision_due)
+                  return (
+                    <div
+                      key={prob.problem_id}
+                      className="p-4 rounded-2xl border border-white/5 bg-[#0E0E14] hover:border-emerald-500/30 transition-colors flex flex-col justify-between gap-3"
+                    >
+                      <div>
+                        <div className="flex items-center justify-between gap-1.5 mb-1.5">
+                          <span
+                            className={`text-[10px] font-mono px-1.5 py-0.5 rounded font-bold uppercase ${
+                              prob.difficulty === 'Easy'
+                                ? 'text-emerald-400 bg-emerald-500/10'
+                                : prob.difficulty === 'Medium'
+                                ? 'text-amber-400 bg-amber-500/10'
+                                : 'text-rose-400 bg-rose-500/10'
+                            }`}
+                          >
+                            {prob.difficulty}
+                          </span>
+                          <span className="text-[10px] font-mono text-emerald-400">
+                            {countdown?.text}
+                          </span>
+                        </div>
+                        <h4 className="text-sm font-display font-bold text-white truncate">
+                          {prob.title}
+                        </h4>
+                        <div className="flex items-center gap-1.5 text-[11px] font-mono text-muted mt-0.5">
+                          <span>{prob.primary_topic}</span>
+                          <span>·</span>
+                          <span className="text-white/80">Scheduled: {prob.next_revision_due}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 pt-2 border-t border-white/5">
+                        {onViewStats && (
+                          <button
+                            onClick={() => onViewStats(prob.problem_id)}
+                            className="px-2.5 py-1.5 rounded-xl text-xs font-mono bg-white/5 hover:bg-white/10 text-white flex items-center gap-1 cursor-pointer transition-colors"
+                          >
+                            <BarChart3 className="w-3 h-3 text-accent" />
+                            <span>Stats</span>
+                          </button>
+                        )}
+                        <button
+                          onClick={() =>
+                            onSelectProblemForPractice({
+                              id: prob.problem_id,
+                              title: prob.title,
+                              canonical_url: prob.canonical_url,
+                              difficulty: prob.difficulty,
+                              primary_topic: prob.primary_topic,
+                              platform: prob.platform,
+                              estimated_solve_time: 20,
+                            })
+                          }
+                          className="flex-1 py-1.5 rounded-xl text-xs font-mono font-medium bg-white/5 hover:bg-white/10 text-white flex items-center justify-center gap-1.5 cursor-pointer border border-hairline"
+                        >
+                          <Play className="w-3 h-3 fill-current" />
+                          <span>Early Practice</span>
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
