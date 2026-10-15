@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence } from 'motion/react'
-import { Routes, Route, useLocation } from 'react-router-dom'
+import { Routes, Route, useLocation, Navigate } from 'react-router-dom'
 import { gsap } from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import Lenis from 'lenis'
@@ -12,7 +12,7 @@ import AdminLogin from './pages/AdminLogin'
 import Navbar from './layouts/Navbar'
 import Loader from './components/Loader'
 import Footer from './components/Footer'
-import { AdminProvider } from './context/AdminContext'
+import { AdminProvider, useAdmin } from './context/AdminContext'
 import AdminToolbar from './components/admin/AdminToolbar'
 import ProjectModal from './components/admin/ProjectModal'
 import AboutModal from './components/admin/AboutModal'
@@ -20,6 +20,24 @@ import EventAdminModal from './components/admin/EventAdminModal'
 import GoalModal from './components/admin/GoalModal'
 
 gsap.registerPlugin(ScrollTrigger)
+
+function ProtectedRoute({ children }) {
+  const { isAdmin, isCheckingSession } = useAdmin()
+
+  if (isCheckingSession) {
+    return (
+      <div className="min-h-screen w-full flex items-center justify-center" style={{ background: '#08080C' }}>
+        <div className="w-6 h-6 rounded-full border-2 border-accent border-t-transparent animate-spin" />
+      </div>
+    )
+  }
+
+  if (!isAdmin) {
+    return <Navigate to="/admin/login" replace />
+  }
+
+  return children
+}
 
 function AppContent() {
   const [loaderDone, setLoaderDone] = useState(false)
@@ -68,10 +86,38 @@ function AppContent() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/projects" element={<AllProjects />} />
-            <Route path="/calendar" element={<SecondBrain defaultMode="calendar" />} />
-            <Route path="/second-brain" element={<SecondBrain defaultMode="calendar" />} />
-            <Route path="/calendar/dsa" element={<SecondBrain defaultMode="dsa" />} />
-            <Route path="/second-brain/dsa" element={<SecondBrain defaultMode="dsa" />} />
+            <Route
+              path="/calendar"
+              element={
+                <ProtectedRoute>
+                  <SecondBrain defaultMode="calendar" />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/second-brain"
+              element={
+                <ProtectedRoute>
+                  <SecondBrain defaultMode="calendar" />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/calendar/dsa"
+              element={
+                <ProtectedRoute>
+                  <SecondBrain defaultMode="dsa" />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/second-brain/dsa"
+              element={
+                <ProtectedRoute>
+                  <SecondBrain defaultMode="dsa" />
+                </ProtectedRoute>
+              }
+            />
             <Route path="/admin/login" element={<AdminLogin />} />
           </Routes>
           {!isAdminLogin && <Footer />}

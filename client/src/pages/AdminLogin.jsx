@@ -16,7 +16,7 @@ export default function AdminLogin() {
 
   useEffect(() => {
     if (isAdmin) {
-      navigate('/', { replace: true })
+      navigate('/second-brain', { replace: true })
     } else if (usernameRef.current) {
       usernameRef.current.focus()
     }
@@ -34,7 +34,7 @@ export default function AdminLogin() {
 
     try {
       await login(username.trim(), password)
-      navigate('/', { replace: true })
+      navigate('/second-brain', { replace: true })
     } catch (err) {
       setError(err.message || 'Authentication failed. Please verify credentials.')
     } finally {

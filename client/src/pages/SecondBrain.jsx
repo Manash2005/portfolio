@@ -82,13 +82,16 @@ export default function SecondBrain({ defaultMode = 'calendar' }) {
     }
   }, [apiUrl, selectedCategory, selectedStatus, searchQuery, isAdmin, authFetch, events.length])
 
-  // Fetch stats, goals, and projects
+  // Fetch stats and projects
   const fetchMetadata = useCallback(async () => {
     try {
-      const [statsRes, goalsRes, projRes] = await Promise.allSettled([
+      const projEndpoint = isAdmin
+        ? `${apiUrl}/api/v1/admin/projects`
+        : `${apiUrl}/api/v1/second-brain/projects`
+
+      const [statsRes, projRes] = await Promise.allSettled([
         fetch(`${apiUrl}/api/v1/second-brain/statistics`, { signal: AbortSignal.timeout(8000) }),
-        fetch(`${apiUrl}/api/v1/second-brain/goals`, { signal: AbortSignal.timeout(8000) }),
-        fetch(`${apiUrl}/api/v1/second-brain/projects`, { signal: AbortSignal.timeout(8000) }),
+        isAdmin ? authFetch(projEndpoint) : fetch(projEndpoint, { signal: AbortSignal.timeout(8000) }),
       ])
 
       if (statsRes.status === 'fulfilled' && statsRes.value.ok) {
@@ -96,19 +99,15 @@ export default function SecondBrain({ defaultMode = 'calendar' }) {
         if (statsJson.success) setStats(statsJson.stats)
       }
 
-      if (goalsRes.status === 'fulfilled' && goalsRes.value.ok) {
-        const goalsJson = await goalsRes.value.json()
-        if (goalsJson.success) setGoals(goalsJson.goals)
-      }
-
       if (projRes.status === 'fulfilled' && projRes.value.ok) {
         const projJson = await projRes.value.json()
-        if (projJson.success) setProjects(projJson.projects)
+        const projList = projJson.data || projJson.projects
+        if (projJson.success && Array.isArray(projList)) setProjects(projList)
       }
     } catch (err) {
       console.warn('Metadata fetch error:', err)
     }
-  }, [apiUrl])
+  }, [apiUrl, isAdmin, authFetch])
 
   // Initial load
   useEffect(() => {
@@ -370,8 +369,8 @@ export default function SecondBrain({ defaultMode = 'calendar' }) {
               )}
             </AnimatePresence>
 
-            {/* Strategic Goals & Connected Projects Section */}
-            <GoalsAndProjectsPanel goals={goals} projects={projects} />
+            {/* Connected Portfolio Projects Section */}
+            <GoalsAndProjectsPanel projects={projects} />
           </div>
         )}
       </div>

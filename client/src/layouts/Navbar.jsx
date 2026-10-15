@@ -136,36 +136,6 @@ export default function Navbar() {
               )
             })}
 
-            {/* Second Brain Link */}
-            <Link
-              to="/calendar"
-              className="relative px-3 py-1.5 rounded-full text-xs font-mono transition-colors flex items-center gap-1.5"
-              style={{
-                color: location.pathname === '/calendar' ? '#08080C' : 'var(--color-muted)',
-                fontFamily: 'var(--font-mono)',
-                letterSpacing: '0.06em',
-              }}
-            >
-              {location.pathname === '/calendar' && (
-                <motion.span
-                  layoutId="nav-pill"
-                  className="absolute inset-0 rounded-full"
-                  style={{ background: 'var(--color-accent)' }}
-                  transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-                />
-              )}
-              <span className="relative z-10 flex items-center gap-1.5">
-                <span
-                  className="w-1.5 h-1.5 rounded-full"
-                  style={{
-                    backgroundColor: location.pathname === '/calendar' ? '#08080C' : '#B8FF3C',
-                    boxShadow: location.pathname === '/calendar' ? 'none' : '0 0 6px #B8FF3C',
-                  }}
-                />
-                Second Brain
-              </span>
-            </Link>
-
             <span style={{ width: 1, height: 16, background: 'var(--color-hairline)', margin: '0 4px' }} aria-hidden />
 
             {/* Resume CTA */}

@@ -30,6 +30,7 @@ import MistakeJournalView from './MistakeJournalView'
 import GamificationView from './GamificationView'
 import DsaVisualCharts from './DsaVisualCharts'
 import ProblemStatsModal from './ProblemStatsModal'
+import DailyXpQuests from './DailyXpQuests'
 import { useAdmin } from '../../context/AdminContext'
 import { API_BASE_URL } from '../../utils/apiConfig'
 
@@ -52,9 +53,13 @@ function getRevisionCountdown(dueString) {
 
 function formatRelativeTime(dateString) {
   if (!dateString) return ''
-  const date = new Date(dateString)
+  const parsed = dateString.includes('T')
+    ? (dateString.endsWith('Z') || dateString.includes('+') ? dateString : `${dateString}Z`)
+    : `${dateString.replace(' ', 'T')}Z`
+  const date = new Date(parsed)
   const now = new Date()
-  const diffSec = Math.floor((now - date) / 1000)
+  const diffSec = Math.floor((now.getTime() - date.getTime()) / 1000)
+  if (isNaN(diffSec) || diffSec < 0) return 'Just now'
   if (diffSec < 60) return 'Just now'
   if (diffSec < 3600) return `${Math.floor(diffSec / 60)}m ago`
   if (diffSec < 86400) return `${Math.floor(diffSec / 3600)}h ago`
@@ -317,63 +322,7 @@ export default function DsaWorkspace({ onSwitchToCalendar }) {
     setActiveTab('topics')
   }
 
-  // Recommended Topics for Today
-  const recommendedTopics = useMemo(() => {
-    const list = []
 
-    // 1. Check overdue spaced revisions
-    if (revisionQueue?.overdue && revisionQueue.overdue.length > 0) {
-      const topicCounts = {}
-      revisionQueue.overdue.forEach((item) => {
-        topicCounts[item.primary_topic] = (topicCounts[item.primary_topic] || 0) + 1
-      })
-      const topDueTopic = Object.keys(topicCounts).sort((a, b) => topicCounts[b] - topicCounts[a])[0]
-      if (topDueTopic) {
-        list.push({
-          topic: topDueTopic,
-          badge: 'Memory Decay Alert',
-          badgeColor: 'text-amber-400 bg-amber-500/10 border-amber-500/30',
-          reason: `${topicCounts[topDueTopic]} spaced revision${topicCounts[topDueTopic] > 1 ? 's' : ''} overdue`,
-          priority: '#1 High Priority',
-          xpBonus: '+35 XP',
-        })
-      }
-    }
-
-    // 2. Check weak topics
-    if (weakTopics && weakTopics.length > 0) {
-      const topWeak = weakTopics[0]
-      if (topWeak && !list.some((r) => r.topic === topWeak.topic)) {
-        list.push({
-          topic: topWeak.topic,
-          badge: 'Mastery Booster',
-          badgeColor: 'text-rose-400 bg-rose-500/10 border-rose-500/30',
-          reason: `Current mastery at ${topWeak.masteryScore}% (${topWeak.solved}/${topWeak.total} solved)`,
-          priority: '#2 Focus Area',
-          xpBonus: '+40 XP',
-        })
-      }
-    }
-
-    // 3. Fallback / Core topics if fewer than 3
-    const corePriorityTopics = ['Dynamic Programming', 'Binary Search', 'Trees', 'Graph Traversal', 'Two Pointers', 'Arrays']
-    for (const core of corePriorityTopics) {
-      if (list.length >= 3) break
-      if (!list.some((r) => r.topic === core)) {
-        const topicMeta = topics.find((t) => t.topic === core)
-        list.push({
-          topic: core,
-          badge: 'High Frequency Interview',
-          badgeColor: 'text-accent bg-accent/10 border-accent/30',
-          reason: topicMeta ? `${topicMeta.solved} of ${topicMeta.total} solved · Essential for FAANG rounds` : 'Core interview foundation',
-          priority: `#${list.length + 1} Recommended`,
-          xpBonus: '+30 XP',
-        })
-      }
-    }
-
-    return list.slice(0, 3)
-  }, [revisionQueue, weakTopics, topics])
 
   const profile = overview?.profile || {}
   const stats = overview?.stats || {}
@@ -461,74 +410,11 @@ export default function DsaWorkspace({ onSwitchToCalendar }) {
             transition={{ duration: 0.15 }}
             className="flex flex-col gap-6"
           >
-            {/* Recommended Topics for Today */}
-            <div className="p-6 rounded-3xl border border-hairline bg-[#0E0E14] text-left flex flex-col gap-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div className="flex items-center gap-2.5">
-                  <span className="p-2 rounded-xl bg-accent/15 text-accent">
-                    <Sparkles className="w-5 h-5" />
-                  </span>
-                  <div>
-                    <h3 className="text-base font-display font-bold text-white">
-                      Recommended Topics for Today
-                    </h3>
-                    <p className="text-xs font-mono text-muted">
-                      Adaptive algorithm targets prioritized by memory decay and interview weight.
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => handleSelectTopic(null)}
-                  className="text-xs font-mono text-accent hover:underline flex items-center gap-1 self-start sm:self-auto cursor-pointer"
-                >
-                  <span>Explore All Topics</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </button>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5 mt-1">
-                {recommendedTopics.map((rec) => (
-                  <div
-                    key={rec.topic}
-                    onClick={() => handleSelectTopic(rec.topic)}
-                    className="p-4 rounded-2xl border border-hairline bg-[#12121A] hover:border-accent/50 hover:bg-[#161622] transition-all flex flex-col justify-between gap-3 cursor-pointer group shadow-md"
-                  >
-                    <div>
-                      <div className="flex items-center justify-between gap-2 mb-2">
-                        <span className={`text-[10px] font-mono px-2 py-0.5 rounded border font-semibold ${rec.badgeColor}`}>
-                          {rec.badge}
-                        </span>
-                        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-accent/20 text-accent font-bold">
-                          {rec.xpBonus}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-mono text-muted font-bold">{rec.priority}</span>
-                      </div>
-                      <h4 className="text-base font-display font-bold text-white group-hover:text-accent transition-colors mt-0.5">
-                        {rec.topic}
-                      </h4>
-                      <p className="text-xs font-mono text-muted mt-1 leading-relaxed">
-                        {rec.reason}
-                      </p>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleSelectTopic(rec.topic)
-                      }}
-                      className="w-full py-2 rounded-xl text-xs font-mono font-medium bg-white/5 group-hover:bg-accent group-hover:text-[#08080C] text-white flex items-center justify-center gap-1.5 transition-all cursor-pointer"
-                    >
-                      <span>Practice Topic</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
+            {/* Daily XP Missions & Dynamic Quests */}
+            <DailyXpQuests
+              recentAttempts={overview?.recentAttempts || []}
+              onSelectTopic={handleSelectTopic}
+            />
 
             {/* Visual Analytics & Interactive Charts */}
             <DsaVisualCharts

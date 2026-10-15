@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
+import { Link } from 'react-router-dom'
 import { useAdmin } from '../../context/AdminContext'
 
 export default function AdminToolbar() {
@@ -93,6 +94,13 @@ export default function AdminToolbar() {
 
             {/* Quick Actions */}
             <div className="flex items-center gap-1.5 border-l border-r border-white/10 px-2">
+              <Link
+                to="/second-brain"
+                className="px-2 py-1 rounded hover:bg-white/10 transition-colors text-[#B8FF3C] flex items-center gap-1"
+                title="Go to Second Brain & DSA practice arena"
+              >
+                <span>Brain ↗</span>
+              </Link>
               <button
                 onClick={openCreateProject}
                 className="px-2 py-1 rounded hover:bg-white/10 transition-colors text-white cursor-pointer"
@@ -106,13 +114,6 @@ export default function AdminToolbar() {
                 title="Create calendar event or activity note"
               >
                 + Event
-              </button>
-              <button
-                onClick={openCreateGoal}
-                className="px-2 py-1 rounded hover:bg-white/10 transition-colors text-white cursor-pointer"
-                title="Create active strategic goal"
-              >
-                + Goal
               </button>
               <button
                 onClick={openEditAbout}

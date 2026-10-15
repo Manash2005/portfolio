@@ -8,6 +8,7 @@ const TOKEN_KEY = 'portfolio_admin_token'
 export function AdminProvider({ children }) {
   const [isAdmin, setIsAdmin] = useState(false)
   const [adminUser, setAdminUser] = useState(null)
+  const [isCheckingSession, setIsCheckingSession] = useState(true)
   const [adminToken, setAdminToken] = useState(() => {
     return typeof window !== 'undefined' ? localStorage.getItem(TOKEN_KEY) : null
   })
@@ -49,6 +50,7 @@ export function AdminProvider({ children }) {
 
   // Check existing session on mount or when token changes
   const checkSession = useCallback(async () => {
+    setIsCheckingSession(true)
     try {
       const res = await authFetch('/api/v1/admin/auth/session')
       if (res.ok) {
@@ -56,6 +58,7 @@ export function AdminProvider({ children }) {
         if (json.authenticated) {
           setIsAdmin(true)
           setAdminUser(json.user)
+          setIsCheckingSession(false)
           return true
         }
       }
@@ -66,6 +69,7 @@ export function AdminProvider({ children }) {
     // If session check failed and we had a token, it might be expired
     setIsAdmin(false)
     setAdminUser(null)
+    setIsCheckingSession(false)
     return false
   }, [authFetch])
 
@@ -145,6 +149,7 @@ export function AdminProvider({ children }) {
         isAdmin,
         adminUser,
         adminToken,
+        isCheckingSession,
         isEditMode,
         contentVersion,
         authFetch,

@@ -96,17 +96,18 @@ export function recordAttempt({
     }
 
     // 2. Insert attempt
+    const attemptCreatedAt = new Date().toISOString()
     db.prepare(`
       INSERT INTO dsa_attempts (
         id, problem_id, attempt_number, started_at, ended_at, duration_seconds,
         result, is_independent, hints_used, solution_viewed, language,
         confidence_rating, difficulty_experienced, notes, source, xp_awarded,
-        calendar_event_id
+        calendar_event_id, created_at
       ) VALUES (
         ?, ?, ?, ?, ?, ?,
         ?, ?, ?, ?, ?,
         ?, ?, ?, ?, ?,
-        ?
+        ?, ?
       )
     `).run(
       attemptId,
@@ -125,7 +126,8 @@ export function recordAttempt({
       notes,
       source,
       xp,
-      calendarEventId
+      calendarEventId,
+      attemptCreatedAt
     )
 
     // 3. Log mistakes if provided

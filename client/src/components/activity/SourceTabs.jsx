@@ -160,16 +160,8 @@ export default function SourceTabs({
               style={{ color: 'var(--color-muted)' }}
             >
               <span>
-                Verified activities & sessions from my SQLite database
+                Verified technical sessions & structured practice logs
               </span>
-              <span>·</span>
-              <Link
-                to="/calendar"
-                className="hover:underline transition-colors font-medium flex items-center gap-1"
-                style={{ color: 'var(--color-accent)' }}
-              >
-                Open Second Brain ↗
-              </Link>
             </motion.div>
           )}
 
