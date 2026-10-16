@@ -1,5 +1,5 @@
 import { db } from '../db/database.js'
-import { persistRevisionToMongo } from '../db/mongoPersistence.js'
+import { persistRevisionToMongo, persistEventToMongo } from '../db/mongoPersistence.js'
 
 /**
  * Update or initialize spaced repetition schedule for a problem
@@ -69,12 +69,85 @@ export function updateRevisionSchedule(problemId, { isSolved, isIndependent, con
     persistRevisionToMongo(updatedRow).catch(() => {})
   }
 
+  // Automatically schedule revision into site calendar
+  try {
+    syncRevisionToCalendar(problemId, nextDueDateStr, intervalDays)
+  } catch (err) {
+    console.warn('Calendar sync error in updateRevisionSchedule:', err)
+  }
+
   return {
     problem_id: problemId,
     next_revision_due: nextDueDateStr,
     interval_days: intervalDays,
     repetition_count: repetitionCount,
   }
+}
+
+/**
+ * Schedule a single spaced repetition problem into the site events calendar
+ */
+export function syncRevisionToCalendar(problemId, nextDueDateStr, intervalDays) {
+  try {
+    const problem = db.prepare('SELECT id, title, difficulty, primary_topic, platform, canonical_url FROM dsa_problems WHERE id = ?').get(problemId)
+    if (!problem || !nextDueDateStr) return null
+
+    const eventId = `rev_${problemId}`
+    const startAt = `${nextDueDateStr}T09:00:00`
+    const endAt = `${nextDueDateStr}T10:00:00`
+    const title = `DSA Revision: ${problem.title}`
+    const description = `Scheduled spaced repetition review for ${problem.title} (${problem.difficulty} • ${problem.primary_topic}). Reinforce memory retention.`
+    const color = problem.difficulty === 'Easy' ? '#B8FF3C' : problem.difficulty === 'Medium' ? '#FFD13B' : '#FF4D4D'
+    const tagsJson = JSON.stringify(['DSA', 'Revision', problem.difficulty, problem.primary_topic])
+
+    db.prepare(`
+      INSERT INTO events (
+        id, title, description, category, start_at, end_at, all_day, timezone,
+        status, visibility, show_on_portfolio_heatmap, color, tags, priority, external_url
+      ) VALUES (
+        ?, ?, ?, 'Competitive Programming', ?, ?, 1, 'Asia/Kolkata',
+        'Planned', 'Private', 1, ?, ?, 'high', ?
+      )
+      ON CONFLICT(id) DO UPDATE SET
+        title = excluded.title,
+        description = excluded.description,
+        start_at = excluded.start_at,
+        end_at = excluded.end_at,
+        color = excluded.color,
+        tags = excluded.tags,
+        external_url = excluded.external_url,
+        status = 'Planned',
+        updated_at = datetime('now')
+    `).run(eventId, title, description, startAt, endAt, color, tagsJson, problem.canonical_url)
+
+    const updatedEvent = db.prepare('SELECT * FROM events WHERE id = ?').get(eventId)
+    if (updatedEvent) {
+      persistEventToMongo(updatedEvent).catch(() => {})
+    }
+
+    return updatedEvent
+  } catch (err) {
+    console.warn(`Failed to sync revision event for problem ${problemId}:`, err)
+    return null
+  }
+}
+
+/**
+ * Bulk sync all active spaced repetition items into site calendar events
+ */
+export function syncAllRevisionsToCalendar() {
+  const revisions = db.prepare(`
+    SELECT r.problem_id, r.next_revision_due, r.interval_days
+    FROM dsa_revision_schedule r
+    WHERE r.next_revision_due IS NOT NULL AND r.next_revision_due != ''
+  `).all()
+
+  let count = 0
+  for (const rev of revisions) {
+    const res = syncRevisionToCalendar(rev.problem_id, rev.next_revision_due, rev.interval_days)
+    if (res) count++
+  }
+  return count
 }
 
 /**

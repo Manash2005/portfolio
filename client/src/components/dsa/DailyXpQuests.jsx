@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { Zap, CheckCircle2, Trophy, Flame, Target, ArrowRight } from 'lucide-react'
+import PenaltyRulesPopover from './PenaltyRulesPopover'
 
 /**
  * Deterministic pseudo-random generator seeded by date string (YYYY-MM-DD).
@@ -119,7 +120,7 @@ export default function DailyXpQuests({ recentAttempts = [], onSelectTopic }) {
   const earnedTodayXp = questStatus.filter((q) => q.completed).reduce((acc, q) => acc + q.xp, 0)
 
   return (
-    <div className="p-6 rounded-3xl border border-hairline bg-[#0E0E14] text-left flex flex-col gap-5 shadow-lg">
+    <div className="p-6 rounded-3xl border border-hairline bg-[#0E0E14] text-left flex flex-col justify-between gap-5 shadow-lg h-full">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-hairline pb-4">
         <div className="flex items-center gap-2.5">
@@ -129,11 +130,13 @@ export default function DailyXpQuests({ recentAttempts = [], onSelectTopic }) {
           <div>
             <div className="flex items-center gap-2">
               <h3 className="text-base font-display font-bold text-white">
-                Daily XP Missions & Challenges
+                Daily XP Missions
               </h3>
               <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-accent/20 text-accent font-bold uppercase tracking-wider">
                 Rotates Daily
               </span>
+              {/* Penalty and Scoring Rules Popover */}
+              <PenaltyRulesPopover />
             </div>
             <p className="text-xs font-mono text-muted">
               Complete today's algorithmic objectives to unlock tiered bonus XP points.
@@ -141,7 +144,7 @@ export default function DailyXpQuests({ recentAttempts = [], onSelectTopic }) {
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#12121A] border border-hairline text-xs font-mono">
             <Trophy className="w-3.5 h-3.5 text-accent" />
             <span className="text-muted">Earned:</span>
@@ -152,24 +155,24 @@ export default function DailyXpQuests({ recentAttempts = [], onSelectTopic }) {
         </div>
       </div>
 
-      {/* Quest Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+      {/* Quest Cards - Vertically arranged column list */}
+      <div className="flex flex-col gap-3 flex-1">
         {questStatus.map((quest) => {
           const percent = Math.round((quest.current / quest.target) * 100)
 
           return (
             <div
               key={quest.id}
-              className={`p-4 rounded-2xl border transition-all flex flex-col justify-between gap-3.5 ${
+              className={`p-3.5 rounded-2xl border transition-all flex flex-col justify-between gap-3 ${
                 quest.completed
                   ? 'border-accent/40 bg-[#121815] shadow-sm'
                   : 'border-white/5 bg-[#12121A] hover:border-white/15'
               }`}
             >
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-1.5">
                 <div className="flex items-center justify-between gap-2">
                   <span
-                    className={`text-[10px] font-mono px-2 py-0.5 rounded font-bold uppercase ${
+                    className={`text-[9px] font-mono px-2 py-0.5 rounded font-bold uppercase ${
                       quest.completed
                         ? 'bg-accent text-[#08080C]'
                         : 'bg-accent/15 text-accent border border-accent/30'
@@ -184,18 +187,18 @@ export default function DailyXpQuests({ recentAttempts = [], onSelectTopic }) {
                 </div>
 
                 <div>
-                  <h4 className="text-sm font-display font-bold text-white flex items-center gap-1.5">
+                  <h4 className="text-xs sm:text-sm font-display font-bold text-white flex items-center gap-1.5">
                     {quest.completed && <CheckCircle2 className="w-4 h-4 text-accent shrink-0" />}
                     <span>{quest.title}</span>
                   </h4>
-                  <p className="text-xs font-mono text-muted mt-1 leading-relaxed">
+                  <p className="text-xs font-mono text-muted mt-0.5 leading-relaxed">
                     {quest.desc}
                   </p>
                 </div>
               </div>
 
               {/* Progress Bar */}
-              <div className="flex flex-col gap-1.5 pt-1">
+              <div className="flex flex-col gap-1 pt-0.5">
                 <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-accent rounded-full transition-all duration-500"
@@ -214,6 +217,12 @@ export default function DailyXpQuests({ recentAttempts = [], onSelectTopic }) {
             </div>
           )
         })}
+      </div>
+
+      {/* Footer hint */}
+      <div className="pt-3 border-t border-hairline flex items-center justify-between text-xs font-mono text-muted">
+        <span>Resets automatically at midnight UTC</span>
+        <span className="text-accent font-bold">Active Today</span>
       </div>
     </div>
   )

@@ -14,6 +14,7 @@ import {
   syncLeetCode,
   importCatalog,
   updatePenalties,
+  syncRevisionsCalendarController,
 } from '../controllers/dsaController.js'
 import { requireAdmin, optionalAdmin } from '../middleware/authMiddleware.js'
 
@@ -38,5 +39,6 @@ router.post('/ai/analyze-weaknesses', requireAdmin, getAiWeaknessAnalysis)
 router.post('/sync/leetcode', requireAdmin, syncLeetCode)
 router.post('/catalog/import', requireAdmin, importCatalog)
 router.post('/penalties/toggle', requireAdmin, updatePenalties)
+router.post('/revision/sync-calendar', requireAdmin, syncRevisionsCalendarController)
 
 export default router

@@ -31,6 +31,7 @@ import GamificationView from './GamificationView'
 import DsaVisualCharts from './DsaVisualCharts'
 import ProblemStatsModal from './ProblemStatsModal'
 import DailyXpQuests from './DailyXpQuests'
+import RevisionScheduleCard from './RevisionScheduleCard'
 import { useAdmin } from '../../context/AdminContext'
 import { API_BASE_URL } from '../../utils/apiConfig'
 
@@ -331,9 +332,9 @@ export default function DsaWorkspace({ onSwitchToCalendar }) {
   return (
     <div className="w-full flex flex-col gap-8">
       {/* 1. Arena Top Navigation & HUD Bar */}
-      <div className="p-4 sm:p-5 rounded-3xl border border-hairline bg-[#0E0E14] flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
+      <div className="p-2.5 sm:p-3 rounded-2xl border border-hairline bg-[#0E0E14] flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 shadow-md">
         {/* Navigation Tabs */}
-        <div className="flex flex-wrap items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-1">
           {[
             { id: 'overview', label: 'Dashboard & Charts', icon: BarChart3 },
             { id: 'topics', label: 'Topics & Questions', icon: Target },
@@ -354,9 +355,9 @@ export default function DsaWorkspace({ onSwitchToCalendar }) {
                   }
                   setActiveTab(tab.id)
                 }}
-                className={`px-3.5 py-2 rounded-xl text-xs font-mono font-medium flex items-center gap-2 whitespace-nowrap transition-colors cursor-pointer ${
+                className={`px-3 py-1.5 rounded-xl text-xs font-mono font-medium flex items-center gap-1.5 whitespace-nowrap transition-colors cursor-pointer ${
                   isActive
-                    ? 'bg-accent text-[#08080C] font-bold shadow-lg shadow-accent/10'
+                    ? 'bg-accent text-[#08080C] font-bold shadow-md shadow-accent/10'
                     : 'text-muted hover:text-white hover:bg-white/[0.04]'
                 }`}
               >
@@ -367,23 +368,16 @@ export default function DsaWorkspace({ onSwitchToCalendar }) {
           })}
         </div>
 
-        {/* Quick Sync & Switcher */}
+        {/* Quick LeetCode Sync */}
         <div className="flex items-center gap-2 shrink-0 justify-end">
           <button
             onClick={handleSyncLeetCode}
             disabled={syncing}
             title="Sync recent solved submissions from LeetCode"
-            className="px-3 py-1.5 rounded-xl border border-hairline bg-white/[0.02] hover:bg-white/[0.06] text-xs font-mono text-muted hover:text-white flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+            className="px-3 py-1.5 rounded-xl border border-hairline bg-white/[0.02] hover:bg-white/[0.06] text-xs font-mono text-muted hover:text-white flex items-center gap-1.5 cursor-pointer disabled:opacity-50 transition-colors"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${syncing ? 'animate-spin text-accent' : ''}`} />
             <span>{syncing ? 'Syncing...' : 'Sync LeetCode'}</span>
-          </button>
-
-          <button
-            onClick={onSwitchToCalendar}
-            className="px-3.5 py-1.5 rounded-xl text-xs font-mono text-muted hover:text-white border border-hairline hover:bg-white/5 transition-colors cursor-pointer"
-          >
-            Switch to Calendar ↗
           </button>
         </div>
       </div>
@@ -410,13 +404,25 @@ export default function DsaWorkspace({ onSwitchToCalendar }) {
             transition={{ duration: 0.15 }}
             className="flex flex-col gap-6"
           >
-            {/* Daily XP Missions & Dynamic Quests */}
-            <DailyXpQuests
-              recentAttempts={overview?.recentAttempts || []}
-              onSelectTopic={handleSelectTopic}
-            />
+            {/* 2-Column Action Hub: Daily XP Missions & Spaced Repetition Revision Schedule */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
+              <DailyXpQuests
+                recentAttempts={overview?.recentAttempts || []}
+                onSelectTopic={handleSelectTopic}
+              />
+              <RevisionScheduleCard
+                revisionQueue={revisionQueue}
+                onLaunchPractice={handleLaunchPractice}
+                onViewStats={(id) => setSelectedStatsProblemId(id)}
+                onSwitchToCalendar={onSwitchToCalendar}
+                onRefresh={() => {
+                  fetchOverview()
+                  fetchTopicsAndRevision()
+                }}
+              />
+            </div>
 
-            {/* Visual Analytics & Interactive Charts */}
+            {/* Visual Analytics & Interactive Charts (includes 3-line Solve Times graph & KPIs) */}
             <DsaVisualCharts
               charts={overview?.charts}
               stats={stats}
@@ -687,189 +693,74 @@ export default function DsaWorkspace({ onSwitchToCalendar }) {
               )}
             </div>
 
-            {/* Quick Two-Column: Overdue Revisions & Weak Topics */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
-              {/* Due for Revision Card */}
-              <div className="p-6 rounded-3xl border border-hairline bg-[#0E0E14] flex flex-col justify-between gap-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <RotateCcw className="w-4 h-4 text-amber-400" />
-                    <h3 className="text-sm font-display font-bold text-white">
-                      Due for Revision
-                    </h3>
-                  </div>
-                  <span className="text-xs font-mono text-amber-400 font-medium">
-                    {(revisionQueue.overdue?.length || 0) + (revisionQueue.dueToday?.length || 0)} Due Now · {revisionQueue.upcoming?.length || 0} Scheduled
+            {/* Weak Topics & Strategic Focus */}
+            <div className="p-6 sm:p-7 rounded-3xl border border-hairline bg-[#0E0E14] flex flex-col gap-5 text-left shadow-lg">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-hairline pb-4">
+                <div className="flex items-center gap-2.5">
+                  <span className="p-2 rounded-xl bg-rose-500/10 text-rose-400">
+                    <Target className="w-5 h-5" />
                   </span>
-                </div>
-
-                {(revisionQueue.overdue && revisionQueue.overdue.length > 0) || (revisionQueue.dueToday && revisionQueue.dueToday.length > 0) ? (
-                  <div className="flex flex-col gap-2">
-                    {revisionQueue.overdue?.slice(0, 3).map((item) => (
-                      <div
-                        key={item.problem_id}
-                        className="p-3 rounded-xl bg-rose-500/[0.04] border border-rose-500/20 flex items-center justify-between"
-                      >
-                        <div>
-                          <span className="text-xs font-mono font-medium text-white block truncate max-w-[190px]">
-                            {item.title}
-                          </span>
-                          <span className="text-[10px] font-mono text-rose-300">
-                            {item.primary_topic} · Overdue: {item.next_revision_due}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <button
-                            onClick={() => setSelectedStatsProblemId(item.problem_id)}
-                            className="px-2 py-1 rounded-lg text-[10px] font-mono bg-white/5 text-muted hover:text-white cursor-pointer"
-                          >
-                            Stats
-                          </button>
-                          <button
-                            onClick={() => handleLaunchPractice(item)}
-                            className="px-3 py-1 rounded-lg text-xs font-mono bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 cursor-pointer"
-                          >
-                            Revise
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                    {revisionQueue.dueToday?.slice(0, 2).map((item) => (
-                      <div
-                        key={item.problem_id}
-                        className="p-3 rounded-xl bg-amber-500/[0.04] border border-amber-500/20 flex items-center justify-between"
-                      >
-                        <div>
-                          <span className="text-xs font-mono font-medium text-white block truncate max-w-[190px]">
-                            {item.title}
-                          </span>
-                          <span className="text-[10px] font-mono text-amber-300">
-                            {item.primary_topic} · Due Today
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <button
-                            onClick={() => setSelectedStatsProblemId(item.problem_id)}
-                            className="px-2 py-1 rounded-lg text-[10px] font-mono bg-white/5 text-muted hover:text-white cursor-pointer"
-                          >
-                            Stats
-                          </button>
-                          <button
-                            onClick={() => handleLaunchPractice(item)}
-                            className="px-3 py-1 rounded-lg text-xs font-mono bg-amber-400/20 text-amber-300 hover:bg-amber-400/30 cursor-pointer"
-                          >
-                            Revise
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : revisionQueue.upcoming && revisionQueue.upcoming.length > 0 ? (
-                  <div className="flex flex-col gap-2">
-                    <div className="flex items-center justify-between text-[11px] font-mono text-muted mb-0.5">
-                      <span>Upcoming Scheduled Revisions</span>
-                      <span className="text-emerald-400">On Track</span>
-                    </div>
-                    {revisionQueue.upcoming.slice(0, 3).map((item) => {
-                      const countdown = getRevisionCountdown(item.next_revision_due)
-                      return (
-                        <div
-                          key={item.problem_id}
-                          className="p-3 rounded-xl bg-white/[0.02] border border-white/5 flex items-center justify-between"
-                        >
-                          <div>
-                            <span className="text-xs font-mono font-medium text-white block truncate max-w-[190px]">
-                              {item.title}
-                            </span>
-                            <span className="text-[10px] font-mono text-emerald-400">
-                              Scheduled: {item.next_revision_due} ({countdown?.text})
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            <button
-                              onClick={() => setSelectedStatsProblemId(item.problem_id)}
-                              className="px-2 py-1 rounded-lg text-[10px] font-mono bg-white/5 text-muted hover:text-white cursor-pointer"
-                            >
-                              Stats
-                            </button>
-                            <button
-                              onClick={() => handleLaunchPractice(item)}
-                              className="px-2.5 py-1 rounded-lg text-[10px] font-mono bg-white/5 text-muted hover:text-white hover:bg-white/10 cursor-pointer"
-                            >
-                              Practice
-                            </button>
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                ) : (
-                  <p className="text-xs font-mono text-muted py-4">
-                    No revisions scheduled yet. Solved problems will automatically be scheduled here according to spaced repetition intervals.
-                  </p>
-                )}
-
-                <button
-                  onClick={() => setActiveTab('topics')}
-                  className="text-xs font-mono text-accent hover:underline flex items-center gap-1 cursor-pointer"
-                >
-                  <span>View Full Revision Schedule</span>
-                  <ArrowRight className="w-3 h-3" />
-                </button>
-              </div>
-
-              {/* Weak Topics Card */}
-              <div className="p-6 rounded-3xl border border-hairline bg-[#0E0E14] flex flex-col justify-between gap-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Target className="w-4 h-4 text-rose-400" />
-                    <h3 className="text-sm font-display font-bold text-white">
-                      Topics Requiring Attention
+                  <div>
+                    <h3 className="text-base font-display font-bold text-white flex items-center gap-2">
+                      <span>Topics Requiring Attention</span>
+                      <span className="text-xs font-mono text-rose-400 font-semibold px-2 py-0.5 rounded-full bg-rose-500/10 border border-rose-500/20">
+                        {weakTopics.length} Flagged
+                      </span>
                     </h3>
+                    <p className="text-xs font-mono text-muted">
+                      Targeted recommendations based on error rates and practice recency.
+                    </p>
                   </div>
-                  <span className="text-xs font-mono text-muted">
-                    {weakTopics.length} flagged
-                  </span>
                 </div>
-
-                {weakTopics.length > 0 ? (
-                  <div className="flex flex-col gap-2">
-                    {weakTopics.slice(0, 3).map((wt) => (
-                      <div
-                        key={wt.topic}
-                        className="p-3 rounded-xl bg-white/[0.02] border border-white/5 flex items-center justify-between"
-                      >
-                        <div>
-                          <span className="text-xs font-mono font-medium text-white block">
-                            {wt.topic}
-                          </span>
-                          <span className="text-[10px] font-mono text-muted">
-                            Mastery: {wt.masteryScore}% · Solved: {wt.solved}/{wt.total}
-                          </span>
-                        </div>
-                        <button
-                          onClick={() => handleSelectTopic(wt.topic)}
-                          className="px-3 py-1 rounded-lg text-xs font-mono bg-white/5 text-white hover:bg-white/10 cursor-pointer"
-                        >
-                          Explore
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-xs font-mono text-muted py-4">
-                    Mastery scores look strong across all attempted topics.
-                  </p>
-                )}
 
                 <button
                   onClick={() => handleSelectTopic(null)}
                   className="text-xs font-mono text-accent hover:underline flex items-center gap-1 cursor-pointer"
                 >
-                  <span>Explore Topic Mastery</span>
-                  <ArrowRight className="w-3 h-3" />
+                  <span>Explore All Topics</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
                 </button>
               </div>
+
+              {weakTopics.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+                  {weakTopics.slice(0, 3).map((wt) => (
+                    <div
+                      key={wt.topic}
+                      className="p-4 rounded-2xl bg-white/[0.02] border border-white/5 flex flex-col justify-between gap-3 hover:border-accent/30 transition-colors"
+                    >
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs font-mono font-bold text-white">
+                            {wt.topic}
+                          </span>
+                          <span className="text-[10px] font-mono text-rose-400 font-bold">
+                            {wt.masteryScore}% Mastery
+                          </span>
+                        </div>
+                        <span className="text-[11px] font-mono text-muted block">
+                          Solved: {wt.solved}/{wt.total} problems
+                        </span>
+                      </div>
+
+                      <button
+                        onClick={() => handleSelectTopic(wt.topic)}
+                        className="w-full py-1.5 rounded-xl text-xs font-mono font-medium bg-white/5 hover:bg-white/10 text-white border border-hairline flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+                      >
+                        <span>Focus Practice</span>
+                        <ArrowRight className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-6 rounded-2xl border border-hairline bg-[#12121A] text-center flex flex-col items-center justify-center gap-2">
+                  <CheckCircle2 className="w-6 h-6 text-emerald-400" />
+                  <p className="text-xs font-mono text-muted">
+                    Mastery scores look strong across all attempted topics. Keep practicing consistently to maintain high accuracy!
+                  </p>
+                </div>
+              )}
             </div>
           </motion.div>
         )}

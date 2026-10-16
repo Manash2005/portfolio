@@ -9,7 +9,6 @@ const TABS = [
   { key: 'github',   label: 'GitHub',   Icon: FaGithub },
   { key: 'leetcode', label: 'LeetCode', Icon: SiLeetcode },
   { key: 'gfg',      label: 'GFG',      Icon: SiGeeksforgeeks },
-  { key: 'calendar', label: 'Second Brain', Icon: Calendar },
 ]
 
 export default function SourceTabs({

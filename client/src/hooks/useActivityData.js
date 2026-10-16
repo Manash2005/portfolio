@@ -76,13 +76,18 @@ function getInitialCache() {
 
 export function useActivityData() {
   const [initial] = useState(getInitialCache)
+  const initialRef = useRef(initial)
   const [days, setDays] = useState(initial.days)
+  const daysRef = useRef(days)
+  daysRef.current = days
   const [status, setStatus] = useState(initial.status)
   const [isSlow, setIsSlow] = useState(false)
   const [isCached, setIsCached] = useState(initial.isCached)
   const [updatedAt, setUpdatedAt] = useState(initial.updatedAt)
   const [errorMessage, setErrorMessage] = useState(null)
   const [activityEvents, setActivityEvents] = useState(initial.activityEvents || portfolioData.activity_events || [])
+  const activityEventsRef = useRef(activityEvents)
+  activityEventsRef.current = activityEvents
   const [leetcodeSummary, setLeetcodeSummary] = useState({
     total: portfolioData.stats.leetcode_fallback || 124,
     easy: 75,
@@ -103,7 +108,7 @@ export function useActivityData() {
 
   const fetchData = useCallback(async () => {
     // Only show loading if we don't have any days yet
-    if (days.length === 0) {
+    if (daysRef.current.length === 0) {
       setStatus('loading')
     }
     setIsSlow(false)
@@ -112,6 +117,7 @@ export function useActivityData() {
     slowTimerRef.current = setTimeout(() => { setIsSlow(true) }, SLOW_THRESHOLD_MS)
 
     const apiUrl = API_BASE_URL
+    const init = initialRef.current
 
     try {
       // Fetch all sources concurrently in parallel
@@ -237,10 +243,10 @@ export function useActivityData() {
       clearTimeout(slowTimerRef.current)
 
       // Merge results with existing baseline
-      const githubMap = (ghRes.status === 'fulfilled' && ghRes.value) ? ghRes.value : initial.githubMap
-      const leetcodeMap = (lcRes.status === 'fulfilled' && lcRes.value) ? lcRes.value : initial.leetcodeMap
-      const gfgMap = (gfgRes.status === 'fulfilled' && gfgRes.value) ? gfgRes.value : initial.gfgMap
-      const calendarMap = (calRes.status === 'fulfilled' && calRes.value) ? calRes.value : initial.calendarMap
+      const githubMap = (ghRes.status === 'fulfilled' && ghRes.value) ? ghRes.value : init.githubMap
+      const leetcodeMap = (lcRes.status === 'fulfilled' && lcRes.value) ? lcRes.value : init.leetcodeMap
+      const gfgMap = (gfgRes.status === 'fulfilled' && gfgRes.value) ? gfgRes.value : init.gfgMap
+      const calendarMap = (calRes.status === 'fulfilled' && calRes.value) ? calRes.value : init.calendarMap
 
       if (evtRes.status === 'fulfilled' && Array.isArray(evtRes.value)) {
         setActivityEvents(evtRes.value)
@@ -271,7 +277,7 @@ export function useActivityData() {
           leetcodeMap,
           gfgMap,
           calendarMap,
-          activityEvents: (evtRes.status === 'fulfilled' && Array.isArray(evtRes.value)) ? evtRes.value : activityEvents,
+          activityEvents: (evtRes.status === 'fulfilled' && Array.isArray(evtRes.value)) ? evtRes.value : activityEventsRef.current,
         }))
       } catch (stErr) {
         console.warn('localStorage save failed:', stErr)
@@ -279,7 +285,7 @@ export function useActivityData() {
     } catch (err) {
       clearTimeout(slowTimerRef.current)
       console.error('Activity data fetch error:', err)
-      if (days.length === 0) {
+      if (daysRef.current.length === 0) {
         setStatus('error')
         setErrorMessage('Unable to load activity data. Upstream service may be temporarily unavailable.')
       } else {
@@ -287,7 +293,7 @@ export function useActivityData() {
         setStatus('ready')
       }
     }
-  }, [days.length, initial, activityEvents])
+  }, [])
 
   useEffect(() => {
     let isCancelled = false

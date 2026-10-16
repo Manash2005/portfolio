@@ -16,6 +16,7 @@ import {
   getTopicMasteryStats,
   getRevisionQueue,
   getDeterministicPracticePlan,
+  syncAllRevisionsToCalendar,
 } from '../services/dsaMasteryService.js'
 import {
   logMistake,
@@ -132,7 +133,7 @@ export async function getDsaOverview(req, res) {
       independentPercentage: totalSolved > 0 ? Math.round((indSolved / totalSolved) * 100) : 100,
     }
 
-    // 4. Topic mastery chart sample (Top 6 topics)
+    // 4. Topic mastery chart sample (Top 8 topics)
     const topicCharts = topicStats.topics.slice(0, 8).map((t) => ({
       topic: t.topic,
       solved: t.solved,
@@ -140,6 +141,97 @@ export async function getDsaOverview(req, res) {
       score: t.masteryScore,
       percentage: t.total > 0 ? Math.round((t.solved / t.total) * 100) : 0,
     }))
+
+    // 5. Solve Times by Difficulty Trend (Line graph: Y = time in minutes, X = dates, 3 lines: Easy, Medium, Hard)
+    const solveTimeRows = db.prepare(`
+      SELECT 
+        date(a.created_at) as date,
+        p.difficulty,
+        ROUND(AVG(a.duration_seconds) / 60.0, 1) as avg_minutes,
+        ROUND(AVG(a.duration_seconds)) as avg_seconds,
+        COUNT(a.id) as solve_count
+      FROM dsa_attempts a
+      JOIN dsa_problems p ON a.problem_id = p.id
+      WHERE a.result = 'solved' AND a.duration_seconds > 0
+      GROUP BY date(a.created_at), p.difficulty
+      ORDER BY date(a.created_at) ASC
+    `).all()
+
+    const solveTimeMap = {}
+    solveTimeRows.forEach(r => {
+      if (!solveTimeMap[r.date]) {
+        solveTimeMap[r.date] = {
+          date: r.date,
+          Easy: null,
+          Medium: null,
+          Hard: null,
+          details: {
+            Easy: { avgMinutes: null, solveCount: 0 },
+            Medium: { avgMinutes: null, solveCount: 0 },
+            Hard: { avgMinutes: null, solveCount: 0 },
+          }
+        }
+      }
+      solveTimeMap[r.date][r.difficulty] = r.avg_minutes
+      solveTimeMap[r.date].details[r.difficulty] = {
+        avgMinutes: r.avg_minutes,
+        avgSeconds: r.avg_seconds,
+        solveCount: r.solve_count,
+      }
+    })
+
+    const solveTimesTrend = Object.values(solveTimeMap).sort((a, b) => a.date.localeCompare(b.date))
+
+    // Overall stats by difficulty
+    const overallDiffTimes = db.prepare(`
+      SELECT 
+        p.difficulty,
+        ROUND(AVG(a.duration_seconds) / 60.0, 1) as avg_minutes,
+        ROUND(MIN(a.duration_seconds) / 60.0, 1) as min_minutes,
+        ROUND(MAX(a.duration_seconds) / 60.0, 1) as max_minutes,
+        COUNT(a.id) as total_solved
+      FROM dsa_attempts a
+      JOIN dsa_problems p ON a.problem_id = p.id
+      WHERE a.result = 'solved' AND a.duration_seconds > 0
+      GROUP BY p.difficulty
+    `).all()
+
+    const overallAverages = {
+      Easy: { avgMinutes: null, minMinutes: null, maxMinutes: null, totalSolved: 0, targetMinutes: 15 },
+      Medium: { avgMinutes: null, minMinutes: null, maxMinutes: null, totalSolved: 0, targetMinutes: 30 },
+      Hard: { avgMinutes: null, minMinutes: null, maxMinutes: null, totalSolved: 0, targetMinutes: 45 },
+    }
+
+    overallDiffTimes.forEach(row => {
+      if (overallAverages[row.difficulty]) {
+        overallAverages[row.difficulty] = {
+          avgMinutes: row.avg_minutes,
+          minMinutes: row.min_minutes,
+          maxMinutes: row.max_minutes,
+          totalSolved: row.total_solved,
+          targetMinutes: row.difficulty === 'Easy' ? 15 : row.difficulty === 'Medium' ? 30 : 45,
+        }
+      }
+    })
+
+    // Accuracy and time metrics
+    const totalAttemptsCount = totalAttemptsRow ? totalAttemptsRow.count : 0
+    const accuracyRate = totalAttemptsCount > 0 ? Math.round((totalSolved / totalAttemptsCount) * 100) : 100
+    const totalPracticeSecs = db.prepare(`SELECT COALESCE(SUM(duration_seconds), 0) as s FROM dsa_attempts`).get().s
+    const totalPracticeMinutes = Math.round(totalPracticeSecs / 60)
+
+    // Target adherence rate
+    const solvesWithTarget = db.prepare(`
+      SELECT 
+        a.duration_seconds,
+        coalesce(p.estimated_solve_time, case when p.difficulty = 'Easy' then 15 when p.difficulty = 'Medium' then 30 else 45 end) * 60 as target_seconds
+      FROM dsa_attempts a
+      JOIN dsa_problems p ON a.problem_id = p.id
+      WHERE a.result = 'solved' AND a.duration_seconds > 0
+    `).all()
+
+    const withinTargetCount = solvesWithTarget.filter(s => s.duration_seconds <= s.target_seconds).length
+    const speedAdherenceRate = solvesWithTarget.length > 0 ? Math.round((withinTargetCount / solvesWithTarget.length) * 100) : 100
 
     return res.status(200).json({
       success: true,
@@ -149,7 +241,10 @@ export async function getDsaOverview(req, res) {
         uniqueSolved: totalSolved,
         independentSolves: indSolved,
         assistedSolves: asstSolved,
-        totalAttempts: totalAttemptsRow ? totalAttemptsRow.count : 0,
+        totalAttempts: totalAttemptsCount,
+        accuracyRate,
+        totalPracticeMinutes,
+        speedAdherenceRate,
         dueRevisionsCount: revisionData.totalDueCount,
         totalScheduledRevisions:
           revisionData.totalScheduledCount ||
@@ -160,6 +255,11 @@ export async function getDsaOverview(req, res) {
         weeklyActivity,
         solveTypes,
         topicCharts,
+        solveTimesByDifficulty: {
+          trend: solveTimesTrend,
+          averages: overallAverages,
+          speedAdherenceRate,
+        },
       },
       activePlan,
       weakTopics: topicStats.weakTopics.slice(0, 3),
@@ -280,9 +380,30 @@ export async function getTopicMastery(req, res) {
 export async function getRevisionList(req, res) {
   try {
     const queue = getRevisionQueue()
+    try {
+      syncAllRevisionsToCalendar()
+    } catch {}
     return res.status(200).json({ success: true, queue })
   } catch (err) {
     console.error('getRevisionList error:', err)
+    return res.status(500).json({ success: false, error: err.message })
+  }
+}
+
+/**
+ * POST /api/v1/dsa/revision/sync-calendar
+ * Manually trigger sync of all spaced repetition items to site calendar
+ */
+export async function syncRevisionsCalendarController(req, res) {
+  try {
+    const syncedCount = syncAllRevisionsToCalendar()
+    return res.status(200).json({
+      success: true,
+      syncedCount,
+      message: `Successfully synchronized ${syncedCount} revision date${syncedCount === 1 ? '' : 's'} to your site calendar.`,
+    })
+  } catch (err) {
+    console.error('syncRevisionsCalendarController error:', err)
     return res.status(500).json({ success: false, error: err.message })
   }
 }

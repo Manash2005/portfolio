@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import {
   PieChart,
@@ -14,6 +14,9 @@ import {
   Activity,
   Flame,
   X,
+  Target,
+  ShieldCheck,
+  ChevronRight,
 } from 'lucide-react'
 
 export default function DsaVisualCharts({
@@ -23,8 +26,14 @@ export default function DsaVisualCharts({
   onViewStats,
 }) {
   const [activeTooltip, setActiveTooltip] = useState(null)
-  const [activeInfoModal, setActiveInfoModal] = useState(null) // 'trajectory' | 'difficulty' | 'activity' | 'independence'
+  const [activeInfoModal, setActiveInfoModal] = useState(null)
+  const [visibleDiffLines, setVisibleDiffLines] = useState({
+    Easy: true,
+    Medium: true,
+    Hard: true,
+  })
 
+  // 1. Difficulty distribution data
   const diff = charts.difficulty || {
     Easy: { solved: 0, total: 18 },
     Medium: { solved: 0, total: 32 },
@@ -35,13 +44,24 @@ export default function DsaVisualCharts({
   const solveTypes = charts.solveTypes || { independent: 0, assisted: 0, independentPercentage: 100 }
   const topicCharts = charts.topicCharts || []
 
-  // Radial Donut calculations for Difficulty
+  // 2. Solve Times by Difficulty data
+  const solveTimesData = charts.solveTimesByDifficulty || {
+    trend: [],
+    averages: { Easy: null, Medium: null, Hard: null },
+    accuracyRate: 100,
+    totalPracticeMinutes: 0,
+    speedAdherenceRate: 100,
+  }
+
+  const trendRows = solveTimesData.trend || []
+  const averages = solveTimesData.averages || {}
+
+  // 3. Radial Donut calculations for Difficulty
   const totalSolved = (diff.Easy?.solved || 0) + (diff.Medium?.solved || 0) + (diff.Hard?.solved || 0)
   const radius = 54
   const strokeWidth = 10
   const circumference = 2 * Math.PI * radius
 
-  // Calculate arc fractions
   const easyRatio = totalSolved > 0 ? (diff.Easy?.solved || 0) / totalSolved : 0
   const medRatio = totalSolved > 0 ? (diff.Medium?.solved || 0) / totalSolved : 0
   const hardRatio = totalSolved > 0 ? (diff.Hard?.solved || 0) / totalSolved : 0
@@ -50,12 +70,10 @@ export default function DsaVisualCharts({
   const medStroke = medRatio * circumference
   const hardStroke = hardRatio * circumference
 
-  // Max solves in week for scaling bars
+  // 4. Weekly Velocity trajectory calculations
   const maxSolvesInWeek = Math.max(1, ...weekly.map((w) => w.solves || 0))
-
-  // Line Chart calculation for Weekly Trajectory
   const linePoints = weekly.map((day, idx) => {
-    const x = 30 + idx * 75 // 7 points over 450 width
+    const x = 30 + idx * 75
     const maxY = 130
     const minY = 30
     const normalizedY = maxY - ((day.solves || 0) / Math.max(1, maxSolvesInWeek)) * (maxY - minY)
@@ -71,28 +89,436 @@ export default function DsaVisualCharts({
     ? `${pathD} L ${linePoints[linePoints.length - 1].x} 150 L ${linePoints[0].x} 150 Z`
     : ''
 
+  // 5. Multi-line Solve Time Graph calculations
+  // Chart dimensions: viewBox="0 0 620 220"
+  // Y-axis: 0m to 60m (target benchmarks: Easy 15m, Med 30m, Hard 45m)
+  const graphPadding = { top: 25, bottom: 40, left: 45, right: 25 }
+  const graphWidth = 620 - graphPadding.left - graphPadding.right
+  const graphHeight = 220 - graphPadding.top - graphPadding.bottom
+
+  // Y-Scale: 0 to 60 minutes
+  const maxYMinutes = 60
+  const getY = (mins) => {
+    const clamped = Math.min(maxYMinutes, Math.max(0, mins))
+    return graphPadding.top + graphHeight - (clamped / maxYMinutes) * graphHeight
+  }
+
+  // Pre-process dates or fall back to recent days if empty
+  const multiLinePoints = useMemo(() => {
+    if (trendRows.length === 0) return []
+
+    const count = trendRows.length
+    return trendRows.map((row, idx) => {
+      const x = count === 1
+        ? graphPadding.left + graphWidth / 2
+        : graphPadding.left + (idx / (count - 1)) * graphWidth
+
+      return {
+        date: row.date,
+        x,
+        easy: row.easy_avg_minutes != null ? { mins: row.easy_avg_minutes, y: getY(row.easy_avg_minutes), count: row.easy_count } : null,
+        medium: row.medium_avg_minutes != null ? { mins: row.medium_avg_minutes, y: getY(row.medium_avg_minutes), count: row.medium_count } : null,
+        hard: row.hard_avg_minutes != null ? { mins: row.hard_avg_minutes, y: getY(row.hard_avg_minutes), count: row.hard_count } : null,
+      }
+    })
+  }, [trendRows, graphWidth, graphPadding.left])
+
+  // Build SVG path strings for each difficulty
+  const easyLinePath = useMemo(() => {
+    const valid = multiLinePoints.filter((p) => p.easy !== null)
+    if (valid.length < 2) return ''
+    return `M ${valid[0].x} ${valid[0].easy.y} ` + valid.slice(1).map((p) => `L ${p.x} ${p.easy.y}`).join(' ')
+  }, [multiLinePoints])
+
+  const mediumLinePath = useMemo(() => {
+    const valid = multiLinePoints.filter((p) => p.medium !== null)
+    if (valid.length < 2) return ''
+    return `M ${valid[0].x} ${valid[0].medium.y} ` + valid.slice(1).map((p) => `L ${p.x} ${p.medium.y}`).join(' ')
+  }, [multiLinePoints])
+
+  const hardLinePath = useMemo(() => {
+    const valid = multiLinePoints.filter((p) => p.hard !== null)
+    if (valid.length < 2) return ''
+    return `M ${valid[0].x} ${valid[0].hard.y} ` + valid.slice(1).map((p) => `L ${p.x} ${p.hard.y}`).join(' ')
+  }, [multiLinePoints])
+
+  const formatMinsDisplay = (mins) => {
+    if (mins == null) return '—'
+    return `${mins}m`
+  }
+
   return (
     <div className="w-full flex flex-col gap-6 text-left">
-      {/* Visual Charts Header */}
+      {/* 1. Header with Live Status */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 px-1">
         <div>
           <h3 className="text-lg font-display font-bold text-white flex items-center gap-2">
             <BarChart3 className="w-5 h-5 text-accent" />
-            <span>Interactive Visual Arena & Trajectory</span>
+            <span>Interactive Visual Arena & Velocity Curves</span>
           </h3>
           <p className="text-xs font-mono text-muted mt-0.5">
-            Real-time visual velocity curves, difficulty ratios, and mastery progression.
+            Real-time multi-line solve time tracking, difficulty ratios, and spaced retention stats.
           </p>
         </div>
         <div className="flex items-center gap-2 text-[11px] font-mono text-muted bg-[#12121A] px-3 py-1.5 rounded-xl border border-hairline">
           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span>Real-time SQLite Analytics</span>
+          <span>Real-time Analytics Engine</span>
         </div>
       </div>
 
-      {/* TOP ROW: LINE CHART (XP & Solve Velocity Trajectory) + DIFFICULTY RADIAL ARENA */}
+      {/* 2. Top Rich Stat Badges Row */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        {/* Stat 1: Total Practice Time */}
+        <div className="p-3.5 rounded-2xl border border-hairline bg-[#0E0E14] flex flex-col gap-1">
+          <span className="text-[10px] font-mono uppercase text-muted flex items-center gap-1">
+            <Clock className="w-3 h-3 text-accent" />
+            <span>Practice Time</span>
+          </span>
+          <span className="text-lg font-display font-bold text-white">
+            {stats.totalPracticeMinutes ? `${Math.floor(stats.totalPracticeMinutes / 60)}h ${stats.totalPracticeMinutes % 60}m` : '0m'}
+          </span>
+          <span className="text-[10px] font-mono text-muted">Focused execution</span>
+        </div>
+
+        {/* Stat 2: Accuracy Rate */}
+        <div className="p-3.5 rounded-2xl border border-hairline bg-[#0E0E14] flex flex-col gap-1">
+          <span className="text-[10px] font-mono uppercase text-muted flex items-center gap-1">
+            <Target className="w-3 h-3 text-emerald-400" />
+            <span>Solve Accuracy</span>
+          </span>
+          <span className="text-lg font-display font-bold text-emerald-400">
+            {stats.accuracyRate != null ? `${stats.accuracyRate}%` : '100%'}
+          </span>
+          <span className="text-[10px] font-mono text-muted">{stats.uniqueSolved || 0} unique solved</span>
+        </div>
+
+        {/* Stat 3: Speed Adherence */}
+        <div className="p-3.5 rounded-2xl border border-hairline bg-[#0E0E14] flex flex-col gap-1">
+          <span className="text-[10px] font-mono uppercase text-muted flex items-center gap-1">
+            <Zap className="w-3 h-3 text-amber-400" />
+            <span>Speed Adherence</span>
+          </span>
+          <span className="text-lg font-display font-bold text-amber-400">
+            {stats.speedAdherenceRate != null ? `${stats.speedAdherenceRate}%` : '100%'}
+          </span>
+          <span className="text-[10px] font-mono text-muted">Within target limits</span>
+        </div>
+
+        {/* Stat 4: Avg Easy Time */}
+        <div className="p-3.5 rounded-2xl border border-hairline bg-[#0E0E14] flex flex-col gap-1">
+          <span className="text-[10px] font-mono uppercase text-emerald-400 flex items-center gap-1">
+            <span className="w-2 h-2 rounded-full bg-emerald-400" />
+            <span>Avg Easy</span>
+          </span>
+          <span className="text-lg font-display font-bold text-white">
+            {formatMinsDisplay(stats.easyAvgMinutes || averages.Easy)}
+          </span>
+          <span className="text-[10px] font-mono text-muted">Target: 15m</span>
+        </div>
+
+        {/* Stat 5: Avg Medium Time */}
+        <div className="p-3.5 rounded-2xl border border-hairline bg-[#0E0E14] flex flex-col gap-1">
+          <span className="text-[10px] font-mono uppercase text-amber-400 flex items-center gap-1">
+            <span className="w-2 h-2 rounded-full bg-amber-400" />
+            <span>Avg Medium</span>
+          </span>
+          <span className="text-lg font-display font-bold text-white">
+            {formatMinsDisplay(stats.mediumAvgMinutes || averages.Medium)}
+          </span>
+          <span className="text-[10px] font-mono text-muted">Target: 30m</span>
+        </div>
+
+        {/* Stat 6: Avg Hard Time */}
+        <div className="p-3.5 rounded-2xl border border-hairline bg-[#0E0E14] flex flex-col gap-1">
+          <span className="text-[10px] font-mono uppercase text-rose-400 flex items-center gap-1">
+            <span className="w-2 h-2 rounded-full bg-rose-400" />
+            <span>Avg Hard</span>
+          </span>
+          <span className="text-lg font-display font-bold text-white">
+            {formatMinsDisplay(stats.hardAvgMinutes || averages.Hard)}
+          </span>
+          <span className="text-[10px] font-mono text-muted">Target: 45m</span>
+        </div>
+      </div>
+
+      {/* 3. MULTI-LINE GRAPH: Average Time to Solve Easy, Medium & Hard Separately */}
+      <div className="p-6 rounded-3xl border border-hairline bg-[#0D0D14] flex flex-col justify-between gap-5 relative overflow-hidden shadow-lg">
+        {/* Header & Line Visibility Toggles */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-hairline/60 pb-3">
+          <div className="flex items-center gap-2">
+            <Clock className="w-4 h-4 text-accent" />
+            <h4 className="text-sm font-display font-bold text-white">
+              Average Solve Time by Difficulty Over Time (3-Line Graph)
+            </h4>
+            <button
+              onClick={() => setActiveInfoModal('timeGraph')}
+              className="p-1 rounded-full text-muted hover:text-white hover:bg-white/5 transition-colors cursor-pointer"
+              title="Graph explanation"
+            >
+              <HelpCircle className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          {/* Toggle pills for 3 separate lines */}
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] font-mono text-muted mr-1 hidden sm:inline">Lines:</span>
+            <button
+              onClick={() => setVisibleDiffLines((prev) => ({ ...prev, Easy: !prev.Easy }))}
+              className={`px-2.5 py-1 rounded-lg text-xs font-mono font-medium flex items-center gap-1.5 transition-all cursor-pointer ${
+                visibleDiffLines.Easy
+                  ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-sm'
+                  : 'bg-white/5 text-muted/50 border border-transparent'
+              }`}
+            >
+              <span className="w-2 h-2 rounded-full bg-emerald-400" />
+              <span>Easy</span>
+            </button>
+
+            <button
+              onClick={() => setVisibleDiffLines((prev) => ({ ...prev, Medium: !prev.Medium }))}
+              className={`px-2.5 py-1 rounded-lg text-xs font-mono font-medium flex items-center gap-1.5 transition-all cursor-pointer ${
+                visibleDiffLines.Medium
+                  ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40 shadow-sm'
+                  : 'bg-white/5 text-muted/50 border border-transparent'
+              }`}
+            >
+              <span className="w-2 h-2 rounded-full bg-amber-400" />
+              <span>Medium</span>
+            </button>
+
+            <button
+              onClick={() => setVisibleDiffLines((prev) => ({ ...prev, Hard: !prev.Hard }))}
+              className={`px-2.5 py-1 rounded-lg text-xs font-mono font-medium flex items-center gap-1.5 transition-all cursor-pointer ${
+                visibleDiffLines.Hard
+                  ? 'bg-rose-500/20 text-rose-400 border border-rose-500/40 shadow-sm'
+                  : 'bg-white/5 text-muted/50 border border-transparent'
+              }`}
+            >
+              <span className="w-2 h-2 rounded-full bg-rose-400" />
+              <span>Hard</span>
+            </button>
+          </div>
+        </div>
+
+        {/* SVG Multi-Line Canvas */}
+        <div className="relative w-full h-56 flex items-center justify-center">
+          <svg viewBox="0 0 620 220" className="w-full h-full overflow-visible">
+            {/* Horizontal Grid & Target Benchmark Lines */}
+            {/* 60m */}
+            <line x1={graphPadding.left} y1={getY(60)} x2={620 - graphPadding.right} y2={getY(60)} stroke="rgba(255,255,255,0.05)" />
+            <text x={graphPadding.left - 8} y={getY(60) + 3} textAnchor="end" fill="#71717A" fontSize="9" fontFamily="var(--font-mono)">60m</text>
+
+            {/* 45m Target Benchmark (Hard Target) */}
+            <line x1={graphPadding.left} y1={getY(45)} x2={620 - graphPadding.right} y2={getY(45)} stroke="rgba(244,63,94,0.25)" strokeDasharray="3 3" />
+            <text x={graphPadding.left - 8} y={getY(45) + 3} textAnchor="end" fill="#F43F5E" fontSize="9" fontFamily="var(--font-mono)">45m</text>
+            <text x={620 - graphPadding.right} y={getY(45) - 3} textAnchor="end" fill="rgba(244,63,94,0.6)" fontSize="8" fontFamily="var(--font-mono)">Hard Target</text>
+
+            {/* 30m Target Benchmark (Medium Target) */}
+            <line x1={graphPadding.left} y1={getY(30)} x2={620 - graphPadding.right} y2={getY(30)} stroke="rgba(245,158,11,0.25)" strokeDasharray="3 3" />
+            <text x={graphPadding.left - 8} y={getY(30) + 3} textAnchor="end" fill="#F59E0B" fontSize="9" fontFamily="var(--font-mono)">30m</text>
+            <text x={620 - graphPadding.right} y={getY(30) - 3} textAnchor="end" fill="rgba(245,158,11,0.6)" fontSize="8" fontFamily="var(--font-mono)">Medium Target</text>
+
+            {/* 15m Target Benchmark (Easy Target) */}
+            <line x1={graphPadding.left} y1={getY(15)} x2={620 - graphPadding.right} y2={getY(15)} stroke="rgba(16,185,129,0.25)" strokeDasharray="3 3" />
+            <text x={graphPadding.left - 8} y={getY(15) + 3} textAnchor="end" fill="#10B981" fontSize="9" fontFamily="var(--font-mono)">15m</text>
+            <text x={620 - graphPadding.right} y={getY(15) - 3} textAnchor="end" fill="rgba(16,185,129,0.6)" fontSize="8" fontFamily="var(--font-mono)">Easy Target</text>
+
+            {/* 0m Baseline */}
+            <line x1={graphPadding.left} y1={getY(0)} x2={620 - graphPadding.right} y2={getY(0)} stroke="rgba(255,255,255,0.15)" />
+            <text x={graphPadding.left - 8} y={getY(0) + 3} textAnchor="end" fill="#71717A" fontSize="9" fontFamily="var(--font-mono)">0m</text>
+
+            {/* Render 3 Continuous Connected Lines */}
+            {visibleDiffLines.Easy && easyLinePath && (
+              <path
+                d={easyLinePath}
+                fill="none"
+                stroke="#10B981"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="transition-all duration-300"
+              />
+            )}
+
+            {visibleDiffLines.Medium && mediumLinePath && (
+              <path
+                d={mediumLinePath}
+                fill="none"
+                stroke="#F59E0B"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="transition-all duration-300"
+              />
+            )}
+
+            {visibleDiffLines.Hard && hardLinePath && (
+              <path
+                d={hardLinePath}
+                fill="none"
+                stroke="#F43F5E"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="transition-all duration-300"
+              />
+            )}
+
+            {/* Render Interactive Data Points with Stable Hitboxes */}
+            {multiLinePoints.map((pt, pIdx) => {
+              return (
+                <g key={pIdx}>
+                  {/* Date label on X axis */}
+                  <text
+                    x={pt.x}
+                    y={getY(0) + 16}
+                    textAnchor="middle"
+                    fill="#A1A1AA"
+                    fontSize="9"
+                    fontFamily="var(--font-mono)"
+                  >
+                    {pt.date.slice(5)}
+                  </text>
+
+                  {/* Easy Point */}
+                  {visibleDiffLines.Easy && pt.easy && (
+                    <g
+                      className="cursor-pointer"
+                      onMouseEnter={() =>
+                        setActiveTooltip({
+                          date: pt.date,
+                          difficulty: 'Easy',
+                          mins: pt.easy.mins,
+                          count: pt.easy.count,
+                          target: 15,
+                        })
+                      }
+                      onMouseLeave={() => setActiveTooltip(null)}
+                    >
+                      <circle cx={pt.x} cy={pt.easy.y} r="14" fill="transparent" />
+                      <circle
+                        cx={pt.x}
+                        cy={pt.easy.y}
+                        r="5"
+                        fill="#10B981"
+                        stroke="#08080C"
+                        strokeWidth="2"
+                        className="transition-transform hover:scale-125"
+                      />
+                    </g>
+                  )}
+
+                  {/* Medium Point */}
+                  {visibleDiffLines.Medium && pt.medium && (
+                    <g
+                      className="cursor-pointer"
+                      onMouseEnter={() =>
+                        setActiveTooltip({
+                          date: pt.date,
+                          difficulty: 'Medium',
+                          mins: pt.medium.mins,
+                          count: pt.medium.count,
+                          target: 30,
+                        })
+                      }
+                      onMouseLeave={() => setActiveTooltip(null)}
+                    >
+                      <circle cx={pt.x} cy={pt.medium.y} r="14" fill="transparent" />
+                      <circle
+                        cx={pt.x}
+                        cy={pt.medium.y}
+                        r="5"
+                        fill="#F59E0B"
+                        stroke="#08080C"
+                        strokeWidth="2"
+                        className="transition-transform hover:scale-125"
+                      />
+                    </g>
+                  )}
+
+                  {/* Hard Point */}
+                  {visibleDiffLines.Hard && pt.hard && (
+                    <g
+                      className="cursor-pointer"
+                      onMouseEnter={() =>
+                        setActiveTooltip({
+                          date: pt.date,
+                          difficulty: 'Hard',
+                          mins: pt.hard.mins,
+                          count: pt.hard.count,
+                          target: 45,
+                        })
+                      }
+                      onMouseLeave={() => setActiveTooltip(null)}
+                    >
+                      <circle cx={pt.x} cy={pt.hard.y} r="14" fill="transparent" />
+                      <circle
+                        cx={pt.x}
+                        cy={pt.hard.y}
+                        r="5"
+                        fill="#F43F5E"
+                        stroke="#08080C"
+                        strokeWidth="2"
+                        className="transition-transform hover:scale-125"
+                      />
+                    </g>
+                  )}
+                </g>
+              )
+            })}
+          </svg>
+        </div>
+
+        {/* Dynamic Tooltip & Guidance Footer */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs font-mono text-muted pt-2 border-t border-hairline/60 gap-2">
+          {activeTooltip ? (
+            <div className="flex items-center gap-2 text-white">
+              <span
+                className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                  activeTooltip.difficulty === 'Easy'
+                    ? 'bg-emerald-500/20 text-emerald-400'
+                    : activeTooltip.difficulty === 'Medium'
+                    ? 'bg-amber-500/20 text-amber-400'
+                    : 'bg-rose-500/20 text-rose-400'
+                }`}
+              >
+                {activeTooltip.difficulty}
+              </span>
+              <span className="font-semibold">{activeTooltip.mins} mins avg</span>
+              <span className="text-muted">({activeTooltip.count} solved on {activeTooltip.date})</span>
+              <span className="text-muted">·</span>
+              <span className={activeTooltip.mins <= activeTooltip.target ? 'text-emerald-400' : 'text-rose-400'}>
+                {activeTooltip.mins <= activeTooltip.target
+                  ? `⚡ ${activeTooltip.target - activeTooltip.mins}m under target`
+                  : `⚠️ ${activeTooltip.mins - activeTooltip.target}m over target`}
+              </span>
+            </div>
+          ) : (
+            <span className="text-muted">
+              Hover over points to inspect average time per problem vs target benchmarks
+            </span>
+          )}
+
+          <div className="flex items-center gap-4 text-[11px] text-muted">
+            <span className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-400" />
+              <span>Easy Target: 15m</span>
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-amber-400" />
+              <span>Medium Target: 30m</span>
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-rose-400" />
+              <span>Hard Target: 45m</span>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* 4. SECOND ROW: XP VELOCITY TRAJECTORY + RADIAL DIFFICULTY RATIO */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* CHART 1: Velocity & XP Curve (Line Chart) */}
+        {/* Weekly Solves & XP Trajectory Curve */}
         <div className="p-6 rounded-3xl border border-hairline bg-[#0D0D14] flex flex-col justify-between gap-5 relative overflow-hidden">
           <div className="flex items-center justify-between">
             <span className="text-xs font-mono uppercase tracking-wider text-muted flex items-center gap-2">
@@ -111,7 +537,6 @@ export default function DsaVisualCharts({
             </span>
           </div>
 
-          {/* SVG Line Chart */}
           <div className="relative w-full h-44 flex items-center justify-center">
             <svg viewBox="0 0 510 160" className="w-full h-full overflow-visible">
               <defs>
@@ -126,18 +551,15 @@ export default function DsaVisualCharts({
                 </linearGradient>
               </defs>
 
-              {/* Grid Lines */}
               <line x1="20" y1="30" x2="490" y2="30" stroke="rgba(255,255,255,0.05)" strokeDasharray="4 4" />
               <line x1="20" y1="80" x2="490" y2="80" stroke="rgba(255,255,255,0.05)" strokeDasharray="4 4" />
               <line x1="20" y1="130" x2="490" y2="130" stroke="rgba(255,255,255,0.05)" strokeDasharray="4 4" />
               <line x1="20" y1="150" x2="490" y2="150" stroke="rgba(255,255,255,0.1)" />
 
-              {/* Area fill under curve */}
               {areaD && (
                 <path d={areaD} fill="url(#areaGradient)" className="transition-all duration-700" />
               )}
 
-              {/* Curve Line */}
               {pathD && (
                 <path
                   d={pathD}
@@ -149,7 +571,6 @@ export default function DsaVisualCharts({
                 />
               )}
 
-              {/* Interactive Data Points (Rock-solid hitbox, no jitter) */}
               {linePoints.map((pt, idx) => {
                 const isHovered = activeTooltip?.day === pt.day
                 return (
@@ -159,10 +580,8 @@ export default function DsaVisualCharts({
                     onMouseEnter={() => setActiveTooltip(pt)}
                     onMouseLeave={() => setActiveTooltip(null)}
                   >
-                    {/* Generous static invisible hit area to prevent mouse flicker */}
                     <circle cx={pt.x} cy={pt.y} r="18" fill="transparent" pointerEvents="all" />
 
-                    {/* Outer pulse circle for today or when hovered */}
                     {(pt.isToday || isHovered) && (
                       <circle
                         cx={pt.x}
@@ -181,7 +600,6 @@ export default function DsaVisualCharts({
                       </circle>
                     )}
 
-                    {/* Point circle - anchored smoothly to true SVG center without transform jitter */}
                     <circle
                       cx={pt.x}
                       cy={pt.y}
@@ -193,7 +611,6 @@ export default function DsaVisualCharts({
                       pointerEvents="none"
                     />
 
-                    {/* X Axis Labels */}
                     <text
                       x={pt.x}
                       y="158"
@@ -211,9 +628,8 @@ export default function DsaVisualCharts({
             </svg>
           </div>
 
-          {/* Dynamic Tooltip / Footer */}
           <div className="flex items-center justify-between text-xs font-mono text-muted pt-1 border-t border-hairline/60">
-            {activeTooltip ? (
+            {activeTooltip?.day ? (
               <span className="text-white flex items-center gap-2">
                 <span className="text-accent font-bold">{activeTooltip.day} ({activeTooltip.date}):</span>
                 <span>{activeTooltip.solves} solved</span> ·
@@ -229,7 +645,7 @@ export default function DsaVisualCharts({
           </div>
         </div>
 
-        {/* CHART 2: Difficulty Distribution Radial Arena */}
+        {/* Difficulty Distribution Radial Arena */}
         <div className="p-6 rounded-3xl border border-hairline bg-[#0D0D14] flex flex-col justify-between gap-5 relative overflow-hidden">
           <div className="flex items-center justify-between">
             <span className="text-xs font-mono uppercase tracking-wider text-muted flex items-center gap-2">
@@ -249,10 +665,8 @@ export default function DsaVisualCharts({
           </div>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-8 py-2">
-            {/* SVG Donut */}
             <div className="relative w-36 h-36 flex items-center justify-center shrink-0">
               <svg className="w-full h-full -rotate-90 transform" viewBox="0 0 140 140">
-                {/* Background Ring */}
                 <circle
                   cx="70"
                   cy="70"
@@ -264,7 +678,6 @@ export default function DsaVisualCharts({
 
                 {totalSolved > 0 ? (
                   <>
-                    {/* Easy Arc */}
                     <circle
                       cx="70"
                       cy="70"
@@ -277,7 +690,6 @@ export default function DsaVisualCharts({
                       strokeLinecap="round"
                       className="transition-all duration-700"
                     />
-                    {/* Medium Arc */}
                     <circle
                       cx="70"
                       cy="70"
@@ -290,7 +702,6 @@ export default function DsaVisualCharts({
                       strokeLinecap="round"
                       className="transition-all duration-700"
                     />
-                    {/* Hard Arc */}
                     <circle
                       cx="70"
                       cy="70"
@@ -318,7 +729,6 @@ export default function DsaVisualCharts({
                 )}
               </svg>
 
-              {/* Center Counter */}
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                 <span className="text-3xl font-display font-bold text-white tracking-tight">
                   {stats.uniqueSolved || 0}
@@ -329,7 +739,6 @@ export default function DsaVisualCharts({
               </div>
             </div>
 
-            {/* Legend & Progress Bars */}
             <div className="flex flex-col gap-3 w-full max-w-xs">
               {/* Easy */}
               <div className="flex flex-col gap-1">
@@ -413,9 +822,9 @@ export default function DsaVisualCharts({
         </div>
       </div>
 
-      {/* BOTTOM ROW: 7-DAY MOMENTUM BARS + SOLVE INTEGRITY & TOPICS */}
+      {/* 5. THIRD ROW: 7-DAY RHYTHM + SOLVE INTEGRITY + TOPIC COVERAGE */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* CHART 3: 7-Day Activity Rhythm Bar Chart */}
+        {/* 7-Day Rhythm */}
         <div className="p-6 rounded-3xl border border-hairline bg-[#0D0D14] flex flex-col justify-between gap-5 relative overflow-hidden">
           <div className="flex items-center justify-between">
             <span className="text-xs font-mono uppercase tracking-wider text-muted flex items-center gap-2">
@@ -434,12 +843,10 @@ export default function DsaVisualCharts({
             </span>
           </div>
 
-          {/* Bar Chart Visualization */}
           <div className="flex items-end justify-between gap-2 h-28 pt-4 pb-2 px-1 border-b border-hairline/60">
             {weekly.map((day, idx) => {
               const heightPercent =
                 day.solves > 0 ? Math.max(22, Math.round((day.solves / maxSolvesInWeek) * 100)) : 8
-
               const isActive = day.solves > 0
 
               return (
@@ -485,7 +892,7 @@ export default function DsaVisualCharts({
           </div>
         </div>
 
-        {/* Metric 1: Solve Integrity & Independence */}
+        {/* Solve Integrity */}
         <div className="p-6 rounded-3xl border border-hairline bg-[#0D0D14] flex flex-col justify-between gap-4 text-left">
           <div className="flex items-center justify-between text-muted">
             <span className="text-xs font-mono uppercase tracking-wider flex items-center gap-2">
@@ -519,7 +926,7 @@ export default function DsaVisualCharts({
           </span>
         </div>
 
-        {/* Metric 2: Topic Coverage Progress */}
+        {/* Core Topic Mastery */}
         <div className="p-6 rounded-3xl border border-hairline bg-[#0D0D14] flex flex-col justify-between gap-4 text-left">
           <div className="flex items-center justify-between text-muted">
             <span className="text-xs font-mono uppercase tracking-wider flex items-center gap-1.5">
@@ -560,9 +967,7 @@ export default function DsaVisualCharts({
         </div>
       </div>
 
-
-
-      {/* Extra Info Help Modal */}
+      {/* Info Modal */}
       <AnimatePresence>
         {activeInfoModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -583,6 +988,7 @@ export default function DsaVisualCharts({
                 <div className="flex items-center gap-2">
                   <HelpCircle className="w-5 h-5 text-accent" />
                   <h4 className="text-sm font-display font-bold text-white">
+                    {activeInfoModal === 'timeGraph' && 'Solve Time Multi-Line Graph'}
                     {activeInfoModal === 'trajectory' && 'Velocity & XP Trajectory'}
                     {activeInfoModal === 'difficulty' && 'Difficulty Arena Weights'}
                     {activeInfoModal === 'activity' && '7-Day Rhythm & Streaks'}
@@ -598,9 +1004,16 @@ export default function DsaVisualCharts({
               </div>
 
               <div className="text-xs font-mono text-muted leading-relaxed flex flex-col gap-2">
+                {activeInfoModal === 'timeGraph' && (
+                  <p>
+                    Plots your average solve times for Easy, Medium, and Hard problems across dates.
+                    Target benchmarks are 15 minutes for Easy, 30 minutes for Medium, and 45 minutes for Hard.
+                    Staying below these target lines unlocks bonus speed XP without triggering overtime deductions.
+                  </p>
+                )}
                 {activeInfoModal === 'trajectory' && (
                   <p>
-                    Tracks your daily problem solves and cumulative XP points. Points are awarded based on difficulty (Easy: +15, Medium: +25, Hard: +40) plus bonuses for first-try solves and timely spaced revisions.
+                    Tracks your daily problem solves and cumulative XP points. Points are awarded based on difficulty (Easy: +50, Medium: +65, Hard: +80) plus bonuses for first-try solves and timely spaced revisions.
                   </p>
                 )}
                 {activeInfoModal === 'difficulty' && (

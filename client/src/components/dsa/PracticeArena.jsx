@@ -19,6 +19,7 @@ import {
   ArrowRight,
 } from 'lucide-react'
 import { useAdmin } from '../../context/AdminContext'
+import PenaltyRulesPopover from './PenaltyRulesPopover'
 
 export default function PracticeArena({
   activeProblem,
@@ -239,9 +240,12 @@ export default function PracticeArena({
               <Clock className="w-3.5 h-3.5 text-accent" />
               <span>Practice Arena Timer</span>
             </span>
-            <span className="text-xs font-mono">
-              Target: <span className="text-white font-medium">{targetMinutes}:00</span>
-            </span>
+            <div className="flex items-center gap-2 text-xs font-mono">
+              <span>
+                Target: <span className="text-white font-medium">{targetMinutes}:00</span>
+              </span>
+              <PenaltyRulesPopover />
+            </div>
           </div>
 
           <div className="flex flex-col items-center justify-center my-4">

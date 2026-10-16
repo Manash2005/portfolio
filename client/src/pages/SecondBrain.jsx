@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import CalendarHeader from '../components/secondbrain/CalendarHeader'
 import FilterDrawer from '../components/secondbrain/FilterDrawer'
 import MonthView from '../components/secondbrain/MonthView'
@@ -9,8 +10,19 @@ import DayView from '../components/secondbrain/DayView'
 import GoalsAndProjectsPanel from '../components/secondbrain/GoalsAndProjectsPanel'
 import EventDetailModal from '../components/secondbrain/EventDetailModal'
 import DsaWorkspace from '../components/dsa/DsaWorkspace'
-import { Calendar, RefreshCw, AlertCircle, Flame, HelpCircle, X, ShieldCheck, Target, Sparkles } from 'lucide-react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import {
+  Calendar,
+  RefreshCw,
+  AlertCircle,
+  Flame,
+  HelpCircle,
+  X,
+  ShieldCheck,
+  Target,
+  Sparkles,
+  ArrowLeft,
+  Plus,
+} from 'lucide-react'
 
 import { useAdmin } from '../context/AdminContext'
 import { API_BASE_URL } from '../utils/apiConfig'
@@ -28,12 +40,11 @@ export default function SecondBrain({ defaultMode = 'calendar' }) {
     }
   }, [location.pathname])
 
-  const { isAdmin, authFetch, contentVersion } = useAdmin()
+  const { isAdmin, isEditMode, openCreateEvent, authFetch, contentVersion } = useAdmin()
   const [currentDate, setCurrentDate] = useState(() => new Date())
   const [view, setView] = useState('month') // 'month' | 'week' | 'agenda' | 'day'
   const [events, setEvents] = useState([])
   const [stats, setStats] = useState({})
-  const [goals, setGoals] = useState([])
   const [projects, setProjects] = useState([])
   const [status, setStatus] = useState('loading') // 'loading' | 'ready' | 'error'
   const [errorMessage, setErrorMessage] = useState(null)
@@ -74,7 +85,6 @@ export default function SecondBrain({ defaultMode = 'calendar' }) {
       throw new Error('Failed to load events')
     } catch (err) {
       console.warn('Events fetch warning:', err)
-      // If error occurs, keep existing events if available or set error state
       if (events.length === 0) {
         setStatus('error')
         setErrorMessage('Unable to connect to Second Brain service. Please ensure server is running.')
@@ -177,55 +187,91 @@ export default function SecondBrain({ defaultMode = 'calendar' }) {
       className="min-h-screen w-full pt-28 pb-20 px-4 sm:px-8 md:px-12 select-none"
       style={{ background: '#08080C' }}
     >
-      <div className="max-w-6xl mx-auto flex flex-col gap-8">
-        {/* Workspace Mode Switcher */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-2 sm:p-2.5 rounded-2xl border border-hairline bg-[#0E0E14] shadow-sm">
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <button
-              onClick={() => {
-                setBrainMode('calendar')
-                navigate('/calendar')
-              }}
-              className={`flex-1 sm:flex-initial px-5 py-2.5 rounded-xl text-xs font-mono font-medium flex items-center justify-center gap-2 cursor-pointer transition-all ${
-                brainMode === 'calendar'
-                  ? 'bg-white/10 text-white border border-white/20 shadow-md'
-                  : 'text-muted hover:text-white border border-transparent hover:bg-white/5'
-              }`}
+      <div className="max-w-6xl mx-auto flex flex-col gap-6">
+        {/* Sleek Unified Control Ribbon: Back Link, Workspace Switcher, Status & Actions */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-2 rounded-2xl border border-hairline bg-[#0E0E14] shadow-md">
+          {/* Left: Back Link + Workspace Mode Toggle */}
+          <div className="flex items-center gap-3">
+            <Link
+              to="/"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-mono text-muted hover:text-white hover:bg-white/5 transition-colors group shrink-0"
             >
-              <Calendar className="w-4 h-4 text-accent" />
-              <span>Calendar & Planning</span>
-            </button>
+              <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-1 transition-transform" />
+              <span>Portfolio</span>
+            </Link>
 
-            <button
-              onClick={() => {
-                setBrainMode('dsa')
-                navigate('/calendar/dsa')
-              }}
-              className={`flex-1 sm:flex-initial px-5 py-2.5 rounded-xl text-xs font-mono font-medium flex items-center justify-center gap-2 cursor-pointer transition-all ${
-                brainMode === 'dsa'
-                  ? 'bg-accent text-[#08080C] font-bold shadow-lg shadow-accent/20'
-                  : 'text-muted hover:text-white border border-transparent hover:bg-white/5'
-              }`}
-            >
-              <Flame className="w-4 h-4 text-amber-400 fill-amber-400" />
-              <span>⚔️ DSA Training Arena</span>
-            </button>
+            <span className="w-[1px] h-4 bg-hairline shrink-0" aria-hidden />
+
+            <div className="flex items-center p-1 rounded-xl bg-black/40 border border-white/5">
+              <button
+                onClick={() => {
+                  setBrainMode('calendar')
+                  navigate('/calendar')
+                }}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-medium flex items-center gap-1.5 cursor-pointer transition-all ${
+                  brainMode === 'calendar'
+                    ? 'bg-white/10 text-white font-bold shadow-sm border border-white/10'
+                    : 'text-muted hover:text-white'
+                }`}
+              >
+                <Calendar className="w-3.5 h-3.5 text-accent" />
+                <span>Calendar</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setBrainMode('dsa')
+                  navigate('/calendar/dsa')
+                }}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-medium flex items-center gap-1.5 cursor-pointer transition-all ${
+                  brainMode === 'dsa'
+                    ? 'bg-accent text-[#08080C] font-bold shadow-md shadow-accent/20'
+                    : 'text-muted hover:text-white'
+                }`}
+              >
+                <Flame className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+                <span>DSA Arena</span>
+              </button>
+            </div>
           </div>
 
-          <div className="flex items-center gap-3 text-[11px] font-mono text-muted pr-2">
-            <span className="hidden sm:flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
-              <span>Personal Second Brain</span>
-            </span>
-            <span className="hidden sm:inline text-white/20">•</span>
-            <span className="hidden md:inline text-[#A0A0B0]">{brainMode === 'dsa' ? 'Interview Practice Mode' : 'Productivity Command Center'}</span>
+          {/* Right: Status Pill, Add Event (if admin), Guide Info */}
+          <div className="flex items-center gap-2 justify-end">
+            {isAdmin ? (
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-accent/10 border border-accent/20 text-[11px] font-mono text-accent">
+                <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+                <span>Admin Active</span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/5 border border-white/10 text-[11px] font-mono text-muted">
+                <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse" />
+                <span>Live Feed</span>
+              </div>
+            )}
+
+            {brainMode === 'calendar' && isAdmin && isEditMode && (
+              <button
+                onClick={openCreateEvent}
+                className="flex items-center gap-1 px-3 py-1 rounded-full text-xs font-mono border transition-all cursor-pointer shadow-sm hover:scale-105"
+                style={{
+                  background: 'rgba(184, 255, 60, 0.15)',
+                  borderColor: 'rgba(184, 255, 60, 0.4)',
+                  color: '#B8FF3C',
+                }}
+                title="Add a new calendar event"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Add Event</span>
+              </button>
+            )}
+
             <button
               onClick={() => setShowInfoModal(true)}
-              className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-muted hover:text-white transition-colors cursor-pointer flex items-center gap-1.5 border border-hairline"
-              title="Second Brain System Info"
+              className="p-1.5 rounded-xl bg-white/5 hover:bg-white/10 text-muted hover:text-white transition-colors cursor-pointer flex items-center gap-1 border border-hairline"
+              title="System Guide"
             >
               <HelpCircle className="w-3.5 h-3.5 text-accent" />
-              <span className="text-[11px] font-mono">Info</span>
+              <span className="text-[11px] font-mono hidden sm:inline">Guide</span>
             </button>
           </div>
         </div>
@@ -239,8 +285,8 @@ export default function SecondBrain({ defaultMode = 'calendar' }) {
             }}
           />
         ) : (
-          <div className="flex flex-col gap-10">
-            {/* Header */}
+          <div className="flex flex-col gap-6">
+            {/* Streamlined Calendar Header */}
             <CalendarHeader
               currentDate={currentDate}
               view={view}
@@ -254,127 +300,127 @@ export default function SecondBrain({ defaultMode = 'calendar' }) {
               activeFilterCount={activeFilterCount}
             />
 
-        {/* Filter Drawer */}
-        <FilterDrawer
-          isOpen={isFilterOpen}
-          selectedCategory={selectedCategory}
-          onCategoryChange={setSelectedCategory}
-          selectedStatus={selectedStatus}
-          onStatusChange={setSelectedStatus}
-          onResetFilters={handleResetFilters}
-          resultCount={events.length}
-        />
+            {/* Filter Drawer */}
+            <FilterDrawer
+              isOpen={isFilterOpen}
+              selectedCategory={selectedCategory}
+              onCategoryChange={setSelectedCategory}
+              selectedStatus={selectedStatus}
+              onStatusChange={setSelectedStatus}
+              onResetFilters={handleResetFilters}
+              resultCount={events.length}
+            />
 
-        {/* Error State with Retry */}
-        {status === 'error' && (
-          <div className="w-full py-12 px-6 rounded-2xl border border-hairline bg-[#160E0E]/40 text-center flex flex-col items-center justify-center gap-3">
-            <AlertCircle className="w-8 h-8 text-red-400" />
-            <h3 className="text-base font-display font-semibold text-white">Connection Error</h3>
-            <p className="text-xs font-mono text-muted max-w-md">
-              {errorMessage || 'Unable to fetch public records from Second Brain backend.'}
-            </p>
-            <button
-              onClick={() => {
-                setStatus('loading')
-                fetchEvents()
-                fetchMetadata()
-              }}
-              className="mt-2 px-4 py-2 rounded-full text-xs font-mono font-medium bg-accent text-[#08080C] hover:opacity-90 flex items-center gap-1.5 cursor-pointer"
-            >
-              <RefreshCw className="w-3.5 h-3.5" />
-              <span>Retry Connection</span>
-            </button>
+            {/* Error State with Retry */}
+            {status === 'error' && (
+              <div className="w-full py-12 px-6 rounded-2xl border border-hairline bg-[#160E0E]/40 text-center flex flex-col items-center justify-center gap-3">
+                <AlertCircle className="w-8 h-8 text-red-400" />
+                <h3 className="text-base font-display font-semibold text-white">Connection Error</h3>
+                <p className="text-xs font-mono text-muted max-w-md">
+                  {errorMessage || 'Unable to fetch public records from Second Brain backend.'}
+                </p>
+                <button
+                  onClick={() => {
+                    setStatus('loading')
+                    fetchEvents()
+                    fetchMetadata()
+                  }}
+                  className="mt-2 px-4 py-2 rounded-full text-xs font-mono font-medium bg-accent text-[#08080C] hover:opacity-90 flex items-center gap-1.5 cursor-pointer"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                  <span>Retry Connection</span>
+                </button>
+              </div>
+            )}
+
+            {/* Loading State */}
+            {status === 'loading' && (
+              <div className="w-full py-20 text-center flex flex-col items-center justify-center gap-3">
+                <div className="w-8 h-8 rounded-full border-2 border-accent border-t-transparent animate-spin" />
+                <span className="text-xs font-mono text-muted">
+                  Loading public activities & calendar...
+                </span>
+              </div>
+            )}
+
+            {/* Active View Container */}
+            {status === 'ready' && (
+              <div className="w-full flex flex-col gap-8">
+                <AnimatePresence mode="wait">
+                  {view === 'month' && (
+                    <motion.div
+                      key="month"
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -8 }}
+                      transition={{ duration: 0.15 }}
+                    >
+                      <MonthView
+                        currentDate={currentDate}
+                        events={events}
+                        onSelectEvent={setSelectedEvent}
+                        onSelectDate={handleSelectDate}
+                      />
+                    </motion.div>
+                  )}
+
+                  {view === 'week' && (
+                    <motion.div
+                      key="week"
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -8 }}
+                      transition={{ duration: 0.15 }}
+                    >
+                      <WeekView
+                        currentDate={currentDate}
+                        events={events}
+                        onSelectEvent={setSelectedEvent}
+                        onSelectDate={handleSelectDate}
+                      />
+                    </motion.div>
+                  )}
+
+                  {view === 'agenda' && (
+                    <motion.div
+                      key="agenda"
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -8 }}
+                      transition={{ duration: 0.15 }}
+                    >
+                      <AgendaView
+                        events={events}
+                        onSelectEvent={setSelectedEvent}
+                      />
+                    </motion.div>
+                  )}
+
+                  {view === 'day' && (
+                    <motion.div
+                      key="day"
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -8 }}
+                      transition={{ duration: 0.15 }}
+                    >
+                      <DayView
+                        currentDate={currentDate}
+                        events={events}
+                        onSelectEvent={setSelectedEvent}
+                        onPrevDay={handlePrev}
+                        onNextDay={handleNext}
+                      />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* Connected Portfolio Projects Section */}
+                <GoalsAndProjectsPanel projects={projects} />
+              </div>
+            )}
           </div>
         )}
-
-        {/* Loading State */}
-        {status === 'loading' && (
-          <div className="w-full py-20 text-center flex flex-col items-center justify-center gap-3">
-            <div className="w-8 h-8 rounded-full border-2 border-accent border-t-transparent animate-spin" />
-            <span className="text-xs font-mono text-muted">
-              Loading public activities & calendar...
-            </span>
-          </div>
-        )}
-
-        {/* Active View Container */}
-        {status === 'ready' && (
-          <div className="w-full flex flex-col gap-10">
-            <AnimatePresence mode="wait">
-              {view === 'month' && (
-                <motion.div
-                  key="month"
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -8 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <MonthView
-                    currentDate={currentDate}
-                    events={events}
-                    onSelectEvent={setSelectedEvent}
-                    onSelectDate={handleSelectDate}
-                  />
-                </motion.div>
-              )}
-
-              {view === 'week' && (
-                <motion.div
-                  key="week"
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -8 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <WeekView
-                    currentDate={currentDate}
-                    events={events}
-                    onSelectEvent={setSelectedEvent}
-                    onSelectDate={handleSelectDate}
-                  />
-                </motion.div>
-              )}
-
-              {view === 'agenda' && (
-                <motion.div
-                  key="agenda"
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -8 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <AgendaView
-                    events={events}
-                    onSelectEvent={setSelectedEvent}
-                  />
-                </motion.div>
-              )}
-
-              {view === 'day' && (
-                <motion.div
-                  key="day"
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -8 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <DayView
-                    currentDate={currentDate}
-                    events={events}
-                    onSelectEvent={setSelectedEvent}
-                    onPrevDay={handlePrev}
-                    onNextDay={handleNext}
-                  />
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {/* Connected Portfolio Projects Section */}
-            <GoalsAndProjectsPanel projects={projects} />
-          </div>
-        )}
-      </div>
-    )}
 
         {/* Event Detail Modal */}
         <EventDetailModal

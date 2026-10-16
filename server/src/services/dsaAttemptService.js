@@ -46,29 +46,87 @@ export function recordAttempt({
   const revSchedule = db.prepare('SELECT * FROM dsa_revision_schedule WHERE problem_id = ?').get(problem_id)
   const isRevisionSolve = Boolean(revSchedule && revSchedule.next_revision_due <= todayStr && result === 'solved')
 
-  // Calculate XP
+  // Target solve times based on difficulty
+  const targetMinutes = problem.estimated_solve_time || (
+    problem.difficulty === 'Easy' ? 15 : problem.difficulty === 'Medium' ? 30 : 45
+  )
+  const durationMinutes = duration_seconds ? Math.floor(duration_seconds / 60) : 0
+  const durationSecondsTotal = duration_seconds || 0
+
+  // Calculate XP with Intelligent Penalties
   let xp = 0
+  const xpBreakdown = []
+
   if (result === 'solved') {
-    xp += 50 // Base solve
+    // 1. Base solve points scaled by difficulty
+    const baseSolveXp = problem.difficulty === 'Easy' ? 50 : problem.difficulty === 'Medium' ? 65 : 80
+    xp += baseSolveXp
+    xpBreakdown.push({ label: `${problem.difficulty} Base Solve`, xp: baseSolveXp, type: 'bonus' })
+
+    // 2. Independent solve bonus vs Assistance Penalties
     if (actualIndependent === 1) {
-      xp += 30 // Independent solve bonus
+      xp += 30
+      xpBreakdown.push({ label: 'Independent Solve Bonus', xp: 30, type: 'bonus' })
+    } else {
+      if (solution_viewed === 1) {
+        xp -= 15
+        xpBreakdown.push({ label: 'Solution Viewed Penalty', xp: -15, type: 'penalty' })
+      }
+      if (hints_used > 0) {
+        const hintPenalty = hints_used * 5
+        xp -= hintPenalty
+        xpBreakdown.push({ label: `Hint Usage Penalty (${hints_used} hint${hints_used > 1 ? 's' : ''})`, xp: -hintPenalty, type: 'penalty' })
+      }
     }
+
+    // 3. Spaced revision bonus
     if (isRevisionSolve) {
-      xp += 25 // Revision bonus
+      xp += 25
+      xpBreakdown.push({ label: 'Spaced Repetition Review Bonus', xp: 25, type: 'bonus' })
     }
-    // Speed bonus
-    if (duration_seconds && duration_seconds < (problem.estimated_solve_time || 25) * 60) {
+
+    // 4. Overtime Penalty vs Fast Speed Bonus
+    if (durationMinutes > targetMinutes) {
+      const extraMinutes = durationMinutes - targetMinutes
+      // Overtime penalty scale per extra minute based on difficulty:
+      // Easy: -10 XP/min (max -40 XP)
+      // Medium: -7 XP/min (max -35 XP)
+      // Hard: -5 XP/min (max -30 XP)
+      const perMinRate = problem.difficulty === 'Easy' ? 10 : problem.difficulty === 'Medium' ? 7 : 5
+      const maxCap = problem.difficulty === 'Easy' ? 40 : problem.difficulty === 'Medium' ? 35 : 30
+      const overtimePenalty = Math.min(maxCap, extraMinutes * perMinRate)
+      xp -= overtimePenalty
+      xpBreakdown.push({
+        label: `Overtime Penalty (${extraMinutes}m over ${targetMinutes}m target at -${perMinRate} XP/m)`,
+        xp: -overtimePenalty,
+        type: 'penalty',
+      })
+    } else if (durationSecondsTotal > 0 && durationSecondsTotal < targetMinutes * 60) {
       xp += 20
+      xpBreakdown.push({ label: `Fast Execution Speed Bonus (<${targetMinutes}m)`, xp: 20, type: 'bonus' })
+    }
+
+    // 5. Completion Floor Protection: guaranteed positive reward for finishing
+    const minFloor = problem.difficulty === 'Easy' ? 15 : problem.difficulty === 'Medium' ? 20 : 25
+    if (xp < minFloor) {
+      const floorBoost = minFloor - xp
+      xpBreakdown.push({ label: 'Completion Floor Protection', xp: floorBoost, type: 'bonus' })
+      xp = minFloor
     }
   } else if (result === 'attempted_unsolved') {
-    // Reward genuine effort (effort > 3 minutes)
-    if (duration_seconds && duration_seconds >= 180) {
-      xp += 10
+    if (durationSecondsTotal >= 180) {
+      xp = 10
+      xpBreakdown.push({ label: 'Genuine Effort Reward (>3m attempt)', xp: 10, type: 'bonus' })
+    } else {
+      xp = 0
+      xpBreakdown.push({ label: 'Rapid Abandonment Penalty (<3m attempt)', xp: 0, type: 'penalty' })
     }
   }
 
+  // 6. Mistake Journal Reflection Bonus
   if (Array.isArray(mistakes) && mistakes.length > 0) {
-    xp += 15 // Reflection bonus for mistake journal
+    xp += 15
+    xpBreakdown.push({ label: 'Mistake Journal Reflection Bonus', xp: 15, type: 'bonus' })
   }
 
   const attemptId = crypto.randomUUID()
@@ -166,6 +224,7 @@ export function recordAttempt({
       isRevisionSolve,
       revisionUpdate: revUpdate,
       rewardInfo,
+      xpBreakdown,
     }
   })
 
@@ -203,6 +262,7 @@ export function recordAttempt({
     xpEarned: txResult.xpAwarded,
     rewardInfo: txResult.rewardInfo,
     revisionUpdate: txResult.revisionUpdate,
+    xpBreakdown: txResult.xpBreakdown,
   }
 }
 
