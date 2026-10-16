@@ -327,12 +327,13 @@ export async function createAttempt(req, res) {
       linkToCalendar,
     } = req.body
 
-    if (!problem_id) {
+    const targetProblemId = req.body.problem_id || req.body.id
+    if (!targetProblemId) {
       return res.status(400).json({ success: false, error: 'problem_id is required' })
     }
 
     const attemptResult = recordAttempt({
-      problem_id,
+      problem_id: targetProblemId,
       started_at,
       ended_at,
       duration_seconds: duration_seconds != null ? parseInt(duration_seconds, 10) : null,

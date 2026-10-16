@@ -224,13 +224,19 @@ export default function DsaWorkspace({ onSwitchToCalendar }) {
   }
 
   const handleLaunchPractice = (problem) => {
-    setArenaProblem(problem)
+    if (!problem) return
+    const normalized = {
+      ...problem,
+      id: problem.id || problem.problem_id,
+      problem_id: problem.id || problem.problem_id,
+    }
+    setArenaProblem(normalized)
     setActiveTab('arena')
   }
 
   const handleCompleteAttempt = async (attemptData) => {
     if (!isAdmin) {
-      return { success: false, error: 'Admin access required to log attempts.' }
+      return { success: false, error: 'Admin access required to log attempts. Please log in from the footer.' }
     }
     try {
       const res = await authFetch(`${apiUrl}/api/v1/dsa/attempts`, {
@@ -238,16 +244,18 @@ export default function DsaWorkspace({ onSwitchToCalendar }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(attemptData),
       })
-      if (res.ok) {
-        const json = await res.json()
+      const json = await res.json()
+      if (res.ok && json.success) {
         // Refresh overview, topics, mistakes
         fetchOverview()
         fetchTopicsAndRevision()
         fetchMistakes()
         return json
       }
+      return { success: false, error: json.error || 'Server rejected attempt submission' }
     } catch (err) {
       console.error('Submit attempt failed:', err)
+      return { success: false, error: err.message || 'Network error submitting attempt' }
     }
   }
 

@@ -38,6 +38,15 @@ export default function RevisionScheduleCard({
   const totalDueNow = overdueList.length + dueTodayList.length
   const totalScheduled = upcomingList.length
 
+  const handleLaunchItem = (item) => {
+    if (!onLaunchPractice) return
+    onLaunchPractice({
+      ...item,
+      id: item.id || item.problem_id,
+      problem_id: item.id || item.problem_id,
+    })
+  }
+
   const handleSyncToCalendar = async () => {
     setSyncingCalendar(true)
     setSyncMessage(null)
@@ -168,7 +177,7 @@ export default function RevisionScheduleCard({
                 )}
                 {onLaunchPractice && (
                   <button
-                    onClick={() => onLaunchPractice(item)}
+                    onClick={() => handleLaunchItem(item)}
                     className="px-3 py-1 rounded-lg text-xs font-mono font-bold bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 border border-rose-500/30 flex items-center gap-1 transition-colors cursor-pointer"
                   >
                     <RotateCcw className="w-3 h-3" />
@@ -224,11 +233,11 @@ export default function RevisionScheduleCard({
                   Stats
                 </button>
               )}
-              {onLaunchPractice && (
-                <button
-                  onClick={() => onLaunchPractice(item)}
-                  className="px-3 py-1 rounded-lg text-xs font-mono font-bold bg-amber-400/20 text-amber-300 hover:bg-amber-400/30 border border-amber-400/30 flex items-center gap-1 transition-colors cursor-pointer"
-                >
+                {onLaunchPractice && (
+                  <button
+                    onClick={() => handleLaunchItem(item)}
+                    className="px-3 py-1 rounded-lg text-xs font-mono font-bold bg-amber-400/20 text-amber-300 hover:bg-amber-400/30 border border-amber-400/30 flex items-center gap-1 transition-colors cursor-pointer"
+                  >
                   <RotateCcw className="w-3 h-3" />
                   <span>Revise</span>
                 </button>
@@ -283,7 +292,7 @@ export default function RevisionScheduleCard({
                 )}
                 {onLaunchPractice && (
                   <button
-                    onClick={() => onLaunchPractice(item)}
+                    onClick={() => handleLaunchItem(item)}
                     className="px-3 py-1 rounded-lg text-xs font-mono bg-white/5 hover:bg-white/10 text-muted hover:text-white border border-hairline transition-colors cursor-pointer"
                   >
                     Practice

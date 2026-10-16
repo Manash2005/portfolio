@@ -159,12 +159,15 @@ export function getRevisionQueue() {
   const items = db.prepare(`
     SELECT 
       r.*,
+      p.id as id,
+      p.id as problem_id,
       p.title,
       p.platform,
       p.canonical_url,
       p.difficulty,
       p.primary_topic,
       p.patterns,
+      p.estimated_solve_time,
       (SELECT COUNT(*) FROM dsa_attempts a WHERE a.problem_id = p.id AND a.result = 'solved') as total_solves
     FROM dsa_revision_schedule r
     JOIN dsa_problems p ON r.problem_id = p.id

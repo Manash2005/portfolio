@@ -89,10 +89,24 @@ export default function PracticeArena({
     setIsFinishing(true)
   }
 
+  const [submitError, setSubmitError] = useState(null)
+
   const handleSubmitAttempt = async (e) => {
     e.preventDefault()
     if (!activeProblem) return
-    if (!isAdmin) return
+    setSubmitError(null)
+
+    if (!isAdmin) {
+      setSubmitError('Administrator login is required to save genuine practice attempts to the database.')
+      return
+    }
+
+    const targetProblemId = activeProblem.id || activeProblem.problem_id
+    if (!targetProblemId) {
+      setSubmitError('Unable to identify problem ID. Please reload and try again.')
+      return
+    }
+
     setIsSubmitting(true)
 
     const isIndependent = !solutionViewed && hintsUsed === 0
@@ -108,7 +122,7 @@ export default function PracticeArena({
 
     try {
       const res = await onCompleteAttempt({
-        problem_id: activeProblem.id,
+        problem_id: targetProblemId,
         started_at: startTime || new Date().toISOString(),
         ended_at: new Date().toISOString(),
         duration_seconds: seconds,
@@ -126,9 +140,13 @@ export default function PracticeArena({
 
       if (res && res.success) {
         setAttemptResult(res)
+        setSubmitError(null)
+      } else {
+        setSubmitError(res?.error || 'Failed to record attempt. Please try again.')
       }
     } catch (err) {
       console.error('Failed to submit attempt:', err)
+      setSubmitError(err.message || 'An error occurred while saving your attempt.')
     } finally {
       setIsSubmitting(false)
     }
@@ -441,6 +459,22 @@ export default function PracticeArena({
                       Cancel
                     </button>
                   </div>
+
+                  {submitError && (
+                    <div className="p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs font-mono flex items-center justify-between">
+                      <span className="flex items-center gap-1.5">
+                        <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+                        <span>{submitError}</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setSubmitError(null)}
+                        className="text-rose-400 hover:text-white p-1 text-xs"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  )}
 
                   {/* Result selection */}
                   <div className="flex flex-col gap-1.5">
