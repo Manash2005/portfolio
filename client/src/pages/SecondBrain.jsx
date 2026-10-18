@@ -35,10 +35,12 @@ export default function SecondBrain({ defaultMode = 'calendar' }) {
   const [showInfoModal, setShowInfoModal] = useState(false)
 
   useEffect(() => {
-    if (location.pathname.includes('/dsa')) {
+    if (location.pathname.includes('/dsa') || defaultMode === 'dsa') {
       setBrainMode('dsa')
+    } else {
+      setBrainMode('calendar')
     }
-  }, [location.pathname])
+  }, [location.pathname, defaultMode])
 
   const { isAdmin, isEditMode, openCreateEvent, authFetch, contentVersion } = useAdmin()
   const [currentDate, setCurrentDate] = useState(() => new Date())

@@ -6,6 +6,20 @@ export default function PenaltyRulesPopover({ className = '' }) {
   const [isOpen, setIsOpen] = useState(false)
   const containerRef = useRef(null)
 
+  const timeoutRef = useRef(null)
+
+  const handleMouseEnter = () => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current)
+    setIsOpen(true)
+  }
+
+  const handleMouseLeave = () => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current)
+    timeoutRef.current = setTimeout(() => {
+      setIsOpen(false)
+    }, 250)
+  }
+
   // Close when clicking outside
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -18,15 +32,20 @@ export default function PenaltyRulesPopover({ className = '' }) {
     }
     return () => {
       document.removeEventListener('mousedown', handleClickOutside)
+      if (timeoutRef.current) clearTimeout(timeoutRef.current)
     }
   }, [isOpen])
 
   return (
-    <div ref={containerRef} className={`relative inline-flex items-center ${className}`}>
+    <div
+      ref={containerRef}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      className={`relative inline-flex items-center ${className}`}
+    >
       <button
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
-        onMouseEnter={() => setIsOpen(true)}
         className="p-1 rounded-full text-muted hover:text-white hover:bg-white/10 transition-colors cursor-pointer group flex items-center gap-1 focus:outline-none"
         aria-label="View DSA Arena Scoring and Penalty Rules"
         title="View Scoring & Penalty Rules"

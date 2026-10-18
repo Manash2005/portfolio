@@ -165,6 +165,12 @@ export async function getDsaOverview(req, res) {
           Easy: null,
           Medium: null,
           Hard: null,
+          easy_avg_minutes: null,
+          medium_avg_minutes: null,
+          hard_avg_minutes: null,
+          easy_count: 0,
+          medium_count: 0,
+          hard_count: 0,
           details: {
             Easy: { avgMinutes: null, solveCount: 0 },
             Medium: { avgMinutes: null, solveCount: 0 },
@@ -173,6 +179,16 @@ export async function getDsaOverview(req, res) {
         }
       }
       solveTimeMap[r.date][r.difficulty] = r.avg_minutes
+      if (r.difficulty === 'Easy') {
+        solveTimeMap[r.date].easy_avg_minutes = r.avg_minutes
+        solveTimeMap[r.date].easy_count = r.solve_count
+      } else if (r.difficulty === 'Medium') {
+        solveTimeMap[r.date].medium_avg_minutes = r.avg_minutes
+        solveTimeMap[r.date].medium_count = r.solve_count
+      } else if (r.difficulty === 'Hard') {
+        solveTimeMap[r.date].hard_avg_minutes = r.avg_minutes
+        solveTimeMap[r.date].hard_count = r.solve_count
+      }
       solveTimeMap[r.date].details[r.difficulty] = {
         avgMinutes: r.avg_minutes,
         avgSeconds: r.avg_seconds,
@@ -245,6 +261,9 @@ export async function getDsaOverview(req, res) {
         accuracyRate,
         totalPracticeMinutes,
         speedAdherenceRate,
+        easyAvgMinutes: overallAverages.Easy.avgMinutes,
+        mediumAvgMinutes: overallAverages.Medium.avgMinutes,
+        hardAvgMinutes: overallAverages.Hard.avgMinutes,
         dueRevisionsCount: revisionData.totalDueCount,
         totalScheduledRevisions:
           revisionData.totalScheduledCount ||

@@ -1,5 +1,16 @@
-import { useState } from 'react'
-import { RotateCcw, Calendar, CheckCircle2, Clock, ArrowRight, ExternalLink, RefreshCw, Sparkles } from 'lucide-react'
+import { useState, useMemo } from 'react'
+import {
+  RotateCcw,
+  Calendar,
+  CheckCircle2,
+  Clock,
+  ArrowRight,
+  ExternalLink,
+  RefreshCw,
+  Sparkles,
+  ChevronDown,
+  ChevronUp,
+} from 'lucide-react'
 import { useAdmin } from '../../context/AdminContext'
 import { API_BASE_URL } from '../../utils/apiConfig'
 
@@ -30,6 +41,7 @@ export default function RevisionScheduleCard({
   const { authFetch, isAdmin } = useAdmin()
   const [syncingCalendar, setSyncingCalendar] = useState(false)
   const [syncMessage, setSyncMessage] = useState(null)
+  const [showAllRevisions, setShowAllRevisions] = useState(false)
 
   const overdueList = revisionQueue.overdue || []
   const dueTodayList = revisionQueue.dueToday || []
@@ -37,6 +49,18 @@ export default function RevisionScheduleCard({
 
   const totalDueNow = overdueList.length + dueTodayList.length
   const totalScheduled = upcomingList.length
+
+  // Combined prioritized revision queue: Overdue first -> Due Today -> Upcoming
+  const allRevisionItems = useMemo(() => {
+    return [
+      ...overdueList.map((item) => ({ ...item, queueType: 'overdue' })),
+      ...dueTodayList.map((item) => ({ ...item, queueType: 'dueToday' })),
+      ...upcomingList.map((item) => ({ ...item, queueType: 'upcoming' })),
+    ]
+  }, [overdueList, dueTodayList, upcomingList])
+
+  // Show max 5 questions by default, expandable with Show All
+  const visibleItems = showAllRevisions ? allRevisionItems : allRevisionItems.slice(0, 5)
 
   const handleLaunchItem = (item) => {
     if (!onLaunchPractice) return
@@ -58,14 +82,18 @@ export default function RevisionScheduleCard({
 
       if (res.ok) {
         const data = await res.json()
-        setSyncMessage(`Scheduled ${data.syncedEvents || 0} revision(s) to your calendar!`)
+        const count = data.syncedCount ?? data.syncedEvents ?? 0
+        setSyncMessage(
+          data.message || `Scheduled ${count} revision date${count === 1 ? '' : 's'} to your calendar!`
+        )
         if (onRefresh) onRefresh()
       } else {
-        setSyncMessage('Calendar sync completed.')
+        const errJson = await res.json().catch(() => ({}))
+        setSyncMessage(errJson.error || 'Admin credentials required to schedule revisions to calendar.')
       }
     } catch (err) {
       console.warn('Calendar sync error:', err)
-      setSyncMessage('Synced with calendar.')
+      setSyncMessage('Calendar sync encountered a network issue.')
     } finally {
       setSyncingCalendar(false)
       setTimeout(() => setSyncMessage(null), 5000)
@@ -127,15 +155,24 @@ export default function RevisionScheduleCard({
         </div>
       )}
 
-      {/* Content: Vertical List of Revision Items */}
-      <div className="flex flex-col gap-3 flex-1">
-        {/* Overdue items */}
-        {overdueList.map((item) => {
+      {/* Content: Vertical List of Revision Items (Max 5 by default) */}
+      <div className="flex flex-col gap-2.5 flex-1">
+        {visibleItems.map((item) => {
           const countdown = getRevisionCountdown(item.next_revision_due)
+          const isOverdue = item.queueType === 'overdue'
+          const isToday = item.queueType === 'dueToday'
+          const isUpcoming = item.queueType === 'upcoming'
+
           return (
             <div
-              key={item.problem_id}
-              className="p-3.5 rounded-2xl bg-rose-500/[0.05] border border-rose-500/25 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-rose-500/40 transition-colors"
+              key={`${item.problem_id}-${item.queueType}`}
+              className={`p-3.5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors ${
+                isOverdue
+                  ? 'bg-rose-500/[0.05] border border-rose-500/25 hover:border-rose-500/40'
+                  : isToday
+                  ? 'bg-amber-500/[0.05] border border-amber-500/25 hover:border-amber-500/40'
+                  : 'bg-white/[0.02] border border-white/5 hover:border-white/15'
+              }`}
             >
               <div className="flex flex-col gap-1">
                 <div className="flex items-center gap-2">
@@ -155,10 +192,24 @@ export default function RevisionScheduleCard({
                   </span>
                 </div>
                 <div className="flex items-center gap-2 text-[11px] font-mono">
-                  <span className="text-rose-400 font-semibold flex items-center gap-1">
-                    <Clock className="w-3 h-3" />
-                    <span>{countdown?.text || 'Overdue'}</span>
-                  </span>
+                  {isOverdue && (
+                    <span className="text-rose-400 font-semibold flex items-center gap-1">
+                      <Clock className="w-3 h-3" />
+                      <span>{countdown?.text || 'Overdue'}</span>
+                    </span>
+                  )}
+                  {isToday && (
+                    <span className="text-amber-400 font-semibold flex items-center gap-1">
+                      <Clock className="w-3 h-3" />
+                      <span>Due Today</span>
+                    </span>
+                  )}
+                  {isUpcoming && (
+                    <span className="text-muted flex items-center gap-1">
+                      <span className="text-emerald-400 font-medium">Scheduled: {item.next_revision_due}</span>
+                      <span>({countdown?.text || 'On Track'})</span>
+                    </span>
+                  )}
                   <span className="text-muted">·</span>
                   <span className="text-muted">{item.primary_topic}</span>
                   <span className="text-muted">·</span>
@@ -178,130 +229,49 @@ export default function RevisionScheduleCard({
                 {onLaunchPractice && (
                   <button
                     onClick={() => handleLaunchItem(item)}
-                    className="px-3 py-1 rounded-lg text-xs font-mono font-bold bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 border border-rose-500/30 flex items-center gap-1 transition-colors cursor-pointer"
-                  >
-                    <RotateCcw className="w-3 h-3" />
-                    <span>Revise</span>
-                  </button>
-                )}
-              </div>
-            </div>
-          )
-        })}
-
-        {/* Due Today items */}
-        {dueTodayList.map((item) => (
-          <div
-            key={item.problem_id}
-            className="p-3.5 rounded-2xl bg-amber-500/[0.05] border border-amber-500/25 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-amber-500/40 transition-colors"
-          >
-            <div className="flex flex-col gap-1">
-              <div className="flex items-center gap-2">
-                <span
-                  className={`text-[9px] font-mono px-1.5 py-0.5 rounded font-bold uppercase ${
-                    item.difficulty === 'Easy'
-                      ? 'bg-emerald-500/15 text-emerald-400'
-                      : item.difficulty === 'Medium'
-                      ? 'bg-amber-500/15 text-amber-400'
-                      : 'bg-rose-500/15 text-rose-400'
-                  }`}
-                >
-                  {item.difficulty}
-                </span>
-                <span className="text-xs font-display font-bold text-white truncate max-w-[220px]">
-                  {item.title}
-                </span>
-              </div>
-              <div className="flex items-center gap-2 text-[11px] font-mono">
-                <span className="text-amber-400 font-semibold flex items-center gap-1">
-                  <Clock className="w-3 h-3" />
-                  <span>Due Today</span>
-                </span>
-                <span className="text-muted">·</span>
-                <span className="text-muted">{item.primary_topic}</span>
-                <span className="text-muted">·</span>
-                <span className="text-muted">Interval: {item.interval_days || 1}d</span>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
-              {onViewStats && (
-                <button
-                  onClick={() => onViewStats(item.problem_id)}
-                  className="px-2.5 py-1 rounded-lg text-xs font-mono bg-white/5 hover:bg-white/10 text-muted hover:text-white border border-white/5 transition-colors cursor-pointer"
-                >
-                  Stats
-                </button>
-              )}
-                {onLaunchPractice && (
-                  <button
-                    onClick={() => handleLaunchItem(item)}
-                    className="px-3 py-1 rounded-lg text-xs font-mono font-bold bg-amber-400/20 text-amber-300 hover:bg-amber-400/30 border border-amber-400/30 flex items-center gap-1 transition-colors cursor-pointer"
-                  >
-                  <RotateCcw className="w-3 h-3" />
-                  <span>Revise</span>
-                </button>
-              )}
-            </div>
-          </div>
-        ))}
-
-        {/* Upcoming Scheduled items */}
-        {upcomingList.slice(0, 4).map((item) => {
-          const countdown = getRevisionCountdown(item.next_revision_due)
-          return (
-            <div
-              key={item.problem_id}
-              className="p-3.5 rounded-2xl bg-white/[0.02] border border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:border-white/15 transition-colors"
-            >
-              <div className="flex flex-col gap-1">
-                <div className="flex items-center gap-2">
-                  <span
-                    className={`text-[9px] font-mono px-1.5 py-0.5 rounded font-bold uppercase ${
-                      item.difficulty === 'Easy'
-                        ? 'bg-emerald-500/15 text-emerald-400'
-                        : item.difficulty === 'Medium'
-                        ? 'bg-amber-500/15 text-amber-400'
-                        : 'bg-rose-500/15 text-rose-400'
+                    className={`px-3 py-1 rounded-lg text-xs font-mono font-bold flex items-center gap-1 transition-colors cursor-pointer ${
+                      isOverdue
+                        ? 'bg-rose-500/20 text-rose-300 hover:bg-rose-500/30 border border-rose-500/30'
+                        : isToday
+                        ? 'bg-amber-400/20 text-amber-300 hover:bg-amber-400/30 border border-amber-400/30'
+                        : 'bg-white/5 hover:bg-white/10 text-muted hover:text-white border border-hairline'
                     }`}
                   >
-                    {item.difficulty}
-                  </span>
-                  <span className="text-xs font-display font-medium text-white truncate max-w-[220px]">
-                    {item.title}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2 text-[11px] font-mono text-muted">
-                  <span className="text-emerald-400 font-medium">
-                    Scheduled: {item.next_revision_due}
-                  </span>
-                  <span>({countdown?.text || 'On Track'})</span>
-                  <span>·</span>
-                  <span>{item.primary_topic}</span>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
-                {onViewStats && (
-                  <button
-                    onClick={() => onViewStats(item.problem_id)}
-                    className="px-2.5 py-1 rounded-lg text-xs font-mono bg-white/5 hover:bg-white/10 text-muted hover:text-white border border-white/5 transition-colors cursor-pointer"
-                  >
-                    Stats
-                  </button>
-                )}
-                {onLaunchPractice && (
-                  <button
-                    onClick={() => handleLaunchItem(item)}
-                    className="px-3 py-1 rounded-lg text-xs font-mono bg-white/5 hover:bg-white/10 text-muted hover:text-white border border-hairline transition-colors cursor-pointer"
-                  >
-                    Practice
+                    {isUpcoming ? (
+                      <span>Practice</span>
+                    ) : (
+                      <>
+                        <RotateCcw className="w-3 h-3" />
+                        <span>Revise</span>
+                      </>
+                    )}
                   </button>
                 )}
               </div>
             </div>
           )
         })}
+
+        {/* Show All / Show Less Toggle Button for > 5 items */}
+        {allRevisionItems.length > 5 && (
+          <button
+            type="button"
+            onClick={() => setShowAllRevisions((prev) => !prev)}
+            className="w-full py-2 px-3 rounded-xl border border-hairline bg-white/[0.03] hover:bg-white/[0.08] text-xs font-mono text-muted hover:text-white flex items-center justify-center gap-1.5 transition-all cursor-pointer mt-1"
+          >
+            {showAllRevisions ? (
+              <>
+                <span>Show less (displaying all {allRevisionItems.length})</span>
+                <ChevronUp className="w-3.5 h-3.5 text-accent" />
+              </>
+            ) : (
+              <>
+                <span>Show all ({allRevisionItems.length} questions — {allRevisionItems.length - 5} more)</span>
+                <ChevronDown className="w-3.5 h-3.5 text-accent" />
+              </>
+            )}
+          </button>
+        )}
 
         {/* Empty state */}
         {totalDueNow === 0 && totalScheduled === 0 && (

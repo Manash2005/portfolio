@@ -294,10 +294,16 @@ export const getProjects = async (req, res) => {
       ORDER BY p.created_at DESC
     `).all()
 
-    const projects = rows.map(p => ({
-      ...p,
-      tech_stack: parseTags(p.tech_stack),
-    }))
+    const projects = rows.map(p => {
+      const parsedTech = parseTags(p.tech_stack)
+      return {
+        ...p,
+        tech_stack: parsedTech,
+        techStack: parsedTech,
+        liveLink: p.live_link,
+        githubLink: p.github_link,
+      }
+    })
 
     return res.status(200).json({
       success: true,

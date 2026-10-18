@@ -113,12 +113,20 @@ export default function DsaVisualCharts({
         ? graphPadding.left + graphWidth / 2
         : graphPadding.left + (idx / (count - 1)) * graphWidth
 
+      const easyMins = row.easy_avg_minutes ?? row.Easy ?? row.details?.Easy?.avgMinutes ?? null
+      const medMins = row.medium_avg_minutes ?? row.Medium ?? row.details?.Medium?.avgMinutes ?? null
+      const hardMins = row.hard_avg_minutes ?? row.Hard ?? row.details?.Hard?.avgMinutes ?? null
+
+      const easyCount = row.easy_count ?? row.details?.Easy?.solveCount ?? 1
+      const medCount = row.medium_count ?? row.details?.Medium?.solveCount ?? 1
+      const hardCount = row.hard_count ?? row.details?.Hard?.solveCount ?? 1
+
       return {
         date: row.date,
         x,
-        easy: row.easy_avg_minutes != null ? { mins: row.easy_avg_minutes, y: getY(row.easy_avg_minutes), count: row.easy_count } : null,
-        medium: row.medium_avg_minutes != null ? { mins: row.medium_avg_minutes, y: getY(row.medium_avg_minutes), count: row.medium_count } : null,
-        hard: row.hard_avg_minutes != null ? { mins: row.hard_avg_minutes, y: getY(row.hard_avg_minutes), count: row.hard_count } : null,
+        easy: easyMins != null ? { mins: Number(easyMins), y: getY(Number(easyMins)), count: easyCount } : null,
+        medium: medMins != null ? { mins: Number(medMins), y: getY(Number(medMins)), count: medCount } : null,
+        hard: hardMins != null ? { mins: Number(hardMins), y: getY(Number(hardMins)), count: hardCount } : null,
       }
     })
   }, [trendRows, graphWidth, graphPadding.left])
@@ -126,25 +134,33 @@ export default function DsaVisualCharts({
   // Build SVG path strings for each difficulty
   const easyLinePath = useMemo(() => {
     const valid = multiLinePoints.filter((p) => p.easy !== null)
-    if (valid.length < 2) return ''
+    if (valid.length === 0) return ''
+    if (valid.length === 1) return `M ${valid[0].x - 16} ${valid[0].easy.y} L ${valid[0].x + 16} ${valid[0].easy.y}`
     return `M ${valid[0].x} ${valid[0].easy.y} ` + valid.slice(1).map((p) => `L ${p.x} ${p.easy.y}`).join(' ')
   }, [multiLinePoints])
 
   const mediumLinePath = useMemo(() => {
     const valid = multiLinePoints.filter((p) => p.medium !== null)
-    if (valid.length < 2) return ''
+    if (valid.length === 0) return ''
+    if (valid.length === 1) return `M ${valid[0].x - 16} ${valid[0].medium.y} L ${valid[0].x + 16} ${valid[0].medium.y}`
     return `M ${valid[0].x} ${valid[0].medium.y} ` + valid.slice(1).map((p) => `L ${p.x} ${p.medium.y}`).join(' ')
   }, [multiLinePoints])
 
   const hardLinePath = useMemo(() => {
     const valid = multiLinePoints.filter((p) => p.hard !== null)
-    if (valid.length < 2) return ''
+    if (valid.length === 0) return ''
+    if (valid.length === 1) return `M ${valid[0].x - 16} ${valid[0].hard.y} L ${valid[0].x + 16} ${valid[0].hard.y}`
     return `M ${valid[0].x} ${valid[0].hard.y} ` + valid.slice(1).map((p) => `L ${p.x} ${p.hard.y}`).join(' ')
   }, [multiLinePoints])
 
-  const formatMinsDisplay = (mins) => {
-    if (mins == null) return '—'
-    return `${mins}m`
+  const formatMinsDisplay = (val) => {
+    if (val == null) return '—'
+    if (typeof val === 'object') {
+      const mins = val.avgMinutes ?? val.minutes ?? val.mins
+      if (mins == null) return '—'
+      return `${mins}m`
+    }
+    return `${val}m`
   }
 
   return (
@@ -211,7 +227,7 @@ export default function DsaVisualCharts({
             <span>Avg Easy</span>
           </span>
           <span className="text-lg font-display font-bold text-white">
-            {formatMinsDisplay(stats.easyAvgMinutes || averages.Easy)}
+            {formatMinsDisplay(averages.Easy?.avgMinutes ?? stats.easyAvgMinutes ?? averages.Easy)}
           </span>
           <span className="text-[10px] font-mono text-muted">Target: 15m</span>
         </div>
@@ -223,7 +239,7 @@ export default function DsaVisualCharts({
             <span>Avg Medium</span>
           </span>
           <span className="text-lg font-display font-bold text-white">
-            {formatMinsDisplay(stats.mediumAvgMinutes || averages.Medium)}
+            {formatMinsDisplay(averages.Medium?.avgMinutes ?? stats.mediumAvgMinutes ?? averages.Medium)}
           </span>
           <span className="text-[10px] font-mono text-muted">Target: 30m</span>
         </div>
@@ -235,7 +251,7 @@ export default function DsaVisualCharts({
             <span>Avg Hard</span>
           </span>
           <span className="text-lg font-display font-bold text-white">
-            {formatMinsDisplay(stats.hardAvgMinutes || averages.Hard)}
+            {formatMinsDisplay(averages.Hard?.avgMinutes ?? stats.hardAvgMinutes ?? averages.Hard)}
           </span>
           <span className="text-[10px] font-mono text-muted">Target: 45m</span>
         </div>
@@ -396,6 +412,7 @@ export default function DsaVisualCharts({
                       onMouseLeave={() => setActiveTooltip(null)}
                     >
                       <circle cx={pt.x} cy={pt.easy.y} r="14" fill="transparent" />
+                      <circle cx={pt.x} cy={pt.easy.y} r="9" fill="rgba(16,185,129,0.25)" />
                       <circle
                         cx={pt.x}
                         cy={pt.easy.y}
@@ -424,6 +441,7 @@ export default function DsaVisualCharts({
                       onMouseLeave={() => setActiveTooltip(null)}
                     >
                       <circle cx={pt.x} cy={pt.medium.y} r="14" fill="transparent" />
+                      <circle cx={pt.x} cy={pt.medium.y} r="9" fill="rgba(245,158,11,0.25)" />
                       <circle
                         cx={pt.x}
                         cy={pt.medium.y}
@@ -452,6 +470,7 @@ export default function DsaVisualCharts({
                       onMouseLeave={() => setActiveTooltip(null)}
                     >
                       <circle cx={pt.x} cy={pt.hard.y} r="14" fill="transparent" />
+                      <circle cx={pt.x} cy={pt.hard.y} r="9" fill="rgba(244,63,94,0.25)" />
                       <circle
                         cx={pt.x}
                         cy={pt.hard.y}
@@ -467,6 +486,14 @@ export default function DsaVisualCharts({
               )
             })}
           </svg>
+
+          {multiLinePoints.length === 0 && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center">
+              <Clock className="w-8 h-8 text-muted/30 mb-1.5" />
+              <span className="text-xs font-mono text-muted">No solve time trajectory recorded yet</span>
+              <span className="text-[10px] font-mono text-muted/60 mt-0.5">Solve timed questions in Practice Arena to plot your curves</span>
+            </div>
+          )}
         </div>
 
         {/* Dynamic Tooltip & Guidance Footer */}

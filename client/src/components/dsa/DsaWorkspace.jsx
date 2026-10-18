@@ -402,8 +402,8 @@ export default function DsaWorkspace({ onSwitchToCalendar }) {
 
       {/* 2. Active Tab Content Container */}
       <AnimatePresence mode="wait">
-        {/* OVERVIEW TAB */}
-        {activeTab === 'overview' && (
+        {/* OVERVIEW & CHARTS TAB */}
+        {(activeTab === 'overview' || activeTab === 'charts') && (
           <motion.div
             key="overview"
             initial={{ opacity: 0, y: 8 }}
@@ -431,12 +431,14 @@ export default function DsaWorkspace({ onSwitchToCalendar }) {
             </div>
 
             {/* Visual Analytics & Interactive Charts (includes 3-line Solve Times graph & KPIs) */}
-            <DsaVisualCharts
-              charts={overview?.charts}
-              stats={stats}
-              recentAttempts={overview?.recentAttempts || []}
-              onViewStats={(id) => setSelectedStatsProblemId(id)}
-            />
+            <div id="velocity-charts" className="w-full">
+              <DsaVisualCharts
+                charts={overview?.charts}
+                stats={{ ...stats, streak: profile?.current_streak ?? profile?.streak ?? stats?.streak ?? 0 }}
+                recentAttempts={overview?.recentAttempts || []}
+                onViewStats={(id) => setSelectedStatsProblemId(id)}
+              />
+            </div>
 
             {/* Active Daily Plan or Launcher Hero */}
             {activePlan ? (
@@ -556,7 +558,13 @@ export default function DsaWorkspace({ onSwitchToCalendar }) {
 
                 {overview?.recentAttempts && overview.recentAttempts.length > 0 && (
                   <button
-                    onClick={() => setActiveTab('charts')}
+                    onClick={() => {
+                      setActiveTab('overview')
+                      setTimeout(() => {
+                        const el = document.getElementById('velocity-charts')
+                        if (el) el.scrollIntoView({ behavior: 'smooth' })
+                      }, 50)
+                    }}
                     className="text-xs font-mono text-accent hover:underline flex items-center gap-1 cursor-pointer"
                   >
                     <span>View Velocity Charts</span>

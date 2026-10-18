@@ -148,7 +148,13 @@ export default function AllProjects() {
                   marginBottom: '1.5rem',
                 }}
               >
-                {Array.isArray(project.techStack) ? project.techStack.join(' · ') : ''}
+                {Array.isArray(project.techStack)
+                  ? project.techStack.join(' · ')
+                  : Array.isArray(project.tech_stack)
+                  ? project.tech_stack.join(' · ')
+                  : typeof (project.techStack || project.tech_stack) === 'string'
+                  ? (project.techStack || project.tech_stack)
+                  : ''}
               </p>
               <div className="flex gap-5">
                 {project.liveLink && (
