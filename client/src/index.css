@@ -67,8 +67,13 @@
   }
 
   ::selection {
-    background-color: var(--color-accent);
-    color: #08080C;
+    background-color: #B8FF3C !important;
+    color: #08080C !important;
+  }
+
+  ::-moz-selection {
+    background-color: #B8FF3C !important;
+    color: #08080C !important;
   }
 
   /* Thin scrollbar */
@@ -134,6 +139,11 @@
   .content-layer {
     position: relative;
     z-index: 1;
+  }
+
+  .select-text {
+    user-select: text !important;
+    -webkit-user-select: text !important;
   }
 }
 

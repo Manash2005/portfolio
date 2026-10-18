@@ -58,6 +58,9 @@ export default function BlogDetail({ slug: propSlug, embedded = false, onBack })
   const [toolbarPos, setToolbarPos] = useState(null)
   const [showNotesDrawer, setShowNotesDrawer] = useState(false)
   const [copiedLink, setCopiedLink] = useState(false)
+  const [highlightToast, setHighlightToast] = useState(false)
+  const [copiedSelectionToast, setCopiedSelectionToast] = useState(false)
+  const articleRef = useRef(null)
 
   // Load saved progress and highlights from localStorage
   useEffect(() => {
@@ -108,28 +111,59 @@ export default function BlogDetail({ slug: propSlug, embedded = false, onBack })
   }, [slug])
 
   // Floating text selection detection for interactive highlighter
-  const handleMouseUp = () => {
-    const selection = window.getSelection()
-    const text = selection?.toString()?.trim()
-    if (text && text.length > 3 && text.length < 500) {
-      const range = selection.getRangeAt(0)
-      const rect = range.getBoundingClientRect()
-      setSelectedText(text)
-      setToolbarPos({
-        top: Math.max(10, rect.top + window.scrollY - 45),
-        left: Math.max(10, rect.left + rect.width / 2 - 80),
-      })
-    } else {
+  const handleSelection = (e) => {
+    // If the event happened inside the toolbar itself, ignore it!
+    if (e?.target?.closest?.('[data-highlighter-toolbar]')) {
+      return
+    }
+
+    // Small delay ensures the browser selection range has settled
+    setTimeout(() => {
+      const selection = window.getSelection()
+      if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
+        setSelectedText('')
+        setToolbarPos(null)
+        return
+      }
+
+      const text = selection.toString().trim()
+      if (text && text.length >= 2 && text.length <= 1500) {
+        try {
+          const range = selection.getRangeAt(0)
+          // Ensure the selection occurred inside the article content container
+          if (articleRef.current && !articleRef.current.contains(range.commonAncestorContainer)) {
+            setSelectedText('')
+            setToolbarPos(null)
+            return
+          }
+
+          const rect = range.getBoundingClientRect()
+          if (rect.width > 0 && rect.height > 0) {
+            setSelectedText(text)
+            // Position toolbar using pure viewport coordinates (toolbar is fixed)
+            const top = rect.top > 60 ? rect.top - 46 : rect.bottom + 8
+            const left = Math.max(16, Math.min(window.innerWidth - 260, rect.left + rect.width / 2 - 100))
+            setToolbarPos({ top, left })
+            return
+          }
+        } catch {
+          // Range access failure fallback
+        }
+      }
+
       setSelectedText('')
       setToolbarPos(null)
-    }
+    }, 10)
   }
 
   const addHighlight = (color = '#B8FF3C') => {
     if (!selectedText) return
+    const textToHighlight = selectedText.trim()
+    if (!textToHighlight) return
+
     const newHighlight = {
       id: Date.now(),
-      text: selectedText,
+      text: textToHighlight,
       color,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     }
@@ -138,6 +172,10 @@ export default function BlogDetail({ slug: propSlug, embedded = false, onBack })
     try {
       localStorage.setItem(`blog_highlights_${slug}`, JSON.stringify(updated))
     } catch {}
+
+    setHighlightToast(true)
+    setTimeout(() => setHighlightToast(false), 2000)
+
     setSelectedText('')
     setToolbarPos(null)
     window.getSelection()?.removeAllRanges()
@@ -149,6 +187,81 @@ export default function BlogDetail({ slug: propSlug, embedded = false, onBack })
     try {
       localStorage.setItem(`blog_highlights_${slug}`, JSON.stringify(updated))
     } catch {}
+  }
+
+  // Inline annotation renderer for article blocks
+  const renderAnnotatedText = (text) => {
+    if (!text || typeof text !== 'string') return text
+    if (!highlights || highlights.length === 0) return text
+
+    const matching = highlights.filter(h => h.text && text.includes(h.text))
+    if (matching.length === 0) return text
+
+    const matches = []
+    matching.forEach(h => {
+      let startIndex = 0
+      while ((startIndex = text.indexOf(h.text, startIndex)) !== -1) {
+        matches.push({
+          id: h.id,
+          color: h.color,
+          start: startIndex,
+          end: startIndex + h.text.length,
+          text: h.text,
+        })
+        startIndex += h.text.length
+      }
+    })
+
+    if (matches.length === 0) return text
+
+    matches.sort((a, b) => a.start - b.start || (b.end - b.start) - (a.end - a.start))
+
+    const segments = []
+    let lastEnd = 0
+    for (const m of matches) {
+      if (m.start >= lastEnd) {
+        segments.push(m)
+        lastEnd = m.end
+      }
+    }
+
+    const output = []
+    let cursor = 0
+    segments.forEach((seg, sIdx) => {
+      if (seg.start > cursor) {
+        output.push(text.slice(cursor, seg.start))
+      }
+      output.push(
+        <mark
+          key={`hl-${seg.id}-${sIdx}`}
+          style={{
+            backgroundColor: `${seg.color}35`,
+            borderBottom: `2px solid ${seg.color}`,
+            color: '#EDEDF2',
+            padding: '1px 3px',
+            borderRadius: '3px',
+          }}
+          className="relative inline-block group cursor-pointer transition-all hover:bg-opacity-60"
+          title="Click to remove highlight"
+          onClick={(e) => {
+            e.stopPropagation()
+            removeHighlight(seg.id)
+          }}
+        >
+          {text.slice(seg.start, seg.end)}
+          <span className="hidden group-hover:inline-flex items-center ml-1 text-[10px] text-red-400 bg-[#0E0E14] px-1 rounded border border-white/20 align-middle">
+            ✕
+          </span>
+        </mark>
+      )
+      cursor = seg.end
+    })
+
+    if (cursor < text.length) {
+      output.push(text.slice(cursor))
+    }
+
+    return output
   }
 
   const toggleSectionComplete = (sIdx) => {
@@ -228,8 +341,9 @@ export default function BlogDetail({ slug: propSlug, embedded = false, onBack })
 
   return (
     <div
-      onMouseUp={handleMouseUp}
-      className={`min-h-screen text-[#EDEDF2] transition-colors duration-300 ${focusMode ? 'bg-[#050508]' : ''} ${embedded ? 'py-4' : 'pt-20 pb-28'}`}
+      onMouseUp={handleSelection}
+      onKeyUp={handleSelection}
+      className={`min-h-screen text-[#EDEDF2] select-text transition-colors duration-300 ${focusMode ? 'bg-[#050508]' : ''} ${embedded ? 'py-4' : 'pt-20 pb-28'}`}
     >
       {/* Top Sticky Reading HUD Progress Bar */}
       <div className="fixed top-0 left-0 right-0 h-1 bg-white/5 z-50">
@@ -246,34 +360,93 @@ export default function BlogDetail({ slug: propSlug, embedded = false, onBack })
       {/* Floating Selection Highlighter Bar */}
       {toolbarPos && (
         <div
-          style={{ top: `${toolbarPos.top}px`, left: `${toolbarPos.left}px` }}
-          className="fixed z-50 flex items-center gap-1.5 p-1 rounded-full bg-[#0E0E14] border border-white/20 shadow-2xl backdrop-blur-md animate-in fade-in zoom-in-95 duration-150"
+          data-highlighter-toolbar="true"
+          onMouseDown={(e) => {
+            // Prevent selection from collapsing when clicking toolbar options
+            e.preventDefault()
+            e.stopPropagation()
+          }}
+          style={{
+            top: `${toolbarPos.top}px`,
+            left: `${toolbarPos.left}px`,
+            zIndex: 9999,
+          }}
+          className="fixed flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#0E0E14] border border-white/20 shadow-2xl backdrop-blur-md select-none transition-all duration-150 animate-in fade-in zoom-in-95"
         >
+          <div className="flex items-center gap-1.5 border-r border-white/10 pr-2">
+            <span className="text-[10px] font-mono text-[#8A8A99] uppercase tracking-wider font-semibold">
+              Highlight:
+            </span>
+            <button
+              onClick={() => addHighlight('#B8FF3C')}
+              className="w-5 h-5 rounded-full bg-[#B8FF3C] hover:scale-125 transition-transform cursor-pointer border border-black/40 shadow-sm shadow-[#B8FF3C]/50"
+              title="Lime (System / Architecture)"
+            />
+            <button
+              onClick={() => addHighlight('#00F0FF')}
+              className="w-5 h-5 rounded-full bg-[#00F0FF] hover:scale-125 transition-transform cursor-pointer border border-black/40 shadow-sm shadow-[#00F0FF]/50"
+              title="Cyan (Concept / Protocol)"
+            />
+            <button
+              onClick={() => addHighlight('#C084FC')}
+              className="w-5 h-5 rounded-full bg-[#C084FC] hover:scale-125 transition-transform cursor-pointer border border-black/40 shadow-sm shadow-[#C084FC]/50"
+              title="Purple (AI / Distributed)"
+            />
+            <button
+              onClick={() => addHighlight('#FFB800')}
+              className="w-5 h-5 rounded-full bg-[#FFB800] hover:scale-125 transition-transform cursor-pointer border border-black/40 shadow-sm shadow-[#FFB800]/50"
+              title="Amber (Trade-off / Key Note)"
+            />
+          </div>
+
           <button
-            onClick={() => addHighlight('#B8FF3C')}
-            className="w-5 h-5 rounded-full bg-[#B8FF3C] hover:scale-110 transition-transform cursor-pointer border border-black/40"
-            title="Lime Highlight"
-          />
+            onClick={() => {
+              if (selectedText) {
+                navigator.clipboard.writeText(selectedText)
+                setCopiedSelectionToast(true)
+                setTimeout(() => setCopiedSelectionToast(false), 2000)
+              }
+            }}
+            className="text-[11px] font-mono text-[#8A8A99] hover:text-white px-1.5 py-0.5 rounded hover:bg-white/5 transition-colors cursor-pointer flex items-center gap-1"
+            title="Copy selected text"
+          >
+            {copiedSelectionToast ? (
+              <span className="text-emerald-400 font-bold">✓ Copied</span>
+            ) : (
+              <span>Copy</span>
+            )}
+          </button>
+
           <button
-            onClick={() => addHighlight('#00F0FF')}
-            className="w-5 h-5 rounded-full bg-[#00F0FF] hover:scale-110 transition-transform cursor-pointer border border-black/40"
-            title="Cyan Highlight"
-          />
-          <button
-            onClick={() => addHighlight('#C084FC')}
-            className="w-5 h-5 rounded-full bg-[#C084FC] hover:scale-110 transition-transform cursor-pointer border border-black/40"
-            title="Purple Highlight"
-          />
-          <button
-            onClick={() => { setSelectedText(''); setToolbarPos(null) }}
-            className="p-1 text-[#8A8A99] hover:text-white text-xs cursor-pointer"
+            onClick={() => {
+              setSelectedText('')
+              setToolbarPos(null)
+              window.getSelection()?.removeAllRanges()
+            }}
+            className="p-1 text-[#8A8A99] hover:text-white text-xs cursor-pointer ml-0.5"
+            title="Dismiss"
           >
             ✕
           </button>
         </div>
       )}
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* Toast Notification when text is highlighted */}
+      <AnimatePresence>
+        {highlightToast && (
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#0E0E14] border border-cyan-400/40 text-xs font-mono text-cyan-400 shadow-2xl backdrop-blur-md"
+          >
+            <CheckCircle2 className="w-4 h-4 text-cyan-400" />
+            <span>Highlight saved to notes!</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div ref={articleRef} className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 select-text">
         {/* Navigation & Reading Controls Ribbon */}
         <div className="flex flex-wrap items-center justify-between gap-3 mb-8 p-3 rounded-2xl bg-[#0E0E14] border border-white/5 shadow-md">
           {/* Back button */}
@@ -425,11 +598,11 @@ export default function BlogDetail({ slug: propSlug, embedded = false, onBack })
                 Key Architectural Takeaways
               </h2>
             </div>
-            <ul className="space-y-2.5">
+            <ul className="space-y-2.5 select-text">
               {blog.key_takeaways.map((takeaway, i) => (
-                <li key={i} className="flex items-start gap-2.5 text-xs sm:text-sm text-[#EDEDF2] leading-relaxed">
+                <li key={i} className="flex items-start gap-2.5 text-xs sm:text-sm text-[#EDEDF2] leading-relaxed select-text cursor-text">
                   <span style={{ color: theme.text }} className="font-bold mt-0.5">›</span>
-                  <span>{takeaway}</span>
+                  <span>{renderAnnotatedText(takeaway)}</span>
                 </li>
               ))}
             </ul>
@@ -483,8 +656,8 @@ export default function BlogDetail({ slug: propSlug, embedded = false, onBack })
           )}
 
           {/* Article Verbatim Body */}
-          <main className={sections.length > 2 ? 'lg:col-span-9' : 'lg:col-span-12'}>
-            <div className={`space-y-12 leading-relaxed ${fontSize}`}>
+          <main className={`${sections.length > 2 ? 'lg:col-span-9' : 'lg:col-span-12'} select-text`}>
+            <div className={`space-y-12 leading-relaxed ${fontSize} select-text`}>
               {sections.map((section, sIdx) => {
                 const secId = `section-${sIdx}`
                 const isSectionDone = completedSections[sIdx]
@@ -494,12 +667,12 @@ export default function BlogDetail({ slug: propSlug, embedded = false, onBack })
                   <section
                     key={sIdx}
                     id={secId}
-                    className={`scroll-mt-24 p-5 sm:p-7 rounded-2xl border transition-all duration-300 ${isSectionDone ? 'bg-[#0E0E14]/50 border-emerald-500/30' : 'bg-[#0E0E14]/20 border-white/5 hover:border-white/10'}`}
+                    className={`scroll-mt-24 p-5 sm:p-7 rounded-2xl border transition-all duration-300 select-text ${isSectionDone ? 'bg-[#0E0E14]/50 border-emerald-500/30' : 'bg-[#0E0E14]/20 border-white/5 hover:border-white/10'}`}
                   >
                     {/* Section Heading & Completion Checkpoint */}
                     <div className="flex items-start justify-between gap-3 pb-3 border-b border-white/10 mb-5">
                       <h2
-                        className="text-lg sm:text-2xl font-bold tracking-tight text-white font-display"
+                        className="text-lg sm:text-2xl font-bold tracking-tight text-white font-display select-text"
                       >
                         {section.heading}
                       </h2>
@@ -514,12 +687,12 @@ export default function BlogDetail({ slug: propSlug, embedded = false, onBack })
                     </div>
 
                     {/* Verbatim Section Content Blocks */}
-                    <div className="space-y-5 text-[#EDEDF2]/90">
+                    <div className="space-y-5 text-[#EDEDF2]/90 select-text">
                       {section.blocks && section.blocks.map((block, bIdx) => {
                         if (block.type === 'paragraph') {
                           return (
-                            <p key={bIdx} className="leading-relaxed font-normal">
-                              {block.text}
+                            <p key={bIdx} className="leading-relaxed font-normal select-text cursor-text">
+                              {renderAnnotatedText(block.text)}
                             </p>
                           )
                         }
@@ -538,8 +711,8 @@ export default function BlogDetail({ slug: propSlug, embedded = false, onBack })
                                   {isCopied ? '✓ Copied' : 'Copy'}
                                 </button>
                               </div>
-                              <pre className="p-4 text-xs sm:text-sm font-mono overflow-x-auto text-[#EDEDF2] leading-relaxed">
-                                <code>{block.code}</code>
+                              <pre className="p-4 text-xs sm:text-sm font-mono overflow-x-auto text-[#EDEDF2] leading-relaxed select-text">
+                                <code className="select-text">{block.code}</code>
                               </pre>
                             </div>
                           )
@@ -549,25 +722,25 @@ export default function BlogDetail({ slug: propSlug, embedded = false, onBack })
                           return (
                             <blockquote
                               key={bIdx}
-                              className="border-l-2 pl-4 py-1.5 my-4 italic text-[#EDEDF2]/80 bg-white/[0.01] rounded-r-lg"
+                              className="border-l-2 pl-4 py-1.5 my-4 italic text-[#EDEDF2]/80 bg-white/[0.01] rounded-r-lg select-text cursor-text"
                               style={{ borderColor: theme.text }}
                             >
-                              {block.text}
+                              {renderAnnotatedText(block.text)}
                             </blockquote>
                           )
                         }
 
                         if (block.type === 'list') {
                           return block.ordered ? (
-                            <ol key={bIdx} className="list-decimal list-inside space-y-1.5 my-3 pl-2 text-[#EDEDF2]/90">
+                            <ol key={bIdx} className="list-decimal list-inside space-y-1.5 my-3 pl-2 text-[#EDEDF2]/90 select-text cursor-text">
                               {block.items.map((it, i) => (
-                                <li key={i} className="leading-relaxed">{it}</li>
+                                <li key={i} className="leading-relaxed select-text">{renderAnnotatedText(it)}</li>
                               ))}
                             </ol>
                           ) : (
-                            <ul key={bIdx} className="list-disc list-inside space-y-1.5 my-3 pl-2 text-[#EDEDF2]/90">
+                            <ul key={bIdx} className="list-disc list-inside space-y-1.5 my-3 pl-2 text-[#EDEDF2]/90 select-text cursor-text">
                               {block.items.map((it, i) => (
-                                <li key={i} className="leading-relaxed">{it}</li>
+                                <li key={i} className="leading-relaxed select-text">{renderAnnotatedText(it)}</li>
                               ))}
                             </ul>
                           )

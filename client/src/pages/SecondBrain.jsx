@@ -196,7 +196,7 @@ export default function SecondBrain({ defaultMode = 'calendar' }) {
 
   return (
     <main
-      className="min-h-screen w-full pt-28 pb-20 px-4 sm:px-8 md:px-12 select-none"
+      className="min-h-screen w-full pt-28 pb-20 px-4 sm:px-8 md:px-12"
       style={{ background: '#08080C' }}
     >
       <div className="max-w-6xl mx-auto flex flex-col gap-6">
