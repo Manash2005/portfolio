@@ -125,7 +125,7 @@ CRITICAL INSTRUCTIONS:
 3. Provide 3-5 fine-grained subtopics / tags (e.g. ["Raft Consensus", "Leader Election", "Fault Tolerance", "Distributed Logs"]).
 4. Provide a 2-3 sentence curated summary of what makes this article valuable to engineers.
 5. Provide 3-5 concrete key takeaways that summarize the core principles or architectural learnings.
-6. Select the best cover_image from the AVAILABLE IMAGES list (or empty string if none).
+6. Select the best cover_image from the AVAILABLE IMAGES list ONLY if it is a genuine architectural diagram, system flowchart, or clear technical illustration. NEVER select an author photo, headshot, avatar, icon, or logo. If no high-quality content illustration exists, return empty string "".
 7. Estimate reading time in minutes.
 
 OUTPUT JSON ONLY. Strict schema:

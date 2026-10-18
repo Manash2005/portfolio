@@ -70,19 +70,53 @@ export async function scrapeBlogArticle(targetUrl) {
     publishedDate = publishedDate.split('T')[0]
   }
 
+/**
+ * Detects whether an image is irrelevant (e.g. author avatars, tracking pixels, logos, small icons)
+ */
+function isIrrelevantImage(src, alt = '', className = '', width = 0, height = 0) {
+  const s = (src || '').toLowerCase()
+  const a = (alt || '').toLowerCase()
+  const c = (className || '').toLowerCase()
+
+  const badKeywords = [
+    'avatar', 'author', 'profile', 'bio', 'user-img', 'userpic', 'user_pic',
+    'gravatar', 'badge', 'icon', 'logo', 'favicon', 'pixel', 'tracking',
+    'tracker', 'beacon', 'spacer', 'sponsor', 'social', 'share', 'button',
+    '1x1', 'analytics', 'ad-', 'advertisement', 'banner-ad', 'subscribe',
+    'newsletter', 'headshot'
+  ]
+
+  for (const kw of badKeywords) {
+    if (s.includes(kw) || a.includes(kw) || c.includes(kw)) {
+      return true
+    }
+  }
+
+  // If width or height are explicitly smaller than 200px, it's an icon/avatar
+  if (width > 0 && width < 220) return true
+  if (height > 0 && height < 120) return true
+
+  return false
+}
+
   let coverImage = $('meta[property="og:image"]').attr('content')
     || $('meta[name="twitter:image"]').attr('content')
     || ''
   if (coverImage) {
     try {
-      coverImage = new URL(coverImage, parsedUrl.href).href
+      const resolvedCover = new URL(coverImage, parsedUrl.href).href
+      if (isIrrelevantImage(resolvedCover)) {
+        coverImage = ''
+      } else {
+        coverImage = resolvedCover
+      }
     } catch {
       coverImage = ''
     }
   }
 
-  // 2. Clean clutter & irrelevant elements before article parsing
-  $('script, style, noscript, nav, footer, header, aside, form, svg, iframe, .advertisement, .ad, .comments, .social-share, .newsletter-signup, .related-posts, .cookie-banner').remove()
+  // 2. Clean clutter & irrelevant elements before article parsing (including author cards and avatars)
+  $('script, style, noscript, nav, footer, header, aside, form, svg, iframe, .advertisement, .ad, .comments, .social-share, .newsletter-signup, .related-posts, .cookie-banner, .author-card, .author-bio, .author-info, .byline, [rel="author"], .user-info').remove()
 
   // 3. Find primary article container
   let $contentContainer = $('article').first()
@@ -178,18 +212,33 @@ export async function scrapeBlogArticle(targetUrl) {
       let imgSrc = ''
       let imgAlt = ''
       let caption = ''
+      let imgWidth = 0
+      let imgHeight = 0
+      let imgClass = ''
 
       if (tagName === 'figure') {
         const $img = $el.find('img').first()
         imgSrc = $img.attr('src') || $img.attr('data-src') || ''
         imgAlt = $img.attr('alt') || ''
+        imgWidth = parseInt($img.attr('width') || $img.attr('data-width') || 0, 10)
+        imgHeight = parseInt($img.attr('height') || $img.attr('data-height') || 0, 10)
+        imgClass = `${$el.attr('class') || ''} ${$img.attr('class') || ''}`
         caption = $el.find('figcaption').text().trim()
       } else {
         imgSrc = $el.attr('src') || $el.attr('data-src') || ''
         imgAlt = $el.attr('alt') || ''
+        imgWidth = parseInt($el.attr('width') || $el.attr('data-width') || 0, 10)
+        imgHeight = parseInt($el.attr('height') || $el.attr('data-height') || 0, 10)
+        imgClass = $el.attr('class') || ''
       }
 
-      if (imgSrc && !imgSrc.startsWith('data:image/svg') && !imgSrc.includes('pixel.gif') && !imgSrc.includes('tracking')) {
+      // Strictly ignore avatars, icons, badges, and small thumbnails
+      if (
+        imgSrc &&
+        !imgSrc.startsWith('data:image/svg') &&
+        !imgSrc.includes('pixel.gif') &&
+        !isIrrelevantImage(imgSrc, imgAlt, imgClass, imgWidth, imgHeight)
+      ) {
         try {
           const resolvedSrc = new URL(imgSrc, parsedUrl.href).href
           const imageObj = {
@@ -197,11 +246,14 @@ export async function scrapeBlogArticle(targetUrl) {
             src: resolvedSrc,
             alt: imgAlt || title,
             caption: caption || imgAlt || '',
+            width: imgWidth,
+            height: imgHeight,
           }
           currentSection.blocks.push(imageObj)
           allImages.push(imageObj)
 
-          if (!coverImage) {
+          // Only pick as coverImage if high resolution (width >= 350 or unknown without small flags)
+          if (!coverImage && (imgWidth >= 350 || imgWidth === 0)) {
             coverImage = resolvedSrc
           }
         } catch {
@@ -215,9 +267,12 @@ export async function scrapeBlogArticle(targetUrl) {
     sections.push(currentSection)
   }
 
-  // If coverImage is still empty, look at any images found in body
+  // If coverImage is still empty, only pick a verified substantive content image (never an avatar)
   if (!coverImage && allImages.length > 0) {
-    coverImage = allImages[0].src
+    const candidate = allImages.find(img => !isIrrelevantImage(img.src, img.alt, '', img.width, img.height))
+    if (candidate) {
+      coverImage = candidate.src
+    }
   }
 
   // Calculate estimated reading time (standard: 200 words per minute)

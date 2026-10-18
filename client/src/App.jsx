@@ -88,8 +88,7 @@ function AppContent() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/projects" element={<AllProjects />} />
-            <Route path="/blogs" element={<Blogs />} />
-            <Route path="/blogs/:slug" element={<BlogDetail />} />
+            <Route path="/blogs" element={<Navigate to="/second-brain/blogs" replace />} />
             <Route
               path="/calendar"
               element={
@@ -119,6 +118,38 @@ function AppContent() {
               element={
                 <ProtectedRoute>
                   <SecondBrain defaultMode="dsa" />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/calendar/blogs"
+              element={
+                <ProtectedRoute>
+                  <SecondBrain defaultMode="blogs" />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/second-brain/blogs"
+              element={
+                <ProtectedRoute>
+                  <SecondBrain defaultMode="blogs" />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/calendar/blogs/:slug"
+              element={
+                <ProtectedRoute>
+                  <SecondBrain defaultMode="blogs" />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/second-brain/blogs/:slug"
+              element={
+                <ProtectedRoute>
+                  <SecondBrain defaultMode="blogs" />
                 </ProtectedRoute>
               }
             />

@@ -6,7 +6,6 @@ const NAV_ITEMS = [
   { label: 'Work',    id: 'projects' },
   { label: 'Proof',   id: 'activity' },
   { label: 'Build',   id: 'build' },
-  { label: 'Blogs',   to: '/blogs' },
   { label: 'About',   id: 'about' },
   { label: 'Contact', id: 'contact' },
 ]

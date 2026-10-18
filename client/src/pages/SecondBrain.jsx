@@ -10,6 +10,8 @@ import DayView from '../components/secondbrain/DayView'
 import GoalsAndProjectsPanel from '../components/secondbrain/GoalsAndProjectsPanel'
 import EventDetailModal from '../components/secondbrain/EventDetailModal'
 import DsaWorkspace from '../components/dsa/DsaWorkspace'
+import Blogs from './Blogs'
+import BlogDetail from './BlogDetail'
 import {
   Calendar,
   RefreshCw,
@@ -22,6 +24,7 @@ import {
   Sparkles,
   ArrowLeft,
   Plus,
+  BookOpen,
 } from 'lucide-react'
 
 import { useAdmin } from '../context/AdminContext'
@@ -30,12 +33,19 @@ import { API_BASE_URL } from '../utils/apiConfig'
 export default function SecondBrain({ defaultMode = 'calendar' }) {
   const location = useLocation()
   const navigate = useNavigate()
+  const isBlogsRoute = location.pathname.includes('/blogs') || defaultMode === 'blogs'
   const isDsaRoute = location.pathname.includes('/dsa') || defaultMode === 'dsa'
-  const [brainMode, setBrainMode] = useState(isDsaRoute ? 'dsa' : 'calendar')
+  const initialMode = isBlogsRoute ? 'blogs' : isDsaRoute ? 'dsa' : 'calendar'
+  const [brainMode, setBrainMode] = useState(initialMode)
   const [showInfoModal, setShowInfoModal] = useState(false)
 
+  const blogSlugMatch = location.pathname.match(/\/blogs\/([^\/]+)/)
+  const currentBlogSlug = blogSlugMatch ? blogSlugMatch[1] : null
+
   useEffect(() => {
-    if (location.pathname.includes('/dsa') || defaultMode === 'dsa') {
+    if (location.pathname.includes('/blogs') || defaultMode === 'blogs') {
+      setBrainMode('blogs')
+    } else if (location.pathname.includes('/dsa') || defaultMode === 'dsa') {
       setBrainMode('dsa')
     } else {
       setBrainMode('calendar')
@@ -234,6 +244,21 @@ export default function SecondBrain({ defaultMode = 'calendar' }) {
                 <Flame className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
                 <span>DSA Arena</span>
               </button>
+
+              <button
+                onClick={() => {
+                  setBrainMode('blogs')
+                  navigate('/calendar/blogs')
+                }}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-medium flex items-center gap-1.5 cursor-pointer transition-all ${
+                  brainMode === 'blogs'
+                    ? 'bg-cyan-400 text-[#08080C] font-bold shadow-md shadow-cyan-400/20'
+                    : 'text-muted hover:text-white'
+                }`}
+              >
+                <BookOpen className="w-3.5 h-3.5 text-cyan-400" />
+                <span>Tech Deep Dives</span>
+              </button>
             </div>
           </div>
 
@@ -278,8 +303,21 @@ export default function SecondBrain({ defaultMode = 'calendar' }) {
           </div>
         </div>
 
-        {/* DSA Training Arena Workspace */}
-        {brainMode === 'dsa' ? (
+        {/* Workspace Content Router: Tech Deep Dives, DSA Arena, or Calendar */}
+        {brainMode === 'blogs' ? (
+          currentBlogSlug ? (
+            <BlogDetail
+              slug={currentBlogSlug}
+              embedded
+              onBack={() => navigate('/calendar/blogs')}
+            />
+          ) : (
+            <Blogs
+              embedded
+              onSelectBlog={(slug) => navigate(`/calendar/blogs/${slug}`)}
+            />
+          )
+        ) : brainMode === 'dsa' ? (
           <DsaWorkspace
             onSwitchToCalendar={() => {
               setBrainMode('calendar')

@@ -67,7 +67,7 @@ router.post('/login', (req, res) => {
     httpOnly: true,
     secure: isProd,
     sameSite: isProd ? 'none' : 'lax',
-    maxAge: 7 * 24 * 60 * 60 * 1000,
+    maxAge: 90 * 24 * 60 * 60 * 1000, // 90 days persistent cookie
     path: '/',
   })
 

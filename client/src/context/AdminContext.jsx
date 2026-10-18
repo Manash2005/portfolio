@@ -4,14 +4,25 @@ import { API_BASE_URL as API_BASE } from '../utils/apiConfig'
 const AdminContext = createContext(null)
 
 const TOKEN_KEY = 'portfolio_admin_token'
+const USER_KEY = 'portfolio_admin_user'
 
 export function AdminProvider({ children }) {
-  const [isAdmin, setIsAdmin] = useState(false)
-  const [adminUser, setAdminUser] = useState(null)
-  const [isCheckingSession, setIsCheckingSession] = useState(true)
   const [adminToken, setAdminToken] = useState(() => {
     return typeof window !== 'undefined' ? localStorage.getItem(TOKEN_KEY) : null
   })
+  const [adminUser, setAdminUser] = useState(() => {
+    if (typeof window === 'undefined') return null
+    try {
+      const stored = localStorage.getItem(USER_KEY)
+      return stored ? JSON.parse(stored) : null
+    } catch {
+      return null
+    }
+  })
+  const [isAdmin, setIsAdmin] = useState(() => {
+    return typeof window !== 'undefined' && Boolean(localStorage.getItem(TOKEN_KEY))
+  })
+  const [isCheckingSession, setIsCheckingSession] = useState(true)
   const [isEditMode, setIsEditMode] = useState(() => {
     return typeof window !== 'undefined' ? localStorage.getItem('portfolio_edit_mode') === 'true' : false
   })
@@ -65,20 +76,35 @@ export function AdminProvider({ children }) {
         if (json.authenticated) {
           setIsAdmin(true)
           setAdminUser(json.user)
+          localStorage.setItem(USER_KEY, JSON.stringify(json.user))
           setIsCheckingSession(false)
           return true
+        } else {
+          // Explicit unauthenticated from server
+          setIsAdmin(false)
+          setAdminUser(null)
+          localStorage.removeItem(TOKEN_KEY)
+          localStorage.removeItem(USER_KEY)
+          setAdminToken(null)
         }
+      } else if (res.status === 401 || res.status === 403) {
+        setIsAdmin(false)
+        setAdminUser(null)
+        localStorage.removeItem(TOKEN_KEY)
+        localStorage.removeItem(USER_KEY)
+        setAdminToken(null)
       }
-    } catch {
-      // not authenticated or network error
+    } catch (err) {
+      // On temporary network failure or timeout, keep existing local session if token exists
+      console.warn('Session verification network error, preserving local session:', err)
+      if (adminToken) {
+        setIsAdmin(true)
+      }
     }
 
-    // If session check failed and we had a token, it might be expired
-    setIsAdmin(false)
-    setAdminUser(null)
     setIsCheckingSession(false)
     return false
-  }, [authFetch])
+  }, [authFetch, adminToken])
 
   useEffect(() => {
     checkSession()
@@ -101,9 +127,12 @@ export function AdminProvider({ children }) {
       localStorage.setItem(TOKEN_KEY, json.sessionToken)
       setAdminToken(json.sessionToken)
     }
+    if (json.user) {
+      localStorage.setItem(USER_KEY, JSON.stringify(json.user))
+      setAdminUser(json.user)
+    }
 
     setIsAdmin(true)
-    setAdminUser(json.user)
     setIsEditMode(true)
     localStorage.setItem('portfolio_edit_mode', 'true')
     triggerRefresh()
@@ -118,6 +147,7 @@ export function AdminProvider({ children }) {
     }
 
     localStorage.removeItem(TOKEN_KEY)
+    localStorage.removeItem(USER_KEY)
     localStorage.removeItem('portfolio_edit_mode')
     setAdminToken(null)
     setIsAdmin(false)

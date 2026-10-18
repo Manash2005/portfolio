@@ -3,7 +3,7 @@ import { db } from '../db/database.js'
 
 const MAX_FAILED_ATTEMPTS = 5
 const ATTEMPT_WINDOW_MS = 15 * 60 * 1000 // 15 minutes
-const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000 // 7 days
+const SESSION_TTL_MS = 90 * 24 * 60 * 60 * 1000 // 90 days persistent login
 
 /**
  * Hash a password using scrypt with a unique salt
