@@ -6,6 +6,7 @@ const NAV_ITEMS = [
   { label: 'Work',    id: 'projects' },
   { label: 'Proof',   id: 'activity' },
   { label: 'Build',   id: 'build' },
+  { label: 'Blogs',   to: '/blogs' },
   { label: 'About',   id: 'about' },
   { label: 'Contact', id: 'contact' },
 ]
@@ -108,7 +109,36 @@ export default function Navbar() {
 
             {/* Nav items */}
             {NAV_ITEMS.map(item => {
-              const isActive = activeId === item.id
+              const isToActive = item.to && location.pathname.startsWith(item.to)
+              const isAnchorActive = isHome && activeId === item.id
+              const isActive = isToActive || isAnchorActive
+
+              if (item.to) {
+                return (
+                  <Link
+                    key={item.label}
+                    to={item.to}
+                    className="relative px-3 py-1.5 rounded-full text-xs font-mono transition-colors"
+                    style={{
+                      color: isActive ? '#08080C' : 'var(--color-muted)',
+                      fontFamily: 'var(--font-mono)',
+                      letterSpacing: '0.06em',
+                      textDecoration: 'none',
+                    }}
+                  >
+                    {isActive && (
+                      <motion.span
+                        layoutId="nav-pill"
+                        className="absolute inset-0 rounded-full"
+                        style={{ background: 'var(--color-accent)' }}
+                        transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                      />
+                    )}
+                    <span className="relative z-10">{item.label}</span>
+                  </Link>
+                )
+              }
+
               return (
                 <button
                   key={item.id}

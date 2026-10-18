@@ -116,3 +116,29 @@ CREATE INDEX IF NOT EXISTS idx_projects_published ON projects(is_published);
 CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions(session_token);
 CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at);
 CREATE INDEX IF NOT EXISTS idx_login_attempts_ip_time ON login_attempts(ip, attempt_time);
+
+-- 8. Curated AI Blogs Table (Structured tech articles with original content preservation)
+CREATE TABLE IF NOT EXISTS blogs (
+  id TEXT PRIMARY KEY,
+  title TEXT NOT NULL,
+  slug TEXT UNIQUE NOT NULL,
+  original_url TEXT NOT NULL,
+  original_author TEXT,
+  published_date TEXT,
+  topic TEXT NOT NULL DEFAULT 'Engineering',
+  subtopics TEXT DEFAULT '[]', -- JSON array of string tags
+  summary TEXT,
+  cover_image TEXT,
+  reading_time_minutes INTEGER DEFAULT 5,
+  content_json TEXT NOT NULL DEFAULT '[]', -- JSON array of sections and elements
+  key_takeaways TEXT DEFAULT '[]', -- JSON array of key takeaways
+  raw_markdown TEXT,
+  is_published INTEGER NOT NULL DEFAULT 1,
+  created_at TEXT DEFAULT (datetime('now')),
+  updated_at TEXT DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_blogs_slug ON blogs(slug);
+CREATE INDEX IF NOT EXISTS idx_blogs_topic ON blogs(topic);
+CREATE INDEX IF NOT EXISTS idx_blogs_published ON blogs(is_published);
+CREATE INDEX IF NOT EXISTS idx_blogs_created_at ON blogs(created_at);

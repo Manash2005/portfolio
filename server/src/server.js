@@ -9,6 +9,8 @@ import secondBrainRoutes from "./routes/secondBrainRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import dsaRoutes from "./routes/dsaRoutes.js";
+import blogRoutes from "./routes/blogRoutes.js";
+import { pruneStaleCalendarRevisions } from "./services/dsaMasteryService.js";
 import { getHeatmapActivity } from "./controllers/secondBrainController.js";
 import { getPortfolioContent, getPublicProjects } from "./controllers/adminController.js";
 import { autoProvisionFromEnv } from "./db/provisionAdmin.js";
@@ -120,6 +122,7 @@ app.use("/api/v1/coding-activity", codingActivityRoutes);
 app.use("/api/v1/contact", contactRoutes);
 app.use("/api/v1/second-brain", secondBrainRoutes);
 app.use("/api/v1/dsa", dsaRoutes);
+app.use("/api/v1/blogs", blogRoutes);
 app.get("/api/portfolio/activity", getHeatmapActivity);
 
 // Portfolio Public Dynamic APIs
@@ -132,6 +135,13 @@ app.use("/api/v1/admin", adminRoutes);
 
 // Ensure default admin user is initialized
 autoProvisionFromEnv();
+
+// Clean up any stale planned revision dates in calendar
+try {
+  pruneStaleCalendarRevisions();
+} catch (pruneErr) {
+  console.warn("Calendar revision prune warning:", pruneErr.message);
+}
 
 // Initialize MongoDB Atlas connection & cloud hydration
 connectMongo()

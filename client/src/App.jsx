@@ -9,6 +9,8 @@ import Home from './pages/Home'
 import AllProjects from './pages/AllProjects'
 import SecondBrain from './pages/SecondBrain'
 import AdminLogin from './pages/AdminLogin'
+import Blogs from './pages/Blogs'
+import BlogDetail from './pages/BlogDetail'
 import Navbar from './layouts/Navbar'
 import Loader from './components/Loader'
 import Footer from './components/Footer'
@@ -86,6 +88,8 @@ function AppContent() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/projects" element={<AllProjects />} />
+            <Route path="/blogs" element={<Blogs />} />
+            <Route path="/blogs/:slug" element={<BlogDetail />} />
             <Route
               path="/calendar"
               element={

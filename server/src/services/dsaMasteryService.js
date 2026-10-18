@@ -1,5 +1,5 @@
 import { db } from '../db/database.js'
-import { persistRevisionToMongo, persistEventToMongo } from '../db/mongoPersistence.js'
+import { persistRevisionToMongo, persistEventToMongo, deleteEventFromMongo } from '../db/mongoPersistence.js'
 
 /**
  * Update or initialize spaced repetition schedule for a problem
@@ -69,9 +69,10 @@ export function updateRevisionSchedule(problemId, { isSolved, isIndependent, con
     persistRevisionToMongo(updatedRow).catch(() => {})
   }
 
-  // Automatically schedule revision into site calendar
+  // Automatically schedule revision into site calendar and prune outdated revision events
   try {
     syncRevisionToCalendar(problemId, nextDueDateStr, intervalDays)
+    pruneStaleCalendarRevisions(problemId)
   } catch (err) {
     console.warn('Calendar sync error in updateRevisionSchedule:', err)
   }
@@ -85,7 +86,53 @@ export function updateRevisionSchedule(problemId, { isSolved, isIndependent, con
 }
 
 /**
- * Schedule a single spaced repetition problem into the site events calendar
+ * Prune stale or past planned revision events for problems that have been rescheduled or already solved.
+ * Prevents database bloat and ensures calendar only shows the upcoming scheduled revision date.
+ */
+export function pruneStaleCalendarRevisions(problemId = null) {
+  try {
+    let staleEvents = []
+    if (problemId) {
+      const rev = db.prepare('SELECT problem_id, last_solved_at, next_revision_due FROM dsa_revision_schedule WHERE problem_id = ?').get(problemId)
+      const problem = db.prepare('SELECT title FROM dsa_problems WHERE id = ?').get(problemId)
+      const titlePattern = problem ? `DSA Revision: ${problem.title}%` : null
+
+      if (rev && rev.next_revision_due) {
+        // Any planned event for this problem where start_at date is older than next_revision_due is stale
+        staleEvents = db.prepare(`
+          SELECT id FROM events
+          WHERE (id = ? OR (title LIKE ? AND category = 'Competitive Programming'))
+            AND status = 'Planned'
+            AND date(start_at) < date(?)
+        `).all(`rev_${problemId}`, titlePattern || '', rev.next_revision_due)
+      }
+    } else {
+      // Global prune: remove any planned revision event whose start_at is before the problem's current next_revision_due
+      staleEvents = db.prepare(`
+        SELECT e.id FROM events e
+        JOIN dsa_revision_schedule r ON (e.id = 'rev_' || r.problem_id)
+        WHERE e.status = 'Planned'
+          AND date(e.start_at) < date(r.next_revision_due)
+      `).all()
+    }
+
+    if (staleEvents.length > 0) {
+      const deleteStmt = db.prepare('DELETE FROM events WHERE id = ?')
+      for (const ev of staleEvents) {
+        deleteStmt.run(ev.id)
+        deleteEventFromMongo(ev.id).catch(() => {})
+      }
+    }
+    return staleEvents.length
+  } catch (err) {
+    console.warn('Error in pruneStaleCalendarRevisions:', err)
+    return 0
+  }
+}
+
+/**
+ * Schedule a single spaced repetition problem into the site events calendar.
+ * Moves the event to the next scheduled revision date and prunes previous planned revision dates.
  */
 export function syncRevisionToCalendar(problemId, nextDueDateStr, intervalDays) {
   try {
@@ -120,6 +167,26 @@ export function syncRevisionToCalendar(problemId, nextDueDateStr, intervalDays) 
         updated_at = datetime('now')
     `).run(eventId, title, description, startAt, endAt, color, tagsJson, problem.canonical_url)
 
+    // Remove any older duplicate or redundant planned events for this problem
+    try {
+      const oldEvents = db.prepare(`
+        SELECT id FROM events
+        WHERE (id = ? OR (title = ? AND category = 'Competitive Programming'))
+          AND status = 'Planned'
+          AND date(start_at) < date(?)
+      `).all(eventId, title, nextDueDateStr)
+
+      if (oldEvents.length > 0) {
+        const deleteStmt = db.prepare('DELETE FROM events WHERE id = ?')
+        for (const oe of oldEvents) {
+          deleteStmt.run(oe.id)
+          deleteEventFromMongo(oe.id).catch(() => {})
+        }
+      }
+    } catch (cleanErr) {
+      console.warn('Old revision cleanup warning:', cleanErr)
+    }
+
     const updatedEvent = db.prepare('SELECT * FROM events WHERE id = ?').get(eventId)
     if (updatedEvent) {
       persistEventToMongo(updatedEvent).catch(() => {})
@@ -136,6 +203,8 @@ export function syncRevisionToCalendar(problemId, nextDueDateStr, intervalDays) 
  * Bulk sync all active spaced repetition items into site calendar events
  */
 export function syncAllRevisionsToCalendar() {
+  pruneStaleCalendarRevisions()
+
   const revisions = db.prepare(`
     SELECT r.problem_id, r.next_revision_due, r.interval_days
     FROM dsa_revision_schedule r

@@ -13,3 +13,4 @@ export {
   DsaAchievementUnlockModel,
   DsaDailyPlanModel,
 } from './DsaUserData.js'
+export { BlogModel } from './Blog.js'

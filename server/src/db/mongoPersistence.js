@@ -15,6 +15,7 @@ import {
   DsaGameProfileModel,
   DsaAchievementUnlockModel,
   DsaDailyPlanModel,
+  BlogModel,
 } from '../models/index.js'
 
 function safeJsonParse(val, fallback = []) {
@@ -447,6 +448,59 @@ export async function persistDailyPlanToMongo(plan) {
     )
   } catch (err) {
     console.error('[MongoDB Atlas] Error persisting daily plan:', err.message)
+  }
+}
+
+/**
+ * Persist or update a Curated Blog in MongoDB Atlas
+ */
+export async function persistBlogToMongo(blog) {
+  if (!blog || !blog.id) return
+  try {
+    if (!isMongoConnected()) await connectMongo()
+    if (!isMongoConnected()) return
+
+    await BlogModel.findOneAndUpdate(
+      { id: blog.id },
+      {
+        _id: blog.id,
+        id: blog.id,
+        title: blog.title,
+        slug: blog.slug,
+        original_url: blog.original_url,
+        original_author: blog.original_author || '',
+        published_date: blog.published_date || '',
+        topic: blog.topic || 'Engineering',
+        subtopics: Array.isArray(blog.subtopics) ? blog.subtopics : safeJsonParse(blog.subtopics, []),
+        summary: blog.summary || '',
+        cover_image: blog.cover_image || '',
+        reading_time_minutes: blog.reading_time_minutes || 5,
+        content_json: typeof blog.content_json === 'string' ? safeJsonParse(blog.content_json, []) : (blog.content_json || []),
+        key_takeaways: Array.isArray(blog.key_takeaways) ? blog.key_takeaways : safeJsonParse(blog.key_takeaways, []),
+        raw_markdown: blog.raw_markdown || '',
+        is_published: blog.is_published !== undefined ? blog.is_published : 1,
+        created_at: blog.created_at || new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+      { upsert: true, returnDocument: 'after' }
+    )
+  } catch (err) {
+    console.error('[MongoDB Atlas] Error persisting blog:', err.message)
+  }
+}
+
+/**
+ * Delete a Curated Blog from MongoDB Atlas
+ */
+export async function deleteBlogFromMongo(blogId) {
+  if (!blogId) return
+  try {
+    if (!isMongoConnected()) await connectMongo()
+    if (!isMongoConnected()) return
+
+    await BlogModel.deleteOne({ id: blogId })
+  } catch (err) {
+    console.error('[MongoDB Atlas] Error deleting blog:', err.message)
   }
 }
 
@@ -1009,6 +1063,73 @@ export async function syncMongoAndSqlite() {
       for (const p of sqlitePlans) {
         await persistDailyPlanToMongo(p)
       }
+    }
+
+    // 10. Sync Curated Blogs
+    try {
+      const hasBlogsTable = sqliteDb.prepare("SELECT count(*) as c FROM sqlite_master WHERE type='table' AND name='blogs'").get().c > 0
+      if (hasBlogsTable) {
+        const mongoBlogs = await BlogModel.find().lean()
+        const sqliteBlogs = sqliteDb.prepare('SELECT * FROM blogs').all()
+
+        if (mongoBlogs.length > 0) {
+          const upsertSqliteBlog = sqliteDb.prepare(`
+            INSERT INTO blogs (
+              id, title, slug, original_url, original_author, published_date,
+              topic, subtopics, summary, cover_image, reading_time_minutes,
+              content_json, key_takeaways, raw_markdown, is_published, created_at, updated_at
+            ) VALUES (
+              @id, @title, @slug, @original_url, @original_author, @published_date,
+              @topic, @subtopics, @summary, @cover_image, @reading_time_minutes,
+              @content_json, @key_takeaways, @raw_markdown, @is_published, @created_at, @updated_at
+            )
+            ON CONFLICT(id) DO UPDATE SET
+              title = excluded.title,
+              slug = excluded.slug,
+              original_url = excluded.original_url,
+              original_author = excluded.original_author,
+              published_date = excluded.published_date,
+              topic = excluded.topic,
+              subtopics = excluded.subtopics,
+              summary = excluded.summary,
+              cover_image = excluded.cover_image,
+              reading_time_minutes = excluded.reading_time_minutes,
+              content_json = excluded.content_json,
+              key_takeaways = excluded.key_takeaways,
+              raw_markdown = excluded.raw_markdown,
+              is_published = excluded.is_published,
+              updated_at = excluded.updated_at
+          `)
+
+          for (const b of mongoBlogs) {
+            upsertSqliteBlog.run({
+              id: b.id,
+              title: b.title,
+              slug: b.slug,
+              original_url: b.original_url,
+              original_author: b.original_author || '',
+              published_date: b.published_date || '',
+              topic: b.topic || 'Engineering',
+              subtopics: typeof b.subtopics === 'string' ? b.subtopics : JSON.stringify(b.subtopics || []),
+              summary: b.summary || '',
+              cover_image: b.cover_image || '',
+              reading_time_minutes: b.reading_time_minutes || 5,
+              content_json: typeof b.content_json === 'string' ? b.content_json : JSON.stringify(b.content_json || []),
+              key_takeaways: typeof b.key_takeaways === 'string' ? b.key_takeaways : JSON.stringify(b.key_takeaways || []),
+              raw_markdown: b.raw_markdown || '',
+              is_published: b.is_published !== undefined ? b.is_published : 1,
+              created_at: b.created_at || new Date().toISOString(),
+              updated_at: b.updated_at || new Date().toISOString(),
+            })
+          }
+        } else if (sqliteBlogs.length > 0) {
+          for (const b of sqliteBlogs) {
+            await persistBlogToMongo(b)
+          }
+        }
+      }
+    } catch (blogSyncErr) {
+      console.warn('[MongoDB Atlas] Blog sync non-fatal warning:', blogSyncErr.message)
     }
 
     console.log('[MongoDB Atlas] Dual sync & cloud hydration complete. Data safely persisted.')

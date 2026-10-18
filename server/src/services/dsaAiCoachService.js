@@ -107,7 +107,7 @@ function buildCoachContext(durationBudgetMinutes = 45) {
 /**
  * Execute LLM call with Groq
  */
-async function callGroq(prompt, keys, model = 'llama-3.3-70b-versatile') {
+async function callGroq(prompt, keys, model = 'qwen/qwen3.8-27b') {
   const startTime = Date.now()
   for (let attempt = 0; attempt < keys.length; attempt++) {
     const key = getUsableKey(keys)
@@ -192,7 +192,7 @@ CRITICAL: You MUST only choose problem_id values that exist in the provided Avai
 /**
  * Execute LLM call with OpenRouter
  */
-async function callOpenRouter(prompt, keys, model = 'meta-llama/llama-3.1-8b-instruct:free') {
+async function callOpenRouter(prompt, keys, model = 'nvidia/nemotron-3.5-lightning:free') {
   const startTime = Date.now()
   for (let attempt = 0; attempt < keys.length; attempt++) {
     const key = getUsableKey(keys)

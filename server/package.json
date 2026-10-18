@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "node test/secondBrainTest.js && node test/adminAuthTest.js && node test/dsaSystemTest.js",
+    "test": "node test/secondBrainTest.js && node test/adminAuthTest.js && node test/dsaSystemTest.js && node test/blogSystemTest.js",
+    "test:blog": "node test/blogSystemTest.js",
     "test:dsa": "node test/dsaSystemTest.js",
     "test:admin": "node test/adminAuthTest.js",
     "test:second-brain": "node test/secondBrainTest.js",
@@ -19,6 +20,7 @@
   "type": "module",
   "dependencies": {
     "better-sqlite3": "^13.0.3",
+    "cheerio": "^1.2.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
