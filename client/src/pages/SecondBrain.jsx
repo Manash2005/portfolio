@@ -12,6 +12,7 @@ import EventDetailModal from '../components/secondbrain/EventDetailModal'
 import DsaWorkspace from '../components/dsa/DsaWorkspace'
 import Blogs from './Blogs'
 import BlogDetail from './BlogDetail'
+import CoreCSWorkspace from '../components/secondbrain/CoreCSWorkspace'
 import {
   Calendar,
   RefreshCw,
@@ -25,6 +26,7 @@ import {
   ArrowLeft,
   Plus,
   BookOpen,
+  Brain,
 } from 'lucide-react'
 
 import { useAdmin } from '../context/AdminContext'
@@ -33,9 +35,10 @@ import { API_BASE_URL } from '../utils/apiConfig'
 export default function SecondBrain({ defaultMode = 'calendar' }) {
   const location = useLocation()
   const navigate = useNavigate()
+  const isCoreCsRoute = location.pathname.includes('/core-cs') || defaultMode === 'core-cs'
   const isBlogsRoute = location.pathname.includes('/blogs') || defaultMode === 'blogs'
   const isDsaRoute = location.pathname.includes('/dsa') || defaultMode === 'dsa'
-  const initialMode = isBlogsRoute ? 'blogs' : isDsaRoute ? 'dsa' : 'calendar'
+  const initialMode = isCoreCsRoute ? 'core-cs' : isBlogsRoute ? 'blogs' : isDsaRoute ? 'dsa' : 'calendar'
   const [brainMode, setBrainMode] = useState(initialMode)
   const [showInfoModal, setShowInfoModal] = useState(false)
 
@@ -43,7 +46,9 @@ export default function SecondBrain({ defaultMode = 'calendar' }) {
   const currentBlogSlug = blogSlugMatch ? blogSlugMatch[1] : null
 
   useEffect(() => {
-    if (location.pathname.includes('/blogs') || defaultMode === 'blogs') {
+    if (location.pathname.includes('/core-cs') || defaultMode === 'core-cs') {
+      setBrainMode('core-cs')
+    } else if (location.pathname.includes('/blogs') || defaultMode === 'blogs') {
       setBrainMode('blogs')
     } else if (location.pathname.includes('/dsa') || defaultMode === 'dsa') {
       setBrainMode('dsa')
@@ -259,6 +264,21 @@ export default function SecondBrain({ defaultMode = 'calendar' }) {
                 <BookOpen className="w-3.5 h-3.5 text-cyan-400" />
                 <span>Tech Deep Dives</span>
               </button>
+
+              <button
+                onClick={() => {
+                  setBrainMode('core-cs')
+                  navigate('/calendar/core-cs')
+                }}
+                className={`px-3.5 py-1.5 rounded-lg text-xs font-mono font-medium flex items-center gap-1.5 cursor-pointer transition-all ${
+                  brainMode === 'core-cs'
+                    ? 'bg-purple-500 text-white font-bold shadow-md shadow-purple-500/20'
+                    : 'text-muted hover:text-white'
+                }`}
+              >
+                <Brain className="w-3.5 h-3.5 text-purple-400" />
+                <span>Core CS Arena</span>
+              </button>
             </div>
           </div>
 
@@ -303,8 +323,15 @@ export default function SecondBrain({ defaultMode = 'calendar' }) {
           </div>
         </div>
 
-        {/* Workspace Content Router: Tech Deep Dives, DSA Arena, or Calendar */}
-        {brainMode === 'blogs' ? (
+        {/* Workspace Content Router: Core CS, Tech Deep Dives, DSA Arena, or Calendar */}
+        {brainMode === 'core-cs' ? (
+          <CoreCSWorkspace
+            onSwitchToCalendar={() => {
+              setBrainMode('calendar')
+              navigate('/calendar')
+            }}
+          />
+        ) : brainMode === 'blogs' ? (
           currentBlogSlug ? (
             <BlogDetail
               slug={currentBlogSlug}

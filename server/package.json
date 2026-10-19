@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "node test/secondBrainTest.js && node test/adminAuthTest.js && node test/dsaSystemTest.js && node test/blogSystemTest.js",
+    "test": "node test/secondBrainTest.js && node test/adminAuthTest.js && node test/dsaSystemTest.js && node test/blogSystemTest.js && node test/coreCsSystemTest.js",
     "test:blog": "node test/blogSystemTest.js",
     "test:dsa": "node test/dsaSystemTest.js",
     "test:admin": "node test/adminAuthTest.js",

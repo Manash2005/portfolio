@@ -10,6 +10,7 @@ import authRoutes from "./routes/authRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import dsaRoutes from "./routes/dsaRoutes.js";
 import blogRoutes from "./routes/blogRoutes.js";
+import coreCsRoutes from "./routes/coreCsRoutes.js";
 import { pruneStaleCalendarRevisions } from "./services/dsaMasteryService.js";
 import { getHeatmapActivity } from "./controllers/secondBrainController.js";
 import { getPortfolioContent, getPublicProjects } from "./controllers/adminController.js";
@@ -123,6 +124,7 @@ app.use("/api/v1/contact", contactRoutes);
 app.use("/api/v1/second-brain", secondBrainRoutes);
 app.use("/api/v1/dsa", dsaRoutes);
 app.use("/api/v1/blogs", blogRoutes);
+app.use("/api/v1/core-cs", coreCsRoutes);
 app.get("/api/portfolio/activity", getHeatmapActivity);
 
 // Portfolio Public Dynamic APIs

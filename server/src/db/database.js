@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url'
 import { seedInitialData } from './seedInitialData.js'
 import { seedDsaCatalog } from './seedDsaCatalog.js'
 import { comprehensiveProblems } from './comprehensiveDsaCatalog.js'
+import { seedCoreCsCatalog, curatedCards } from './seedCoreCsCatalog.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -102,6 +103,23 @@ export function getDatabase() {
       }
     } catch (err) {
       console.error('DSA count check error:', err)
+    }
+
+    // 6. Initialize Core CS schema (coreCsSchema.sql) & auto-seed catalog
+    const coreCsSchemaPath = path.join(__dirname, 'coreCsSchema.sql')
+    if (fs.existsSync(coreCsSchemaPath)) {
+      const coreCsSchemaSql = fs.readFileSync(coreCsSchemaPath, 'utf8')
+      dbInstance.exec(coreCsSchemaSql)
+    }
+
+    try {
+      const cardCount = dbInstance.prepare("SELECT count(*) as c FROM core_cs_cards").get().c
+      if (cardCount < curatedCards.length) {
+        console.log(`[Database] Seeding Core CS catalog (${cardCount} -> ${curatedCards.length} cards)...`)
+        seedCoreCsCatalog(dbInstance)
+      }
+    } catch (err) {
+      console.error('Core CS catalog seed check error:', err)
     }
   }
   return dbInstance

@@ -153,6 +153,22 @@ function AppContent() {
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/calendar/core-cs"
+              element={
+                <ProtectedRoute>
+                  <SecondBrain defaultMode="core-cs" />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/second-brain/core-cs"
+              element={
+                <ProtectedRoute>
+                  <SecondBrain defaultMode="core-cs" />
+                </ProtectedRoute>
+              }
+            />
             <Route path="/admin/login" element={<AdminLogin />} />
           </Routes>
           {!isAdminLogin && <Footer />}
