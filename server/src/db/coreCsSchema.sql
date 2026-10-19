@@ -57,3 +57,78 @@ CREATE TABLE IF NOT EXISTS core_cs_cheat_sheets (
 );
 
 CREATE INDEX IF NOT EXISTS idx_core_cs_sheet_subject ON core_cs_cheat_sheets(subject);
+
+-- 4. Interactive Course Academy Courses
+CREATE TABLE IF NOT EXISTS core_cs_courses (
+  id TEXT PRIMARY KEY,
+  subject TEXT UNIQUE NOT NULL, -- 'OS', 'DBMS', 'CN', 'System Design', 'OOPs'
+  title TEXT NOT NULL,
+  description TEXT NOT NULL,
+  icon TEXT NOT NULL DEFAULT 'Cpu',
+  color TEXT NOT NULL DEFAULT '#00F0FF',
+  display_order INTEGER DEFAULT 0,
+  created_at TEXT DEFAULT (datetime('now'))
+);
+
+-- 5. Course Modules
+CREATE TABLE IF NOT EXISTS core_cs_modules (
+  id TEXT PRIMARY KEY,
+  course_id TEXT NOT NULL REFERENCES core_cs_courses(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  description TEXT,
+  module_number INTEGER NOT NULL,
+  display_order INTEGER DEFAULT 0,
+  created_at TEXT DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_core_cs_mod_course ON core_cs_modules(course_id);
+
+-- 6. Interactive Teaching Lessons
+CREATE TABLE IF NOT EXISTS core_cs_lessons (
+  id TEXT PRIMARY KEY,
+  module_id TEXT NOT NULL REFERENCES core_cs_modules(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  slug TEXT UNIQUE NOT NULL,
+  reading_time_minutes INTEGER DEFAULT 8,
+  analogy_markdown TEXT,
+  content_markdown TEXT NOT NULL,
+  diagram_ascii TEXT,
+  code_snippet TEXT,
+  code_language TEXT,
+  key_takeaways TEXT DEFAULT '[]', -- JSON array of strings
+  display_order INTEGER DEFAULT 0,
+  created_at TEXT DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_core_cs_les_mod ON core_cs_lessons(module_id);
+CREATE INDEX IF NOT EXISTS idx_core_cs_les_slug ON core_cs_lessons(slug);
+
+-- 7. Lesson Quizzes & Assignments
+CREATE TABLE IF NOT EXISTS core_cs_assignments (
+  id TEXT PRIMARY KEY,
+  lesson_id TEXT NOT NULL REFERENCES core_cs_lessons(id) ON DELETE CASCADE,
+  question TEXT NOT NULL,
+  options_json TEXT NOT NULL, -- JSON array of string options
+  correct_option_idx INTEGER NOT NULL, -- 0-indexed
+  explanation_markdown TEXT NOT NULL,
+  display_order INTEGER DEFAULT 0,
+  created_at TEXT DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_core_cs_asgn_les ON core_cs_assignments(lesson_id);
+
+-- 8. Student Learning Progress & Assignment Scores
+CREATE TABLE IF NOT EXISTS core_cs_progress (
+  id TEXT PRIMARY KEY,
+  lesson_id TEXT UNIQUE NOT NULL REFERENCES core_cs_lessons(id) ON DELETE CASCADE,
+  status TEXT NOT NULL DEFAULT 'not_started', -- 'not_started', 'reading', 'completed'
+  quiz_score INTEGER DEFAULT 0,
+  is_quiz_passed INTEGER DEFAULT 0,
+  completed_at TEXT,
+  created_at TEXT DEFAULT (datetime('now')),
+  updated_at TEXT DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_core_cs_prog_les ON core_cs_progress(lesson_id);
+CREATE INDEX IF NOT EXISTS idx_core_cs_prog_status ON core_cs_progress(status);
+

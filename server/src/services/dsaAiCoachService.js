@@ -479,7 +479,23 @@ Output JSON only with keys: weakTopicsSummary (string), actionableAdvice (array 
 `
     const res = await callGroq(prompt, groqKeys)
     if (res.success && res.data) {
-      return { ...res.data, provider: 'groq' }
+      return {
+        weakTopicsSummary:
+          res.data.weakTopicsSummary ||
+          res.data.weak_topics_summary ||
+          res.data.summary ||
+          fallbackAnalysis.weakTopicsSummary,
+        actionableAdvice: Array.isArray(res.data.actionableAdvice)
+          ? res.data.actionableAdvice
+          : Array.isArray(res.data.actionable_advice)
+          ? res.data.actionable_advice
+          : fallbackAnalysis.actionableAdvice,
+        topMistakeNote:
+          res.data.topMistakeNote ||
+          res.data.top_mistake_note ||
+          fallbackAnalysis.topMistakeNote,
+        provider: 'groq',
+      }
     }
 
     return fallbackAnalysis

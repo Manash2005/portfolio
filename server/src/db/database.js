@@ -6,6 +6,7 @@ import { seedInitialData } from './seedInitialData.js'
 import { seedDsaCatalog } from './seedDsaCatalog.js'
 import { comprehensiveProblems } from './comprehensiveDsaCatalog.js'
 import { seedCoreCsCatalog, curatedCards } from './seedCoreCsCatalog.js'
+import { seedCoreCsCourseData, coursesData } from './seedCoreCsCourseData.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -120,6 +121,16 @@ export function getDatabase() {
       }
     } catch (err) {
       console.error('Core CS catalog seed check error:', err)
+    }
+
+    try {
+      const courseCount = dbInstance.prepare("SELECT count(*) as c FROM core_cs_courses").get().c
+      if (courseCount < coursesData.length) {
+        console.log(`[Database] Seeding Core CS courses (${courseCount} -> ${coursesData.length} courses)...`)
+        seedCoreCsCourseData(dbInstance)
+      }
+    } catch (err) {
+      console.error('Core CS courses seed check error:', err)
     }
   }
   return dbInstance

@@ -8,10 +8,20 @@ import {
   getStats,
   createCustomCard,
   deleteCustomCard,
+  listCourses,
+  getCourseCurriculum,
+  getLesson,
+  submitLessonAssignment,
 } from '../controllers/coreCsController.js'
 import { requireAdmin } from '../middleware/authMiddleware.js'
 
 const router = express.Router()
+
+// Interactive Course Academy
+router.get('/courses', listCourses)
+router.get('/courses/:identifier', getCourseCurriculum)
+router.get('/lessons/:id', getLesson)
+router.post('/lessons/:id/submit-assignment', submitLessonAssignment)
 
 // Card catalog & search
 router.get('/cards', listCards)

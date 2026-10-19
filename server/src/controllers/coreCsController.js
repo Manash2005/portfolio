@@ -478,3 +478,336 @@ export function deleteCustomCard(req, res) {
     res.status(500).json({ success: false, error: 'Failed to delete card' })
   }
 }
+
+/**
+ * List all 5 courses with module & lesson counts, and student completion progress
+ */
+export function listCourses(req, res) {
+  try {
+    const courses = db.prepare('SELECT * FROM core_cs_courses ORDER BY display_order ASC').all()
+
+    const enriched = courses.map(course => {
+      const moduleCount = db.prepare('SELECT count(*) as c FROM core_cs_modules WHERE course_id = ?').get(course.id).c
+
+      const lessonStats = db.prepare(`
+        SELECT 
+          count(l.id) as total_lessons,
+          sum(CASE WHEN p.is_quiz_passed = 1 THEN 1 ELSE 0 END) as completed_lessons
+        FROM core_cs_lessons l
+        JOIN core_cs_modules m ON l.module_id = m.id
+        LEFT JOIN core_cs_progress p ON l.id = p.lesson_id
+        WHERE m.course_id = ?
+      `).get(course.id)
+
+      const totalLessons = lessonStats.total_lessons || 0
+      const completedLessons = lessonStats.completed_lessons || 0
+      const progressPercent = totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0
+
+      return {
+        ...course,
+        moduleCount,
+        totalLessons,
+        completedLessons,
+        progressPercent,
+      }
+    })
+
+    res.json({ success: true, count: enriched.length, courses: enriched })
+  } catch (error) {
+    console.error('Error listing courses:', error)
+    res.status(500).json({ success: false, error: 'Failed to retrieve courses' })
+  }
+}
+
+/**
+ * Get full curriculum tree for a course (by subject or course ID)
+ */
+export function getCourseCurriculum(req, res) {
+  try {
+    const { identifier } = req.params
+    const course = db.prepare(`
+      SELECT * FROM core_cs_courses 
+      WHERE id = ? OR subject = ? COLLATE NOCASE
+    `).get(identifier, identifier)
+
+    if (!course) {
+      return res.status(404).json({ success: false, error: 'Course not found' })
+    }
+
+    const modules = db.prepare(`
+      SELECT * FROM core_cs_modules 
+      WHERE course_id = ? 
+      ORDER BY module_number ASC, display_order ASC
+    `).all(course.id)
+
+    const modulesWithLessons = modules.map(mod => {
+      const lessons = db.prepare(`
+        SELECT 
+          l.id,
+          l.module_id,
+          l.title,
+          l.slug,
+          l.reading_time_minutes,
+          l.display_order,
+          COALESCE(p.status, 'not_started') as progress_status,
+          COALESCE(p.is_quiz_passed, 0) as is_quiz_passed,
+          COALESCE(p.quiz_score, 0) as quiz_score,
+          p.completed_at
+        FROM core_cs_lessons l
+        LEFT JOIN core_cs_progress p ON l.id = p.lesson_id
+        WHERE l.module_id = ?
+        ORDER BY l.display_order ASC
+      `).all(mod.id)
+
+      return {
+        ...mod,
+        lessons,
+      }
+    })
+
+    let totalLessons = 0
+    let completedLessons = 0
+    modulesWithLessons.forEach(m => {
+      totalLessons += m.lessons.length
+      completedLessons += m.lessons.filter(l => l.is_quiz_passed === 1).length
+    })
+
+    res.json({
+      success: true,
+      course: {
+        ...course,
+        totalLessons,
+        completedLessons,
+        progressPercent: totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0,
+        modules: modulesWithLessons,
+      }
+    })
+  } catch (error) {
+    console.error('Error fetching course curriculum:', error)
+    res.status(500).json({ success: false, error: 'Failed to retrieve course curriculum' })
+  }
+}
+
+/**
+ * Get complete lesson detail with assignments and progress
+ */
+export function getLesson(req, res) {
+  try {
+    const { id } = req.params
+    const lesson = db.prepare(`
+      SELECT 
+        l.*,
+        m.course_id,
+        m.title as module_title,
+        m.module_number,
+        c.subject,
+        c.color as subject_color,
+        COALESCE(p.status, 'not_started') as progress_status,
+        COALESCE(p.is_quiz_passed, 0) as is_quiz_passed,
+        COALESCE(p.quiz_score, 0) as quiz_score,
+        p.completed_at
+      FROM core_cs_lessons l
+      JOIN core_cs_modules m ON l.module_id = m.id
+      JOIN core_cs_courses c ON m.course_id = c.id
+      LEFT JOIN core_cs_progress p ON l.id = p.lesson_id
+      WHERE l.id = ? OR l.slug = ?
+    `).get(id, id)
+
+    if (!lesson) {
+      return res.status(404).json({ success: false, error: 'Lesson not found' })
+    }
+
+    let keyTakeaways = []
+    try {
+      keyTakeaways = JSON.parse(lesson.key_takeaways || '[]')
+    } catch {}
+
+    const rawAssignments = db.prepare(`
+      SELECT id, lesson_id, question, options_json, display_order
+      FROM core_cs_assignments
+      WHERE lesson_id = ?
+      ORDER BY display_order ASC
+    `).all(lesson.id)
+
+    const assignments = rawAssignments.map(a => {
+      let options = []
+      try { options = JSON.parse(a.options_json) } catch {}
+      return {
+        id: a.id,
+        lesson_id: a.lesson_id,
+        question: a.question,
+        options,
+        display_order: a.display_order,
+      }
+    })
+
+    const allCourseLessons = db.prepare(`
+      SELECT l.id, l.title, l.slug
+      FROM core_cs_lessons l
+      JOIN core_cs_modules m ON l.module_id = m.id
+      WHERE m.course_id = ?
+      ORDER BY m.module_number ASC, l.display_order ASC
+    `).all(lesson.course_id)
+
+    const currentIdx = allCourseLessons.findIndex(l => l.id === lesson.id)
+    const prevLesson = currentIdx > 0 ? allCourseLessons[currentIdx - 1] : null
+    const nextLesson = currentIdx < allCourseLessons.length - 1 ? allCourseLessons[currentIdx + 1] : null
+
+    if (lesson.progress_status === 'not_started') {
+      db.prepare(`
+        INSERT INTO core_cs_progress (id, lesson_id, status)
+        VALUES (?, ?, 'reading')
+        ON CONFLICT(lesson_id) DO UPDATE SET status = 'reading', updated_at = datetime('now')
+      `).run(randomUUID(), lesson.id)
+    }
+
+    res.json({
+      success: true,
+      lesson: {
+        ...lesson,
+        key_takeaways: keyTakeaways,
+        assignments,
+        prevLesson,
+        nextLesson,
+      }
+    })
+  } catch (error) {
+    console.error('Error fetching lesson:', error)
+    res.status(500).json({ success: false, error: 'Failed to retrieve lesson' })
+  }
+}
+
+/**
+ * Submit lesson assignment answers for instant grading & automated calendar revision scheduling
+ */
+export function submitLessonAssignment(req, res) {
+  try {
+    const { id } = req.params
+    const { answers = [] } = req.body
+
+    const lesson = db.prepare(`
+      SELECT l.*, m.course_id, c.subject, c.title as course_title
+      FROM core_cs_lessons l
+      JOIN core_cs_modules m ON l.module_id = m.id
+      JOIN core_cs_courses c ON m.course_id = c.id
+      WHERE l.id = ? OR l.slug = ?
+    `).get(id, id)
+
+    if (!lesson) {
+      return res.status(404).json({ success: false, error: 'Lesson not found' })
+    }
+
+    const officialQuestions = db.prepare(`
+      SELECT * FROM core_cs_assignments WHERE lesson_id = ? ORDER BY display_order ASC
+    `).all(lesson.id)
+
+    if (officialQuestions.length === 0) {
+      return res.status(400).json({ success: false, error: 'No assignments found for this lesson' })
+    }
+
+    let correctCount = 0
+    const results = officialQuestions.map(q => {
+      const userSubmission = answers.find(a => a.question_id === q.id)
+      const selectedIdx = userSubmission !== undefined ? userSubmission.selected_option_idx : -1
+      const isCorrect = selectedIdx === q.correct_option_idx
+
+      if (isCorrect) correctCount++
+
+      let options = []
+      try { options = JSON.parse(q.options_json) } catch {}
+
+      return {
+        question_id: q.id,
+        question: q.question,
+        options,
+        selected_option_idx: selectedIdx,
+        correct_option_idx: q.correct_option_idx,
+        is_correct: isCorrect,
+        explanation: q.explanation_markdown,
+      }
+    })
+
+    const score = Math.round((correctCount / officialQuestions.length) * 100)
+    const passed = score >= 80
+
+    const now = new Date()
+    const todayStr = now.toISOString().split('T')[0]
+    const progressId = randomUUID()
+
+    db.prepare(`
+      INSERT INTO core_cs_progress (
+        id, lesson_id, status, quiz_score, is_quiz_passed, completed_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
+      ON CONFLICT(lesson_id) DO UPDATE SET
+        status = CASE WHEN excluded.is_quiz_passed = 1 THEN 'completed' ELSE 'reading' END,
+        quiz_score = excluded.quiz_score,
+        is_quiz_passed = excluded.is_quiz_passed,
+        completed_at = CASE WHEN excluded.is_quiz_passed = 1 THEN datetime('now') ELSE completed_at END,
+        updated_at = datetime('now')
+    `).run(
+      progressId,
+      lesson.id,
+      passed ? 'completed' : 'reading',
+      score,
+      passed ? 1 : 0,
+      passed ? now.toISOString() : null
+    )
+
+    let xpEarned = 0
+    let rewardResult = null
+
+    if (passed) {
+      try {
+        xpEarned = 50
+        rewardResult = recordActivityReward({ xpEarned: 50, isRevision: false })
+      } catch (err) {
+        console.warn('XP attribution warning:', err)
+      }
+
+      try {
+        const revDate = new Date(now)
+        revDate.setDate(revDate.getDate() + 2)
+        const nextReviewStr = revDate.toISOString().split('T')[0]
+        const eventTitle = `Core CS Revision: ${lesson.title}`
+
+        db.prepare(`
+          DELETE FROM events 
+          WHERE title = ? AND status = 'Planned' AND start_at >= ?
+        `).run(eventTitle, todayStr)
+
+        const newEventId = randomUUID()
+        db.prepare(`
+          INSERT INTO events (
+            id, title, description, category, start_at, end_at,
+            all_day, status, visibility, show_on_portfolio_heatmap
+          ) VALUES (
+            ?, ?, ?, 'Learning', ?, ?, 0, 'Planned', 'Private', 1
+          )
+        `).run(
+          newEventId,
+          eventTitle,
+          `First active recall revision for ${lesson.subject}: ${lesson.title}. Complete assignment score: ${score}%.`,
+          `${nextReviewStr}T09:00:00`,
+          `${nextReviewStr}T09:30:00`
+        )
+      } catch (calErr) {
+        console.warn('Calendar revision scheduling warning:', calErr)
+      }
+    }
+
+    res.json({
+      success: true,
+      score,
+      passed,
+      correctCount,
+      totalQuestions: officialQuestions.length,
+      xp_earned: xpEarned,
+      streak: rewardResult?.streak || null,
+      results,
+    })
+  } catch (error) {
+    console.error('Error submitting lesson assignment:', error)
+    res.status(500).json({ success: false, error: 'Failed to grade assignment' })
+  }
+}
+

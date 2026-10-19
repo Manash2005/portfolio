@@ -26,7 +26,9 @@ import {
   Zap,
   Tag,
   Trophy,
+  GraduationCap,
 } from 'lucide-react'
+import CourseAcademyWorkspace from './CourseAcademyWorkspace'
 
 const SUBJECT_CONFIG = {
   'OS': {
@@ -69,8 +71,8 @@ const SUBJECT_CONFIG = {
 export default function CoreCSWorkspace({ onSwitchToCalendar }) {
   const { authFetch } = useAdmin()
 
-  // Workspace Mode: 'drill' | 'vault' | 'sheets' | 'stats'
-  const [activeTab, setActiveTab] = useState('drill')
+  // Workspace Mode: 'academy' | 'drill' | 'vault' | 'sheets'
+  const [activeTab, setActiveTab] = useState('academy')
 
   // Selected subject filter: 'All' | 'OS' | 'DBMS' | 'CN' | 'System Design' | 'OOPs'
   const [selectedSubject, setSelectedSubject] = useState('All')
@@ -348,9 +350,21 @@ export default function CoreCSWorkspace({ onSwitchToCalendar }) {
         </div>
       </div>
 
-      {/* Primary Navigation Ribbon: Drill vs Vault vs Cheat Sheets */}
+      {/* Primary Navigation Ribbon: Academy vs Drill vs Vault vs Cheat Sheets */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-2 rounded-2xl bg-[#0E0E14] border border-white/5">
-        <div className="flex items-center gap-1 bg-black/40 p-1 rounded-xl border border-white/5">
+        <div className="flex items-center gap-1 bg-black/40 p-1 rounded-xl border border-white/5 overflow-x-auto">
+          <button
+            onClick={() => setActiveTab('academy')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-mono font-medium flex items-center gap-1.5 cursor-pointer transition-all ${
+              activeTab === 'academy'
+                ? 'bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-bold shadow-md shadow-purple-500/25'
+                : 'text-[#8A8A99] hover:text-white'
+            }`}
+          >
+            <GraduationCap className="w-3.5 h-3.5 text-cyan-300" />
+            <span>Interactive Academy</span>
+          </button>
+
           <button
             onClick={() => setActiveTab('drill')}
             className={`px-3 py-1.5 rounded-lg text-xs font-mono font-medium flex items-center gap-1.5 cursor-pointer transition-all ${
@@ -448,6 +462,21 @@ export default function CoreCSWorkspace({ onSwitchToCalendar }) {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* ========================================================================= */}
+      {/* TAB 0: INTERACTIVE COURSE ACADEMY (COURSERA / UDEMY STYLE LEARNING) */}
+      {/* ========================================================================= */}
+      {activeTab === 'academy' && (
+        <CourseAcademyWorkspace
+          onSwitchToDrill={() => setActiveTab('drill')}
+          onSwitchToCalendar={onSwitchToCalendar}
+          onActivityReward={({ xp, title, message }) => {
+            setRewardToast({ xp, nextDate: '2 days later' })
+            setTimeout(() => setRewardToast(null), 5000)
+            fetchStats()
+          }}
+        />
+      )}
 
       {/* ========================================================================= */}
       {/* TAB 1: ACTIVE RECALL DRILL (FLASHCARDS WITH SM-2) */}
